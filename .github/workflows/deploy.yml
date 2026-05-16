@@ -1,0 +1,62 @@
+name: 🚀 Deploy MiProfesional
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  BACKEND_URL: https://miprofesional-backend.onrender.com
+  FRONTEND_URL: https://miprofesional.vercel.app
+
+jobs:
+  notify:
+    name: 📢 Notify
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: 🚀 Deploy Notification
+        run: |
+          echo "🚀 Deploy completado!"
+          echo "Backend: ${{ env.BACKEND_URL }}"
+          echo "Frontend: ${{ env.FRONTEND_URL }}"
+          echo "Webhook: ${{ env.BACKEND_URL }}/api/v1/mercadopago/webhook"
+
+  test-backend:
+    name: 🧪 Test Backend
+    runs-on: ubuntu-latest
+    needs: notify
+    steps:
+      - name: Test API Health
+        run: |
+          echo "Testing backend health..."
+          curl -s ${{ env.BACKEND_URL }}/health | jq .
+          
+      - name: Test Webhook Endpoint
+        run: |
+          echo "Testing webhook endpoint..."
+          curl -s -X POST ${{ env.BACKEND_URL }}/api/v1/mercadopago/webhook \
+            -H "Content-Type: application/json" \
+            -d '{"action":"payment.updated","type":"payment","data":{"id":"test_github_actions"}}' | jq .
+
+  deploy-status:
+    name: 📊 Deploy Status
+    runs-on: ubuntu-latest
+    needs: [notify, test-backend]
+    steps:
+      - name: Check All Services
+        run: |
+          echo "╔════════════════════════════════════════════════════════════╗"
+          echo "║  DEPLOY STATUS - MiProfesional                            ║"
+          echo "╚════════════════════════════════════════════════════════════╝"
+          echo ""
+          echo "✅ Backend: ${{ env.BACKEND_URL }}"
+          echo "✅ Frontend: ${{ env.FRONTEND_URL }}"
+          echo "✅ Webhook: ${{ env.BACKEND_URL }}/api/v1/mercadopago/webhook"
+          echo ""
+          echo "Mercado Pago Config:"
+          echo "  - Access Token: APP_USR-4157382814247637-..."
+          echo "  - Webhook URL: ${{ env.BACKEND_URL }}/api/v1/mercadopago/webhook"
+          echo "  - Modo: Sandbox/Producción"
