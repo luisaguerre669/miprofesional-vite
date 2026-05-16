@@ -1,0 +1,103 @@
+{
+  "services": [
+    {
+      "name": "miprofesional-backend",
+      "type": "web",
+      "env": "node",
+      "region": "oregon",
+      "plan": "free",
+      "buildCommand": "npm install",
+      "startCommand": "node src/server.js",
+      "healthCheckPath": "/health",
+      "envVars": {
+        "NODE_ENV": "production",
+        "MONGODB_URI": "${MONGODB_URI}",
+        "JWT_SECRET": "${JWT_SECRET}",
+        "JWT_REFRESH_SECRET": "${JWT_REFRESH_SECRET}"
+      },
+      "cors": {
+        "origins": [
+          "https://miprofesional.onrender.com",
+          "https://miprofesional-backend.onrender.com",
+          "https://miprofesional-gateway.onrender.com"
+        ],
+        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        "allowedHeaders": ["Content-Type", "Authorization"],
+        "credentials": true
+      }
+    },
+    {
+      "name": "miprofesional-gateway",
+      "type": "web",
+      "env": "node",
+      "region": "oregon",
+      "plan": "free",
+      "buildCommand": "npm install",
+      "startCommand": "node index.js",
+      "healthCheckPath": "/health",
+      "envVars": {
+        "NODE_ENV": "production",
+        "USE_AUTH_SERVICE": "true",
+        "AUTH_SERVICE_URL": "https://miprofesional-auth.onrender.com",
+        "MONOLITH_URL": "https://miprofesional-backend.onrender.com",
+        "ENABLE_DUAL_RUN": "false",
+        "LOG_ROUTING_DECISIONS": "true"
+      },
+      "cors": {
+        "origins": [
+          "https://miprofesional.onrender.com",
+          "https://miprofesional-backend.onrender.com",
+          "https://miprofesional-auth.onrender.com"
+        ],
+        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        "allowedHeaders": ["Content-Type", "Authorization"],
+        "credentials": true
+      }
+    },
+    {
+      "name": "miprofesional-auth",
+      "type": "web",
+      "env": "node",
+      "region": "oregon",
+      "plan": "free",
+      "buildCommand": "npm install",
+      "startCommand": "node server.js",
+      "healthCheckPath": "/health",
+      "envVars": {
+        "NODE_ENV": "production",
+        "MONGODB_URI": "${MONGODB_URI}",
+        "JWT_SECRET": "${JWT_SECRET}",
+        "JWT_REFRESH_SECRET": "${JWT_REFRESH_SECRET}",
+        "PORT": "3001"
+      },
+      "cors": {
+        "origins": [
+          "https://miprofesional.onrender.com",
+          "https://miprofesional-backend.onrender.com",
+          "https://miprofesional-gateway.onrender.com"
+        ],
+        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        "allowedHeaders": ["Content-Type", "Authorization"],
+        "credentials": true
+      }
+    }
+  ],
+  "deployment": {
+    "strategy": "zero-downtime",
+    "order": [
+      "miprofesional-backend",
+      "miprofesional-auth",
+      "miprofesional-gateway"
+    ],
+    "healthChecks": {
+      "timeout": 30000,
+      "retries": 3,
+      "interval": 10000
+    },
+    "fallback": {
+      "enabled": true,
+      "primary": "miprofesional-gateway",
+      "fallback": "miprofesional-backend"
+    }
+  }
+}
