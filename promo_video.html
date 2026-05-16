@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Promo MiProfesional</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #0f172a;
+            color: white;
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .scene {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            opacity: 0;
+            padding: 2rem;
+            box-sizing: border-box;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+
+        /* Capa oscura para que el texto sea legible */
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.7); /* Oscurece la imagen de fondo */
+            z-index: 1;
+        }
+
+        .content {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 {
+            font-size: 4.5rem;
+            font-weight: 900;
+            margin-bottom: 1rem;
+            color: #ffffff;
+            text-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            transform: translateY(20px);
+        }
+
+        .highlight {
+            color: #38bdf8;
+        }
+
+        p {
+            font-size: 2.2rem;
+            font-weight: 400;
+            color: #e2e8f0;
+            max-width: 900px;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+            transform: translateY(20px);
+        }
+
+        /* Animations */
+        @keyframes fadeInOut {
+            0% { opacity: 0; transform: scale(1.05); }
+            10% { opacity: 1; transform: scale(1); h1, p { transform: translateY(0); transition: 0.8s ease-out; } }
+            90% { opacity: 1; transform: scale(1); }
+            100% { opacity: 0; transform: scale(0.95); }
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+            100% { transform: translateY(0px); }
+        }
+
+        /* Timeline (Total 30s) */
+        #scene1 { 
+            background-image: url('https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=1920&q=80');
+            animation: fadeInOut 6s linear 0s forwards; 
+        }
+        #scene2 { 
+            background-image: url('https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&w=1920&q=80');
+            animation: fadeInOut 6s linear 6s forwards; 
+        }
+        #scene3 { 
+            background-image: url('https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=1920&q=80');
+            animation: fadeInOut 6s linear 12s forwards; 
+        }
+        #scene4 { 
+            background-image: url('https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?auto=format&fit=crop&w=1920&q=80');
+            animation: fadeInOut 6s linear 18s forwards; 
+        }
+        #scene5 { 
+            background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+            animation: fadeInOut 6s linear 24s forwards; 
+        }
+
+        .logo-container {
+            animation: float 4s ease-in-out infinite;
+        }
+
+        .progress-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 6px;
+            background: #38bdf8;
+            width: 0%;
+            z-index: 10;
+            animation: progress 30s linear forwards;
+        }
+
+        @keyframes progress {
+            to { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="progress-bar"></div>
+
+    <!-- Scene 1: The Problem -->
+    <div id="scene1" class="scene">
+        <div class="overlay"></div>
+        <div class="content">
+            <h1>¿Necesitas un <span class="highlight">experto</span>?</h1>
+            <p>Encontrar al profesional adecuado para tu hogar o negocio requiere tiempo y confianza...</p>
+        </div>
+    </div>
+
+    <!-- Scene 2: The Solution -->
+    <div id="scene2" class="scene">
+        <div class="overlay"></div>
+        <div class="content">
+            <h1>Tenemos la <span class="highlight">solución</span></h1>
+            <p>Electricistas, plomeros, abogados, profesores... Todos verificados y listos para ayudarte.</p>
+        </div>
+    </div>
+
+    <!-- Scene 3: How it works -->
+    <div id="scene3" class="scene">
+        <div class="overlay"></div>
+        <div class="content">
+            <h1>Conexión <span class="highlight">Directa</span></h1>
+            <p>Publica tu necesidad, recibe presupuestos y elige al mejor profesional según sus reseñas.</p>
+        </div>
+    </div>
+
+    <!-- Scene 4: Mobile App -->
+    <div id="scene4" class="scene">
+        <div class="overlay"></div>
+        <div class="content">
+            <h1>Todo desde tu <span class="highlight">celular</span></h1>
+            <p>Gestiona todo el proceso, comunícate de forma segura y resuelve tus problemas rápido.</p>
+        </div>
+    </div>
+
+    <!-- Scene 5: Outro -->
+    <div id="scene5" class="scene">
+        <div class="content">
+            <div class="logo-container">
+                <h1 style="font-size: 5.5rem; background: linear-gradient(to right, #38bdf8, #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">MiProfesional</h1>
+            </div>
+            <p>Tu experto de confianza, a un clic de distancia.</p>
+            <div style="margin-top: 3rem; padding: 1.2rem 4rem; background: #38bdf8; color: #0f172a; font-weight: bold; border-radius: 50px; font-size: 1.8rem; box-shadow: 0 10px 25px rgba(56, 189, 248, 0.4);">
+                Descarga la App Hoy
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

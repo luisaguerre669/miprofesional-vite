@@ -1,0 +1,206 @@
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { LogIn, Mail, Lock, AlertCircle, Chrome, Smartphone, ArrowLeft, CheckCircle } from 'lucide-react';
+
+const Login = () => {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const { login } = useAuth();
+  const [mode, setMode] = useState('email');
+  const [formData, setFormData] = useState({ email: '', password: '', phone: '', code: '' });
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [codeSent, setCodeSent] = useState(false);
+
+  useEffect(() => {
+    const token = searchParams.get('token');
+    const verified = searchParams.get('verified');
+    const errorParam = searchParams.get('error');
+    if (token) {
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify({ authProvider: searchParams.get('provider') }));
+      navigate('/', { replace: true });
+    }
+    if (verified === 'true') setSuccess('Correo verificado exitosamente. Ya podes iniciar sesion.');
+    if (errorParam === 'google_auth_failed') setError('La autenticacion con Google fallo. Intenta de nuevo.');
+  }, []);
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+    setError('');
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    if (mode === 'email') {
+      const result = await login(formData.email, formData.password);
+      if (result.success) navigate('/');
+      else setError(result.error);
+    }
+    setLoading(false);
+  };
+
+  const handleSendCode = async () => {
+    if (!formData.phone) { setError('Ingresa tu numero de telefono'); return; }
+    setLoading(true);
+    try {
+      const res = await fetch('/api/auth/send-verification', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: formData.phone })
+      });
+      const data = await res.json();
+      if (data.success) setCodeSent(true);
+      else setError(data.error || 'Error al enviar codigo');
+    } catch { setError('Error de conexion'); }
+    setLoading(false);
+  };
+
+  const handleVerifyCode = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/auth/verify-phone', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: formData.phone, code: formData.code })
+      });
+      const data = await res.json();
+      if (data.success) {
+        const result = await login(formData.phone, '');
+        if (result.success) navigate('/');
+        else setError(result.error);
+      } else setError(data.error || 'Codigo invalido');
+    } catch { setError('Error de conexion'); }
+    setLoading(false);
+  };
+
+  const handleGoogleLogin = () => {
+    window.location.href = `${import.meta.env.VITE_API_URL || 'http://localhost:10000'}/auth/google`;
+  };
+
+  return (
+    <div className="min-h-[calc(100vh-200px)] flex items-center justify-center py-12 px-4">
+      <div className="max-w-md w-full">
+        <div className="bg-white rounded-2xl shadow-lg p-8">
+          <div className="text-center mb-6">
+            <div className="w-16 h-16 bg-primary-600 rounded-xl flex items-center justify-center mx-auto mb-4">
+              <LogIn className="text-white" size={32} />
+            </div>
+            <h1 className="text-2xl font-bold text-gray-900">Iniciar Sesion</h1>
+            <p className="text-gray-500 mt-1 text-sm">Ingresa a tu cuenta de MiProfesional</p>
+          </div>
+
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
+              <AlertCircle className="text-red-600 shrink-0 mt-0.5" size={18} />
+              <p className="text-red-800 text-sm">{error}</p>
+            </div>
+          )}
+          {success && (
+            <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg flex items-start gap-3">
+              <CheckCircle className="text-green-600 shrink-0 mt-0.5" size={18} />
+              <p className="text-green-800 text-sm">{success}</p>
+            </div>
+          )}
+
+          {/* Login mode tabs */}
+          <div className="flex border border-gray-200 rounded-xl overflow-hidden mb-6">
+            <button onClick={() => { setMode('email'); setCodeSent(false); }}
+              className={`flex-1 py-2.5 text-sm font-medium transition-all ${mode === 'email' ? 'bg-primary-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
+            >
+              <Mail size={15} className="inline mr-1.5 -mt-0.5" /> Email
+            </button>
+            <button onClick={() => setMode('sms')}
+              className={`flex-1 py-2.5 text-sm font-medium transition-all ${mode === 'sms' ? 'bg-primary-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
+            >
+              <Smartphone size={15} className="inline mr-1.5 -mt-0.5" /> SMS
+            </button>
+          </div>
+
+          {/* Email Login */}
+          {mode === 'email' && (
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Correo Electronico</label>
+                <div className="relative">
+                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                  <input name="email" type="email" required value={formData.email} onChange={handleChange}
+                    className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
+                    placeholder="tu@email.com" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Contrasena</label>
+                <div className="relative">
+                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                  <input name="password" type="password" required value={formData.password} onChange={handleChange}
+                    className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
+                    placeholder="••••••••" />
+                </div>
+              </div>
+              <button type="submit" disabled={loading}
+                className="w-full py-2.5 bg-primary-600 text-white font-semibold rounded-lg hover:bg-primary-700 disabled:opacity-50 transition-colors text-sm"
+              >{loading ? 'Ingresando...' : 'Iniciar Sesion'}</button>
+            </form>
+          )}
+
+          {/* SMS Login */}
+          {mode === 'sms' && !codeSent && (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Numero de Telefono</label>
+                <input name="phone" type="tel" value={formData.phone} onChange={handleChange}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
+                  placeholder="+54 11 1234-5678" />
+              </div>
+              <button onClick={handleSendCode} disabled={loading}
+                className="w-full py-2.5 bg-primary-600 text-white font-semibold rounded-lg hover:bg-primary-700 disabled:opacity-50 transition-colors text-sm"
+              >{loading ? 'Enviando...' : 'Enviar codigo'}</button>
+            </div>
+          )}
+
+          {mode === 'sms' && codeSent && (
+            <div className="space-y-4">
+              <p className="text-sm text-gray-600 text-center">Ingresa el codigo de 6 digitos enviado a {formData.phone}</p>
+              <input name="code" type="text" maxLength={6} value={formData.code} onChange={handleChange}
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm text-center tracking-[8px] font-mono"
+                placeholder="000000" />
+              <button onClick={handleVerifyCode} disabled={loading || formData.code.length !== 6}
+                className="w-full py-2.5 bg-primary-600 text-white font-semibold rounded-lg hover:bg-primary-700 disabled:opacity-50 transition-colors text-sm"
+              >{loading ? 'Verificando...' : 'Verificar codigo'}</button>
+              <button onClick={() => setCodeSent(false)}
+                className="w-full text-sm text-gray-500 hover:text-gray-700 flex items-center justify-center gap-1"
+              ><ArrowLeft size={14} /> Cambiar numero</button>
+            </div>
+          )}
+
+          {/* Divider */}
+          <div className="flex items-center gap-3 my-5">
+            <div className="flex-1 border-t border-gray-200" />
+            <span className="text-xs text-gray-400">O</span>
+            <div className="flex-1 border-t border-gray-200" />
+          </div>
+
+          {/* Google Login */}
+          <button onClick={handleGoogleLogin}
+            className="w-full py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
+          >
+            <Chrome size={18} /> Continuar con Google
+          </button>
+
+          <div className="mt-5 text-center">
+            <p className="text-sm text-gray-500">
+              No tenes una cuenta?{' '}
+              <Link to="/register" className="text-primary-600 hover:text-primary-700 font-medium">Registrate</Link>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Login;

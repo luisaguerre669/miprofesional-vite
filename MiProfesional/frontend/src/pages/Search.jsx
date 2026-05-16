@@ -1,0 +1,379 @@
+import React, { useState, useEffect } from 'react';
+import { useSearchParams, Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
+import api from '../lib/axios';
+import {
+  Search as SearchIcon, Star, MapPin, SlidersHorizontal, X,
+  BadgeCheck, ChevronRight, Briefcase, Navigation
+} from 'lucide-react';
+import MapView from '../components/MapView';
+
+function StarRating({ rating, size = 14 }) {
+  return (
+    <div className="flex items-center gap-0.5">
+      {[1,2,3,4,5].map(i => (
+        <Star key={i} size={size}
+          className={i <= Math.floor(rating) ? 'fill-amber-400 text-amber-400' : 'text-gray-300'}
+        />
+      ))}
+    </div>
+  );
+}
+
+const Search = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [query, setQuery] = useState(searchParams.get('q') || '');
+  const [professionals, setProfessionals] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+  const [showMap, setShowMap] = useState(false);
+  const [searchRadius, setSearchRadius] = useState(10);
+  const [userLocation, setUserLocation] = useState(null);
+  const [filters, setFilters] = useState({
+    category: searchParams.get('category') || '',
+    subcategory: '',
+    minRating: 0,
+    maxPrice: '',
+    verified: false,
+    featured: false,
+    sortBy: '',
+    location: '',
+  });
+
+  useEffect(() => {
+    api.get('/categories?limit=50').then(r => setCategories(r.data.data || [])).catch(() => {});
+    const q = searchParams.get('q');
+    const cat = searchParams.get('category');
+    if (q || cat) {
+      if (q) setQuery(q);
+      if (cat) setFilters(f => ({ ...f, category: cat }));
+      searchProfessionals(q || '', { ...filters, category: cat || filters.category });
+    } else {
+      fetchProfessionals();
+    }
+  }, []);
+
+  const fetchProfessionals = async () => {
+    setLoading(true);
+    try {
+      const response = await api.get('/professionals', { params: { limit: 20 } });
+      setProfessionals(response.data.data || []);
+    } catch (error) {
+      console.error('Error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const searchProfessionals = async (q, filterOpts) => {
+    setLoading(true);
+    try {
+      const params = {};
+      if (q) params.search = q;
+      if (filterOpts.category) params.categoryId = filterOpts.category;
+      if (filterOpts.subcategory) params.subcategoryId = filterOpts.subcategory;
+      if (filterOpts.minRating > 0) params.minRating = filterOpts.minRating;
+      if (filterOpts.maxPrice) params.maxPrice = filterOpts.maxPrice;
+      if (filterOpts.verified) params.isVerified = true;
+      if (filterOpts.featured) params.featured = true;
+      if (filterOpts.location) params.location = filterOpts.location;
+      if (filterOpts.sortBy) params.sortBy = filterOpts.sortBy;
+      params.limit = 20;
+
+      const response = await api.get('/professionals/search', { params: { q, ...params } });
+      setProfessionals(response.data.data || []);
+    } catch (error) {
+      console.error('Search error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    const p = {};
+    if (query.trim()) p.q = query;
+    setSearchParams(p);
+    searchProfessionals(query, filters);
+  };
+
+  const applyFilters = () => searchProfessionals(query, filters);
+
+  const selectedCategory = categories.find(c => c._id === filters.category);
+  const subcategories = selectedCategory?.subcategories || [];
+
+  const mapProfessionals = professionals.filter(
+    p => p.location?.coordinates?.lat && p.location?.coordinates?.lng
+  );
+
+  return (
+    <>
+    <Helmet>
+      <title>Buscar Profesionales — MiProfesional</title>
+      <meta name="description" content="Encuentra profesionales verificados. Filtra por categoría, ubicación, rating y precio." />
+    </Helmet>
+    <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
+      {/* Search Bar */}
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4 md:p-6">
+        <form onSubmit={handleSearch} className="flex gap-3">
+          <div className="flex-1 relative">
+            <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+            <input type="text" value={query} onChange={e => setQuery(e.target.value)}
+              placeholder="Buscar profesionales, servicios, oficios..." autoFocus
+              className="w-full pl-12 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:bg-white transition-all text-base"
+            />
+          </div>
+          <button type="submit" className="px-6 py-3.5 bg-primary-600 text-white font-bold rounded-xl hover:bg-primary-700 transition-all shadow-lg flex items-center gap-2">
+            <SearchIcon size={18} />
+            <span className="hidden md:inline">Buscar</span>
+          </button>
+          <button type="button" onClick={() => setShowFilters(!showFilters)}
+            className={`px-4 py-3.5 rounded-xl border-2 transition-all flex items-center gap-2 ${
+              showFilters ? 'border-primary-600 bg-primary-50 text-primary-600' : 'border-gray-200 text-gray-600 hover:border-gray-300'
+            }`}
+          >
+            <SlidersHorizontal size={18} />
+            <span className="hidden md:inline">Filtros</span>
+          </button>
+          {mapProfessionals.length > 0 && (
+            <button type="button" onClick={() => setShowMap(!showMap)}
+              className={`px-4 py-3.5 rounded-xl border-2 transition-all flex items-center gap-2 ${
+                showMap ? 'border-primary-600 bg-primary-50 text-primary-600' : 'border-gray-200 text-gray-600 hover:border-gray-300'
+              }`}
+            >
+              <Navigation size={18} />
+              <span className="hidden md:inline">Mapa</span>
+            </button>
+          )}
+        </form>
+
+        {(filters.category || filters.minRating > 0 || filters.maxPrice || filters.verified || filters.featured) && (
+          <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-gray-100">
+            {filters.category && (
+              <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-primary-50 text-primary-700 rounded-lg text-sm">
+                {categories.find(c => c._id === filters.category)?.title}
+                <button onClick={() => { setFilters({...filters, category: '', subcategory: ''}); applyFilters(); }}><X size={14} /></button>
+              </span>
+            )}
+            {filters.minRating > 0 && (
+              <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-amber-50 text-amber-700 rounded-lg text-sm">
+                {filters.minRating}+ estrellas <button onClick={() => { setFilters({...filters, minRating: 0}); applyFilters(); }}><X size={14} /></button>
+              </span>
+            )}
+            {filters.verified && (
+              <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-green-50 text-green-700 rounded-lg text-sm">
+                Verificados <button onClick={() => { setFilters({...filters, verified: false}); applyFilters(); }}><X size={14} /></button>
+              </span>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Filters Panel */}
+      {showFilters && (
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 animate-fade-in-down">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1.5">Categoría</label>
+              <select value={filters.category} onChange={e => { setFilters({...filters, category: e.target.value, subcategory: ''}); }}
+                className="w-full p-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white"
+              >
+                <option value="">Todas</option>
+                {categories.map(cat => (
+                  <option key={cat._id} value={cat._id}>{cat.title}</option>
+                ))}
+              </select>
+            </div>
+
+            {subcategories.length > 0 && (
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Subcategoría</label>
+                <select value={filters.subcategory} onChange={e => setFilters({...filters, subcategory: e.target.value})}
+                  className="w-full p-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white"
+                >
+                  <option value="">Todas</option>
+                  {subcategories.map(sc => (
+                    <option key={sc._id || sc} value={sc._id || sc}>{sc.title || sc}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1.5">Rating mínimo</label>
+              <select value={filters.minRating} onChange={e => setFilters({...filters, minRating: Number(e.target.value)})}
+                className="w-full p-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white"
+              >
+                <option value={0}>Cualquiera</option>
+                <option value={3}>3+ estrellas</option>
+                <option value={4}>4+ estrellas</option>
+                <option value={4.5}>4.5+ estrellas</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1.5">Precio máximo</label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">$</span>
+                <input type="number" value={filters.maxPrice} onChange={e => setFilters({...filters, maxPrice: e.target.value})}
+                  placeholder="0" className="w-full pl-7 pr-3 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1.5">Ubicación</label>
+              <div className="relative">
+                <MapPin size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input type="text" value={filters.location} onChange={e => setFilters({...filters, location: e.target.value})}
+                  placeholder="Ciudad..." className="w-full pl-9 pr-3 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1.5">Ordenar por</label>
+              <select value={filters.sortBy} onChange={e => setFilters({...filters, sortBy: e.target.value})}
+                className="w-full p-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white"
+              >
+                <option value="">Relevancia</option>
+                <option value="rating">Rating</option>
+                <option value="price">Menor precio</option>
+                <option value="-price">Mayor precio</option>
+                <option value="createdAt">Más recientes</option>
+              </select>
+            </div>
+
+            <div className="flex items-end gap-4">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={filters.verified} onChange={e => setFilters({...filters, verified: e.target.checked})}
+                  className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                />
+                <span className="text-sm text-gray-700">Verificados</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={filters.featured} onChange={e => setFilters({...filters, featured: e.target.checked})}
+                  className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                />
+                <span className="text-sm text-gray-700">Destacados</span>
+              </label>
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1.5">Radio de busqueda</label>
+              <div className="flex gap-1.5">
+                {[5, 10, 20, 50].map(km => (
+                  <button key={km} onClick={() => setSearchRadius(km)}
+                    className={`flex-1 py-2 rounded-lg text-xs font-medium border transition-all ${
+                      searchRadius === km ? 'border-primary-500 bg-primary-50 text-primary-700' : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                    }`}
+                  >{km} km</button>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex items-end">
+              <button onClick={applyFilters} className="w-full py-2.5 bg-primary-600 text-white font-semibold rounded-xl hover:bg-primary-700 transition-all">
+                Aplicar Filtros
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Map */}
+      {showMap && mapProfessionals.length > 0 && (
+        <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100 bg-gray-50">
+            <span className="text-xs font-medium text-gray-500">
+              <MapPin size={13} className="inline mr-1 -mt-0.5" />
+              {mapProfessionals.length} profesionales en {searchRadius} km a la redonda
+            </span>
+            <span className="text-[10px] text-gray-400">{searchRadius} km de radio</span>
+          </div>
+          <MapView professionals={mapProfessionals} height="400px" />
+        </div>
+      )}
+
+      {/* Results */}
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-gray-500">
+          {loading ? 'Buscando...' : `${professionals.length} profesionales`}
+        </p>
+      </div>
+
+      {loading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {Array.from({length: 6}).map((_, i) => (
+            <div key={i} className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+              <div className="skeleton h-44" />
+              <div className="p-5 space-y-3">
+                <div className="skeleton h-5 w-2/3" />
+                <div className="skeleton h-4 w-1/2" />
+                <div className="skeleton h-4 w-full" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : professionals.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {professionals.map((pro, idx) => (
+            <Link key={pro._id} to={`/service/${pro._id}`}
+              className="group bg-white rounded-2xl border border-gray-200 hover:border-primary-300 hover-lift overflow-hidden"
+              style={{ animationDelay: `${idx * 80}ms` }}
+            >
+              <div className="relative h-44 bg-gray-900 overflow-hidden">
+                <img src={pro.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(pro.businessName || pro.profession)}&background=166534&color=fff&size=200`}
+                  alt="" className="w-full h-full object-cover opacity-50 group-hover:scale-105 transition-transform duration-700"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+                <div className="absolute bottom-3 left-4">
+                  <div className="flex items-center gap-3">
+                    <img src={pro.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(pro.businessName || pro.profession)}&background=166534&color=fff`}
+                      alt="" className="w-12 h-12 rounded-xl object-cover ring-2 ring-white/30"
+                    />
+                    <div>
+                      <h3 className="font-bold text-white text-sm">{pro.businessName || pro.profession}</h3>
+                      <p className="text-xs text-white/70">{pro.profession}</p>
+                    </div>
+                  </div>
+                </div>
+                {pro.verification?.isVerified && (
+                  <BadgeCheck size={18} className="absolute top-3 right-3 text-primary-400 bg-white/90 rounded-full" />
+                )}
+              </div>
+
+              <div className="p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <StarRating rating={pro.stats?.rating || 0} size={13} />
+                  <span className="text-sm font-semibold text-gray-800">{(pro.stats?.rating || 0).toFixed(1)}</span>
+                  <span className="text-xs text-gray-400">({pro.stats?.reviewCount || 0})</span>
+                </div>
+                <p className="text-sm text-gray-600 line-clamp-2 mb-3">{pro.description}</p>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1 text-xs text-gray-500">
+                    <MapPin size={12} />
+                    <span>{pro.location?.city || 'CABA'}</span>
+                  </div>
+                  {pro.pricing?.hourlyRate > 0 && (
+                    <span className="font-bold text-primary-600 text-sm">${pro.pricing.hourlyRate.toLocaleString()}/h</span>
+                  )}
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-20">
+          <SearchIcon size={56} className="mx-auto text-gray-300 mb-4" />
+          <h3 className="text-xl font-bold text-gray-900 mb-2">No se encontraron resultados</h3>
+          <p className="text-gray-500">Intenta con otros términos o filtros</p>
+        </div>
+      )}
+    </div>
+    </>
+  );
+};
+
+export default Search;

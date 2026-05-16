@@ -1,0 +1,23 @@
+{
+  "version": 4,
+  "activeEnvironmentId": "production-2",
+  "environmentTargets": [
+    {
+      "id": "production",
+      "name": "Production",
+      "kind": "external-instance",
+      "url": "https://miprofesional-backend.onrender.com"
+    }
+  ],
+  "environments": [
+    {
+      "id": "production-2",
+      "name": "Production",
+      "environmentTargetId": "production",
+      "projectId": "personal",
+      "projectName": "Personal",
+      "syncFolder": "workflows",
+      "folderSync": false
+    }
+  ]
+}
