@@ -12,6 +12,7 @@ const { generarToken, verificarToken } = require('../config/jwt');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 
+const { authenticate } = require('../middleware/auth');
 const { sendVerificationEmail, sendPasswordResetEmail } = require('../services/emailService');
 
 const router = express.Router();
