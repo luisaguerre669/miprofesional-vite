@@ -5,6 +5,7 @@ const Professional = require("../models/Professional");
 const Payment = require("../models/Payment");
 const { authenticate } = require("../middleware/auth");
 const logger = require("../utils/logger");
+const { MercadoPagoConfig, Preference, Payment: MpPayment } = require("mercadopago");
 
 const router = express.Router();
 
@@ -120,37 +121,38 @@ router.post("/create-preference", authenticate, async (req, res) => {
     if (!user) return res.status(404).json({ success: false, message: "Usuario no encontrado" });
 
     const externalReference = `sub_${req.userId}_${Date.now()}`;
-    const mercadopago = require("mercadopago");
-    mercadopago.configure({ access_token: process.env.MERCADO_PAGO_ACCESS_TOKEN });
+    const client = new MercadoPagoConfig({ accessToken: process.env.MERCADO_PAGO_ACCESS_TOKEN });
+    const preference = new Preference(client);
 
-    const preference = {
-      items: [{
-        id: "sub_monthly",
-        title: `Suscripcion MiProfesional - ${user.name || "Profesional"}`,
-        description: "Suscripcion mensual al marketplace de servicios profesionales",
-        quantity: 1,
-        currency_id: "ARS",
-        unit_price: SUBSCRIPTION_PRICE,
-      }],
-      payer: {
-        name: user.name || "",
-        email: user.email || "",
-      },
-      back_urls: {
-        success: `${process.env.FRONTEND_URL || "http://localhost:5173"}/dashboard?payment=success`,
-        failure: `${process.env.FRONTEND_URL || "http://localhost:5173"}/dashboard?payment=failure`,
-        pending: `${process.env.FRONTEND_URL || "http://localhost:5173"}/dashboard?payment=pending`,
-      },
-      auto_return: "approved",
-      external_reference: externalReference,
-      notification_url: `${process.env.API_URL || "http://localhost:10000"}/api/subscription/webhook`,
-      purpose: "subscription",
-    };
+    const mpResponse = await preference.create({
+      body: {
+        items: [{
+          id: "sub_monthly",
+          title: `Suscripcion MiProfesional - ${user.name || "Profesional"}`,
+          description: "Suscripcion mensual al marketplace de servicios profesionales",
+          quantity: 1,
+          currency_id: "ARS",
+          unit_price: SUBSCRIPTION_PRICE,
+        }],
+        payer: {
+          name: user.name || "",
+          email: user.email || "",
+        },
+        back_urls: {
+          success: `${process.env.FRONTEND_URL || "http://localhost:5173"}/dashboard?payment=success`,
+          failure: `${process.env.FRONTEND_URL || "http://localhost:5173"}/dashboard?payment=failure`,
+          pending: `${process.env.FRONTEND_URL || "http://localhost:5173"}/dashboard?payment=pending`,
+        },
+        auto_return: "approved",
+        external_reference: externalReference,
+        notification_url: `${process.env.API_URL || "http://localhost:10000"}/api/subscription/webhook`,
+        purpose: "subscription",
+      }
+    });
 
-    const mpResponse = await mercadopago.preferences.create(preference);
-    const preferenceId = mpResponse.body.id;
-    const initPoint = mpResponse.body.init_point;
-    const sandboxInitPoint = mpResponse.body.sandbox_init_point;
+    const preferenceId = mpResponse.id;
+    const initPoint = mpResponse.init_point;
+    const sandboxInitPoint = mpResponse.sandbox_init_point;
 
     await Payment.create({
       mpPaymentId: `pending_${externalReference}`,
@@ -198,15 +200,15 @@ router.post("/webhook", async (req, res) => {
 
     if (type === "payment") {
       const paymentId = data.id;
-      const mercadopago = require("mercadopago");
-      mercadopago.configure({ access_token: process.env.MERCADO_PAGO_ACCESS_TOKEN });
+      const client = new MercadoPagoConfig({ accessToken: process.env.MERCADO_PAGO_ACCESS_TOKEN });
+      const mpPaymentClient = new MpPayment(client);
 
-      const payment = await mercadopago.payment.get(paymentId);
-      const { status, external_reference, payer } = payment.body;
+      const mpPayment = await mpPaymentClient.get({ id: paymentId });
+      const { status, external_reference, payer } = mpPayment;
 
       const existingPayment = await Payment.findByMpId(paymentId);
       if (existingPayment) {
-        await existingPayment.updateStatus(status, payment.body);
+        await existingPayment.updateStatus(status, mpPayment);
       } else if (external_reference) {
         await Payment.findOneAndUpdate(
           { externalReference: external_reference },
