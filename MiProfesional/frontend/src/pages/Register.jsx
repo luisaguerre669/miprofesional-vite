@@ -5,7 +5,7 @@ import api from '../lib/axios';
 import {
   UserPlus, Shield, ArrowRight, CheckCircle, AlertCircle,
   Eye, EyeOff, Phone, Mail, Lock, User, Briefcase, Upload,
-  FileText, Building2, Sparkles, Smartphone, Info
+  FileText, Building2, Sparkles, Smartphone, Info, CreditCard
 } from 'lucide-react';
 
 const LICENSED_PROFESSIONS = [
@@ -102,13 +102,13 @@ const Register = () => {
           <h2 className="text-xl font-bold text-gray-900 mb-2">Registro Exitoso</h2>
           <p className="text-gray-500 text-sm mb-6">
             {isProfessional
-              ? 'Tu perfil profesional fue creado. Ahora activa tu prueba gratis de 30 dias para empezar a recibir clientes.'
+              ? 'Tu perfil profesional fue creado. Ahora elegi un plan de suscripcion para empezar a recibir clientes.'
               : 'Tu cuenta fue creada exitosamente. Revisa tu correo para verificar tu cuenta.'}
           </p>
           <div className="flex flex-col gap-2">
             {isProfessional ? (
               <Link to="/dashboard" className="inline-flex items-center justify-center gap-2 px-6 py-2.5 bg-primary-600 text-white font-semibold rounded-xl hover:bg-primary-700 transition-all text-sm">
-                Activar prueba gratis <Sparkles size={16} />
+                Elegir plan de suscripcion <CreditCard size={16} />
               </Link>
             ) : (
               <Link to="/login" className="inline-flex items-center justify-center gap-2 px-6 py-2.5 bg-primary-600 text-white font-semibold rounded-xl hover:bg-primary-700 transition-all text-sm">
