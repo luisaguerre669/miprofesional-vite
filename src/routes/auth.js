@@ -12,6 +12,8 @@ const { generarToken, verificarToken } = require('../config/jwt');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 
+const { sendVerificationEmail } = require('../services/emailService');
+
 const router = express.Router();
 
 const authLimiter = rateLimit({
@@ -176,7 +178,10 @@ router.post('/register', registerLimiter, [
       }
     });
 
+    user.generateVerificationToken();
     await user.save();
+
+    sendVerificationEmail(user.email, user.name, user.verificationToken).catch(() => {});
 
     // Generate tokens
     const { accessToken, refreshToken } = generateTokens(user._id);
