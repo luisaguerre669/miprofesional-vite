@@ -569,14 +569,24 @@ router.put('/change-password', authenticateToken, [
 // === GOOGLE OAUTH ROUTES ===
 
 // GET /auth/google — Initiate Google OAuth
-router.get('/google', passport.authenticate('google', {
-  scope: ['profile', 'email'],
-  session: false,
-  prompt: 'select_account'
-}));
+router.get('/google', (req, res, next) => {
+  if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    return res.redirect(`${frontendUrl}/login?error=google_not_configured`);
+  }
+  passport.authenticate('google', {
+    scope: ['profile', 'email'],
+    session: false,
+    prompt: 'select_account'
+  })(req, res, next);
+});
 
 // GET /auth/google/callback — Google OAuth callback
 router.get('/google/callback', (req, res, next) => {
+  if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    return res.redirect(`${frontendUrl}/login?error=google_not_configured`);
+  }
   passport.authenticate('google', { session: false, failWithError: true }, (err, user, info) => {
     if (err || !user) {
       const errorMsg = err ? err.message : 'Autenticacion con Google fallo';
@@ -796,6 +806,43 @@ router.post('/reset-password', async (req, res) => {
   } catch (error) {
     logger.error('Reset password error', { error: error.message });
     res.status(500).json({ success: false, error: 'Error al restablecer la contrasena' });
+  }
+});
+
+// DELETE /auth/account — Deactivate own account
+router.delete('/account', authenticate, async (req, res) => {
+  try {
+    const user = await User.findById(req.userId);
+    if (!user) return res.status(404).json({ success: false, message: 'Usuario no encontrado' });
+
+    user.isActive = false;
+    user.deactivatedAt = new Date();
+    await user.save();
+
+    await Professional.updateMany({ userId: req.userId }, { isActive: false });
+
+    logger.logAuth('account_deactivated', req.userId, req.ip, true);
+    res.json({ success: true, message: 'Cuenta desactivada exitosamente' });
+  } catch (error) {
+    logger.error('Delete account error', { error: error.message });
+    res.status(500).json({ success: false, message: 'Error al desactivar la cuenta' });
+  }
+});
+
+// POST /auth/setup-admin — Promote own user to admin (one-time, no existing admin)
+router.post('/setup-admin', authenticate, async (req, res) => {
+  try {
+    const existingAdmin = await User.findOne({ role: 'admin', isActive: true });
+    if (existingAdmin) {
+      return res.status(400).json({ success: false, message: 'Ya existe un administrador' });
+    }
+    const user = await User.findByIdAndUpdate(req.userId, { role: 'admin' }, { new: true }).select('-password');
+    if (!user) return res.status(404).json({ success: false, message: 'Usuario no encontrado' });
+    logger.logAuth('admin_setup', req.userId, req.ip, true);
+    res.json({ success: true, message: 'Administrador configurado exitosamente', data: user });
+  } catch (error) {
+    logger.error('Setup admin error', { error: error.message });
+    res.status(500).json({ success: false, message: 'Error al configurar administrador' });
   }
 });
 
