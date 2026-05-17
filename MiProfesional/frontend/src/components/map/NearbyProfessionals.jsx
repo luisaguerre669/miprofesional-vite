@@ -10,7 +10,7 @@ import {
   Navigation, 
   Search, 
   Filter,
-  Verified,
+  BadgeCheck,
   Phone
 } from 'lucide-react';
 import ProfessionalsMap from './ProfessionalsMap';
@@ -54,7 +54,7 @@ export default function NearbyProfessionals() {
     setLoading(true);
     try {
       const response = await fetch(
-        `${API}/api/professionals/nearby?lat=${userLocation.lat}&lng=${userLocation.lng}&radius=${radius}`
+          `${API}/professionals/nearby?lat=${userLocation.lat}&lng=${userLocation.lng}&radius=${radius}`
       );
       const data = await response.json();
       
@@ -75,7 +75,7 @@ export default function NearbyProfessionals() {
     setLoading(true);
     try {
       const response = await fetch(
-        `${API}/api/professionals/by-city/${encodeURIComponent(city)}`
+          `${API}/professionals/by-city/${encodeURIComponent(city)}`
       );
       const data = await response.json();
       
@@ -194,7 +194,7 @@ export default function NearbyProfessionals() {
                   <p className="text-sm text-gray-500">{pro.profession}</p>
                 </div>
                 {pro.verification?.isVerified && (
-                  <Verified className="w-5 h-5 text-blue-500" />
+                  <BadgeCheck className="w-5 h-5 text-blue-500" />
                 )}
               </div>
 

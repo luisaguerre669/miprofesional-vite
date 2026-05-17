@@ -133,7 +133,7 @@ const CategoryPage = () => {
       <Helmet>
         <title>{category.title} — Profesionales en MiProfesional</title>
         <meta name="description" content={category.description?.slice(0, 160)} />
-        <link rel="canonical" href={`https://miprofesional.com/categoria/${category.slug}`} />
+        <link rel="canonical" href={`https://www.miprofesional.online/categoria/${category.slug}`} />
       </Helmet>
 
       {/* Hero Banner */}

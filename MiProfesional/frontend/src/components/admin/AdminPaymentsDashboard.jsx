@@ -14,8 +14,8 @@ export default function AdminPaymentsDashboard() {
     async function loadData() {
       try {
         const [statsRes, auditRes] = await Promise.all([
-          fetch(`${API}/api/v1/mercadopago/payments/stats`),
-          fetch(`${API}/api/v1/mercadopago/payments/audit`)
+          fetch(`${API}/v1/mercadopago/payments/stats`),
+          fetch(`${API}/v1/mercadopago/payments/audit`)
         ]);
 
         const statsData = await statsRes.json();

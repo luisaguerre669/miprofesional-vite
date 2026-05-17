@@ -83,7 +83,7 @@ const Register = () => {
           }).catch(() => {});
         }
         if (isProfessional) {
-          navigate('/dashboard');
+          navigate('/dashboard/professional');
         } else {
           setRegistered(true);
         }

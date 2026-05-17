@@ -101,7 +101,7 @@ const ServiceDetail = () => {
       <meta property="og:title" content={`${p.businessName || p.profession} — Profesional en MiProfesional`} />
       {p.avatar && <meta property="og:image" content={p.avatar} />}
       <meta name="robots" content="index, follow" />
-      <link rel="canonical" href={`https://miprofesional.com/profesional/${p._id}`} />
+      <link rel="canonical" href={`https://www.miprofesional.online/profesional/${p._id}`} />
     </Helmet>
     <div className="max-w-6xl mx-auto px-4 py-6">
       {/* Breadcrumb */}

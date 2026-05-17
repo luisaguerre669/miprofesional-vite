@@ -58,7 +58,7 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
           authProviderId: profile.id,
           authProviderData: { googleId: profile.id, displayName: profile.displayName },
           name: profile.displayName || profile.name?.givenName || 'Usuario',
-          email: email || `${profile.id}@google-oauth.miprofesional.com`,
+          email: email || `${profile.id}@google-oauth.miprofesional.online`,
           password: crypto.randomBytes(32).toString('hex'),
           isVerified: true,
           avatar: profile.photos?.[0]?.value || null,

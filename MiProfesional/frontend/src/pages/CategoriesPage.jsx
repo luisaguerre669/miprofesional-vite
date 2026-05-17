@@ -47,7 +47,7 @@ const CategoriesPage = () => {
       <Helmet>
         <title>Todas las categorias — MiProfesional</title>
         <meta name="description" content="Explora todas las categorias de servicios profesionales en MiProfesional." />
-        <link rel="canonical" href="https://miprofesional.com/categorias" />
+        <link rel="canonical" href="https://www.miprofesional.online/categorias" />
       </Helmet>
 
       <div className="mb-10">

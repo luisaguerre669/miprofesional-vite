@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -107,6 +107,7 @@ const StarRating = ({ rating = 0, size = 14 }) => (
 );
 
 const Home = () => {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [featuredPros, setFeaturedPros] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -160,7 +161,7 @@ const Home = () => {
       <Helmet>
         <title>MiProfesional — Marketplace de Servicios Profesionales</title>
         <meta name="description" content="Encuentra profesionales verificados para construccion, servicios generales, emergencias 24/7 y empresas." />
-        <link rel="canonical" href="https://miprofesional.com" />
+        <link rel="canonical" href="https://www.miprofesional.online" />
       </Helmet>
 
       {/* NAVBAR */}

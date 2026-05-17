@@ -14,7 +14,7 @@ const ForgotPassword = () => {
     setError('');
     setLoading(true);
     try {
-      await api.post('/api/auth/forgot-password', { email });
+      await api.post('/auth/forgot-password', { email });
       setSent(true);
     } catch (err) {
       setError(err.response?.data?.message || 'Error al enviar el email');
