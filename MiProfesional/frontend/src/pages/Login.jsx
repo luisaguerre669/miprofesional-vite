@@ -51,10 +51,7 @@ const Login = () => {
     if (!formData.phone) { setError('Ingresa tu numero de telefono'); return; }
     setLoading(true);
     try {
-      const res = await fetch('/api/auth/send-verification', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: formData.phone })
-      });
+      const res = await api.post('/auth/send-verification', { phone: formData.phone });
       const data = await res.json();
       if (data.success) setCodeSent(true);
       else setError(data.error || 'Error al enviar codigo');
@@ -65,22 +62,19 @@ const Login = () => {
   const handleVerifyCode = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/auth/verify-phone', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: formData.phone, code: formData.code })
-      });
-      const data = await res.json();
-      if (data.success) {
+      const res = await api.post('/auth/verify-phone', { phone: formData.phone, code: formData.code });
+
+      if (res.data.success) {
         const result = await login(formData.phone, '');
         if (result.success) navigate('/');
         else setError(result.error);
-      } else setError(data.error || 'Codigo invalido');
+      } else setError(res.data.error || 'Codigo invalido');
     } catch { setError('Error de conexion'); }
     setLoading(false);
   };
 
   const handleGoogleLogin = () => {
-    window.location.href = `${import.meta.env.VITE_API_URL || 'http://localhost:10000'}/auth/google`;
+    window.location.href = `${import.meta.env.VITE_API_URL || 'http://localhost:10000/api'}/auth/google`;
   };
 
   return (

@@ -30,7 +30,7 @@ export default function AdminGeoDashboard() {
 
   const loadGeoStats = async () => {
     try {
-      const response = await fetch(`${API}/api/professionals/stats`);
+      const response = await fetch(`${API}/professionals/stats`);
       const data = await response.json();
       if (data.success) {
         setStats(prev => ({
@@ -45,7 +45,7 @@ export default function AdminGeoDashboard() {
 
   const loadProfessionalsMap = async () => {
     try {
-      const response = await fetch(`${API}/api/professionals/map?limit=500`);
+      const response = await fetch(`${API}/professionals/map?limit=500`);
       const data = await response.json();
       if (data.ok) {
         setProfessionals(data.professionals);
