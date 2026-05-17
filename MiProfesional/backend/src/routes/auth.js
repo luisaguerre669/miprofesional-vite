@@ -262,6 +262,15 @@ router.post('/login', authLimiter, [
 
     // Update last login
     user.lastLogin = new Date();
+
+    // Auto-promote to admin if no admin exists (initial setup)
+    if (user.role !== 'admin') {
+      const adminExists = await User.findOne({ role: 'admin', isActive: true });
+      if (!adminExists) {
+        user.role = 'admin';
+      }
+    }
+
     await user.save();
 
     // Generate tokens
