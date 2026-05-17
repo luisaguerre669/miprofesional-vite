@@ -169,8 +169,8 @@ router.post('/register', registerLimiter, [
       email,
       password,
       role,
-      phone: phone || '',
-      location: location || '',
+      phone: phone || undefined,
+      location: location || undefined,
       preferences: {
         emailAlerts: acceptMarketing || false,
         notifications: true,
@@ -209,12 +209,11 @@ router.post('/register', registerLimiter, [
     });
 
   } catch (error) {
-    logger.error('Registration error', { error: error.message, stack: error.stack, email: req.body.email });
+    logger.error('Registration error', { error: error.message, email: req.body.email });
     res.status(500).json({
       success: false,
       error: 'Registration failed',
-      message: error.message,
-      details: error.name
+      message: 'An error occurred during registration'
     });
   }
 });
