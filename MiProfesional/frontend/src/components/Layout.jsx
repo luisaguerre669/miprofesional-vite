@@ -8,6 +8,7 @@ const Layout = ({ children }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
   const [searchQuery, setSearchQuery] = React.useState('');
   const [scrolled, setScrolled] = React.useState(false);
+  const [userMenuOpen, setUserMenuOpen] = React.useState(false);
   const { user, isAuthenticated, logout, isProfessional } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
@@ -82,8 +83,8 @@ const Layout = ({ children }) => {
                       Publicar Servicio
                     </Link>
                   )}
-                  <div className="flex items-center gap-2 pl-2 border-l border-gray-200">
-                    <Link to="/profile" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+                  <div className="relative flex items-center gap-2 pl-2 border-l border-gray-200">
+                    <button onClick={() => setUserMenuOpen(!userMenuOpen)} className="flex items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer">
                       <div className="w-9 h-9 rounded-full bg-primary-600 flex items-center justify-center text-white text-sm font-bold">
                         {user?.name?.charAt(0) || 'U'}
                       </div>
@@ -91,7 +92,41 @@ const Layout = ({ children }) => {
                         <p className="text-sm font-medium text-gray-900 leading-tight">{user?.name || 'Usuario'}</p>
                         <p className="text-xs text-gray-400 capitalize">{user?.role || 'client'}</p>
                       </div>
-                    </Link>
+                    </button>
+                    {userMenuOpen && (
+                      <>
+                        <div className="fixed inset-0 z-10" onClick={() => setUserMenuOpen(false)} />
+                        <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-200 py-2 z-20 animate-fade-in-down">
+                          <Link to={isProfessional ? "/dashboard/professional" : "/dashboard/client"} onClick={() => setUserMenuOpen(false)}
+                            className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50">
+                            <LayoutDashboard size={16} /> Dashboard
+                          </Link>
+                          <Link to="/profile" onClick={() => setUserMenuOpen(false)}
+                            className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50">
+                            <User size={16} /> Mi Perfil
+                          </Link>
+                          <Link to="/subscriptions" onClick={() => setUserMenuOpen(false)}
+                            className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50">
+                            <CreditCard size={16} /> Suscripcion
+                          </Link>
+                          <Link to="/settings" onClick={() => setUserMenuOpen(false)}
+                            className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50">
+                            <Settings size={16} /> Configuracion
+                          </Link>
+                          {user?.role === 'admin' && (
+                            <Link to="/admin" onClick={() => setUserMenuOpen(false)}
+                              className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50">
+                              <Shield size={16} /> Admin Panel
+                            </Link>
+                          )}
+                          <div className="border-t border-gray-100 my-1" />
+                          <button onClick={() => { handleLogout(); setUserMenuOpen(false); }}
+                            className="flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 w-full">
+                            <LogOut size={16} /> Cerrar Sesion
+                          </button>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </>
               ) : (

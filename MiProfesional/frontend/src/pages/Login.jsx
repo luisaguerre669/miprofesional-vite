@@ -142,6 +142,9 @@ const Login = () => {
                     placeholder="••••••••" />
                 </div>
               </div>
+              <div className="flex justify-end">
+                <Link to="/forgot-password" className="text-xs text-primary-600 hover:text-primary-700 hover:underline">Olvidaste tu contrasena?</Link>
+              </div>
               <button type="submit" disabled={loading}
                 className="w-full py-2.5 bg-primary-600 text-white font-semibold rounded-lg hover:bg-primary-700 disabled:opacity-50 transition-colors text-sm"
               >{loading ? 'Ingresando...' : 'Iniciar Sesion'}</button>

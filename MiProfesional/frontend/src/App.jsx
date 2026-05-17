@@ -16,6 +16,8 @@ import Search from './pages/Search';
 import CategoryPage from './pages/CategoryPage';
 import CategoriesPage from './pages/CategoriesPage';
 import VerifyEmail from './pages/VerifyEmail';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 
 // Protected pages
 import ClientDashboard from './pages/ClientDashboard';
@@ -61,6 +63,8 @@ function AppRoutes() {
       <Route path="/categorias" element={<Layout><CategoriesPage /></Layout>} />
       <Route path="/profesionales/:slug" element={<Layout><CategoryPage /></Layout>} />
       <Route path="/verify-email" element={<Layout><VerifyEmail /></Layout>} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
 
       {/* Client Routes */}
       <Route
