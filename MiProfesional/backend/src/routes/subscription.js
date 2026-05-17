@@ -11,15 +11,31 @@ const FRONTEND_URL = "https://frontend-rust-chi-eom3nydslb.vercel.app";
 
 const router = express.Router();
 
-const SUBSCRIPTION_PRICE = 10000;
-const TRIAL_DAYS = 30;
+const MONTHLY_PRICE = 10000;
+const SEMESTER_MONTHS = 6;
+const SEMESTER_DISCOUNT = 0.15;
+const SEMESTER_PRICE = Math.round(MONTHLY_PRICE * SEMESTER_MONTHS * (1 - SEMESTER_DISCOUNT));
 
 router.get("/plans", (req, res) => {
   res.json({
     success: true,
     data: [
-      { id: "trial", name: "Prueba Gratis", price: 0, duration: `${TRIAL_DAYS} dias`, benefits: ["Perfil visible en el marketplace", "Recibir contactos de clientes", "Panel de control"] },
-      { id: "monthly", name: "Suscripcion Mensual", price: SUBSCRIPTION_PRICE, duration: "1 mes", benefits: ["Perfil destacado en busquedas", "Recibe contactos de clientes", "Sin comisiones por servicio", "Panel de control", "Soporte prioritario"] },
+      {
+        id: "monthly",
+        name: "Suscripcion Mensual",
+        price: MONTHLY_PRICE,
+        duration: "1 mes",
+        benefits: ["Perfil destacado en busquedas", "Recibe contactos de clientes", "Sin comisiones por servicio", "Panel de control", "Soporte prioritario"],
+      },
+      {
+        id: "semester",
+        name: "Suscripcion Semestral",
+        price: SEMESTER_PRICE,
+        duration: "6 meses",
+        originalPrice: MONTHLY_PRICE * SEMESTER_MONTHS,
+        discount: `${SEMESTER_DISCOUNT * 100}%`,
+        benefits: ["Perfil destacado en busquedas", "Recibe contactos de clientes", "Sin comisiones por servicio", "Panel de control", "Soporte prioritario", "Ahorro del 15%"],
+      },
     ]
   });
 });
@@ -29,43 +45,34 @@ router.get("/status", authenticate, async (req, res) => {
     const user = await User.findById(req.userId);
     if (!user) return res.status(404).json({ success: false, message: "Usuario no encontrado" });
 
-    const professional = await Professional.findOne({ userId: req.userId });
-
     const now = new Date();
     const membership = user.membership || { type: "free", expiresAt: null };
 
     let status = "inactive";
     let expiresAt = membership.expiresAt;
-    let trialEnd = null;
     let daysRemaining = 0;
+    let plan = "";
 
-    if (professional && professional.subscription) {
-      trialEnd = professional.subscription.trialEnd;
-      if (professional.subscription.status === "trial" && trialEnd) {
-        daysRemaining = Math.ceil((new Date(trialEnd) - now) / (1000 * 60 * 60 * 24));
-        status = daysRemaining > 0 ? "trial" : "expired_trial";
+    if (membership.type === "premium" && expiresAt) {
+      if (now < new Date(expiresAt)) {
+        status = "active";
+        daysRemaining = Math.ceil((new Date(expiresAt) - now) / (1000 * 60 * 60 * 24));
+        plan = membership.plan || "monthly";
+      } else {
+        status = "expired";
       }
-    }
-
-    if (membership.type === "premium" && expiresAt && now < new Date(expiresAt)) {
-      status = "active";
-      daysRemaining = Math.ceil((new Date(expiresAt) - now) / (1000 * 60 * 60 * 24));
-    }
-
-    if (membership.type === "premium" && expiresAt && now >= new Date(expiresAt)) {
-      status = "expired";
     }
 
     res.json({
       success: true,
       data: {
         status,
-        plan: membership.type,
+        plan,
         expiresAt,
-        trialEnd,
         daysRemaining: Math.max(0, daysRemaining),
-        price: SUBSCRIPTION_PRICE,
-        isVisible: status === "active" || status === "trial",
+        monthlyPrice: MONTHLY_PRICE,
+        semesterPrice: SEMESTER_PRICE,
+        isVisible: status === "active",
       }
     });
   } catch (error) {
@@ -74,67 +81,37 @@ router.get("/status", authenticate, async (req, res) => {
   }
 });
 
-router.post("/free-trial", authenticate, async (req, res) => {
-  try {
-    const professional = await Professional.findOne({ userId: req.userId });
-    if (!professional) {
-      return res.status(400).json({ success: false, message: "Debes tener perfil profesional" });
-    }
 
-    if (professional.subscription && professional.subscription.status === "trial") {
-      return res.status(400).json({ success: false, message: "Ya activaste tu prueba gratis" });
-    }
-
-    const trialEnd = new Date();
-    trialEnd.setDate(trialEnd.getDate() + TRIAL_DAYS);
-
-    professional.subscription = {
-      status: "trial",
-      trialStart: new Date(),
-      trialEnd,
-      activatedAt: new Date(),
-    };
-    await professional.save();
-
-    const user = await User.findById(req.userId);
-    user.membership = {
-      type: "premium",
-      expiresAt: trialEnd,
-      benefits: ["Perfil visible en el marketplace", "Recibir contactos de clientes", "Panel de control"],
-    };
-    await user.save();
-
-    logger.info("Free trial activated:", { userId: req.userId, trialEnd });
-
-    res.json({
-      success: true,
-      message: "Prueba gratis activada! Disfruta de 30 dias sin costo.",
-      data: { trialEnd, daysRemaining: TRIAL_DAYS }
-    });
-  } catch (error) {
-    logger.error("Free trial error:", error);
-    res.status(500).json({ success: false, message: "Error al activar prueba gratis" });
-  }
-});
 
 router.post("/create-preference", authenticate, async (req, res) => {
   try {
     const user = await User.findById(req.userId);
     if (!user) return res.status(404).json({ success: false, message: "Usuario no encontrado" });
 
-    const externalReference = `sub_${req.userId}_${Date.now()}`;
+    const plan = req.body.plan || "monthly";
+    const isSemester = plan === "semester";
+    const months = isSemester ? SEMESTER_MONTHS : 1;
+    const amount = isSemester ? SEMESTER_PRICE : MONTHLY_PRICE;
+    const title = isSemester
+      ? `Suscripcion Semestral MiProfesional - ${user.name || "Profesional"}`
+      : `Suscripcion Mensual MiProfesional - ${user.name || "Profesional"}`;
+    const description = isSemester
+      ? "Suscripcion semestral al marketplace de servicios profesionales (15% descuento)"
+      : "Suscripcion mensual al marketplace de servicios profesionales";
+
+    const externalReference = `sub_${plan}_${req.userId}_${Date.now()}`;
     const client = new MercadoPagoConfig({ accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN });
     const preference = new Preference(client);
 
     const mpResponse = await preference.create({
       body: {
         items: [{
-          id: "sub_monthly",
-          title: `Suscripcion MiProfesional - ${user.name || "Profesional"}`,
-          description: "Suscripcion mensual al marketplace de servicios profesionales",
+          id: `sub_${plan}`,
+          title,
+          description,
           quantity: 1,
           currency_id: "ARS",
-          unit_price: SUBSCRIPTION_PRICE,
+          unit_price: amount,
         }],
         payer: {
           name: user.name || "",
@@ -162,9 +139,10 @@ router.post("/create-preference", authenticate, async (req, res) => {
       externalReference,
       userId: req.userId,
       type: "subscription",
+      plan,
       status: "pending",
-      amount: SUBSCRIPTION_PRICE,
-      description: "Suscripcion mensual MiProfesional",
+      amount,
+      description,
     });
 
     const professional = await Professional.findOne({ userId: req.userId });
@@ -173,11 +151,12 @@ router.post("/create-preference", authenticate, async (req, res) => {
         ...(professional.subscription || {}),
         mpPreferenceId: preferenceId,
         mpInitPoint: initPoint,
+        selectedPlan: plan,
       };
       await professional.save();
     }
 
-    logger.info("MP preference created:", { userId: req.userId, preferenceId, externalReference });
+    logger.info("MP preference created:", { userId: req.userId, plan, preferenceId, externalReference });
 
     res.json({
       success: true,
@@ -186,6 +165,8 @@ router.post("/create-preference", authenticate, async (req, res) => {
         initPoint,
         sandboxInitPoint,
         externalReference,
+        plan,
+        amount,
       }
     });
   } catch (error) {
@@ -225,14 +206,19 @@ router.post("/webhook", async (req, res) => {
       }
 
       if (status === "approved" && external_reference) {
-        const userId = external_reference.replace("sub_", "").split("_")[0];
+        const parts = external_reference.replace("sub_", "").split("_");
+        const plan = parts[0];
+        const userId = parts[1];
+        const months = plan === "semester" ? SEMESTER_MONTHS : 1;
+
         const user = await User.findById(userId);
         if (user) {
           const expiresAt = new Date();
-          expiresAt.setDate(expiresAt.getDate() + TRIAL_DAYS);
+          expiresAt.setMonth(expiresAt.getMonth() + months);
 
           user.membership = {
             type: "premium",
+            plan,
             expiresAt,
             benefits: ["Perfil destacado en busquedas", "Recibe contactos de clientes", "Sin comisiones por servicio", "Panel de control", "Soporte prioritario"],
           };
@@ -243,13 +229,14 @@ router.post("/webhook", async (req, res) => {
             professional.subscription = {
               ...(professional.subscription || {}),
               status: "active",
+              plan,
               lastPayment: new Date(),
               nextBilling: expiresAt,
             };
             await professional.save();
           }
 
-          logger.info("Subscription payment approved:", { userId, externalReference, expiresAt });
+          logger.info("Subscription payment approved:", { userId, plan, externalReference, expiresAt, months });
         }
       }
     }

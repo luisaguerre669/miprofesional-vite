@@ -25,7 +25,7 @@ const ProfessionalDashboard = () => {
   const [uploadingLicense, setUploadingLicense] = useState(false);
   const [subscription, setSubscription] = useState(null);
   const [creatingPayment, setCreatingPayment] = useState(false);
-  const [activatingTrial, setActivatingTrial] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState('monthly');
 
   useEffect(() => { fetchData(); }, []);
 
@@ -94,20 +94,10 @@ const ProfessionalDashboard = () => {
     setUploadingLicense(false);
   };
 
-  const handleActivateTrial = async () => {
-    setActivatingTrial(true);
-    try {
-      const r = await api.post('/subscription/free-trial');
-      alert(r.data.message);
-      fetchData();
-    } catch (e) { alert(e.response?.data?.message || 'Error al activar prueba'); }
-    setActivatingTrial(false);
-  };
-
-  const handleCreatePayment = async () => {
+  const handleCreatePayment = async (plan) => {
     setCreatingPayment(true);
     try {
-      const r = await api.post('/subscription/create-preference');
+      const r = await api.post('/subscription/create-preference', { plan });
       if (r.data.data.initPoint) {
         window.open(r.data.data.initPoint, '_blank');
       }
@@ -379,95 +369,132 @@ const ProfessionalDashboard = () => {
             <div className="space-y-4">
               {subscription ? (
                 <>
-                  <div className={`p-5 rounded-xl border ${
-                    subscription.status === 'active' ? 'bg-green-50 border-green-200' :
-                    subscription.status === 'trial' ? 'bg-blue-50 border-blue-200' :
-                    subscription.status === 'expired_trial' ? 'bg-amber-50 border-amber-200' :
-                    'bg-gray-50 border-gray-200'
-                  }`}>
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-2">
-                        {subscription.status === 'active' ? (
+                  {subscription.status === 'active' && (
+                    <div className="p-5 rounded-xl border bg-green-50 border-green-200">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
                           <div className="w-10 h-10 rounded-xl bg-green-500/20 flex items-center justify-center">
                             <Sparkles size={20} className="text-green-600" />
                           </div>
-                        ) : subscription.status === 'trial' ? (
-                          <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center">
-                            <Clock size={20} className="text-blue-600" />
+                          <div>
+                            <h4 className="font-bold text-gray-900 text-sm">Suscripcion Activa</h4>
+                            <p className="text-xs text-gray-500">
+                              Plan {subscription.plan === 'semester' ? 'Semestral' : 'Mensual'} - Renueva el {new Date(subscription.expiresAt).toLocaleDateString()}
+                            </p>
                           </div>
-                        ) : (
-                          <div className="w-10 h-10 rounded-xl bg-gray-500/20 flex items-center justify-center">
-                            <AlertTriangle size={20} className="text-gray-600" />
-                          </div>
-                        )}
-                        <div>
-                          <h4 className="font-bold text-gray-900 text-sm">
-                            {subscription.status === 'active' ? 'Suscripcion Activa' :
-                             subscription.status === 'trial' ? 'Periodo de Prueba' :
-                             subscription.status === 'expired_trial' ? 'Prueba Expirada' :
-                             'Sin Suscripcion'}
-                          </h4>
-                          <p className="text-xs text-gray-500">
-                            {subscription.status === 'active' && `Renueva el ${new Date(subscription.expiresAt).toLocaleDateString()}`}
-                            {subscription.status === 'trial' && `${subscription.daysRemaining} dias restantes de prueba`}
-                            {subscription.status === 'expired_trial' && 'Tu periodo de prueba ha terminado'}
-                            {subscription.status === 'inactive' && 'Activa tu suscripcion para aparecer en el marketplace'}
-                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-xs text-green-600 font-medium">{subscription.daysRemaining} dias restantes</p>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <p className="text-xl font-black text-gray-900">${subscription.price?.toLocaleString() || '10.000'}</p>
-                        <p className="text-[10px] text-gray-400">ARS / mes</p>
+                      <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                        <div className="h-full rounded-full bg-green-500 transition-all"
+                          style={{ width: `${Math.min(100, (subscription.daysRemaining / 30) * 100)}%` }} />
                       </div>
                     </div>
+                  )}
 
-                    {subscription.daysRemaining > 0 && (
-                      <div className="h-2 bg-gray-200 rounded-full overflow-hidden mb-3">
-                        <div className={`h-full rounded-full transition-all ${
-                          subscription.status === 'active' ? 'bg-green-500' : 'bg-blue-500'
-                        }`} style={{ width: `${Math.min(100, (subscription.daysRemaining / 30) * 100)}%` }} />
+                  {subscription.status === 'inactive' && (
+                    <>
+                      <div className="p-5 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3">
+                        <AlertTriangle size={18} className="text-amber-600 shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-sm font-semibold text-amber-800">Suscripcion requerida</p>
+                          <p className="text-xs text-amber-600">Elegi un plan para activar tu perfil y aparecer en los resultados de busqueda del marketplace.</p>
+                        </div>
                       </div>
-                    )}
-                  </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <button onClick={() => setSelectedPlan('monthly')}
+                          className={`p-5 rounded-xl border-2 text-left transition-all ${
+                            selectedPlan === 'monthly' ? 'border-primary-500 bg-primary-50 shadow-md' : 'border-gray-200 hover:border-gray-300 bg-white'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between mb-3">
+                            <h4 className="font-bold text-gray-900">Mensual</h4>
+                            {selectedPlan === 'monthly' && <CheckCircle size={18} className="text-primary-600" />}
+                          </div>
+                          <p className="text-2xl font-black text-gray-900">$10.000</p>
+                          <p className="text-xs text-gray-500 mb-3">ARS / mes</p>
+                          <ul className="space-y-1.5">
+                            {['Perfil visible en busquedas', 'Recibir contactos', 'Sin comisiones', 'Panel de control'].map((b, i) => (
+                              <li key={i} className="flex items-start gap-1.5 text-xs text-gray-600">
+                                <CheckCircle size={12} className="text-green-500 mt-0.5 shrink-0" /> {b}
+                              </li>
+                            ))}
+                          </ul>
+                        </button>
+
+                        <button onClick={() => setSelectedPlan('semester')}
+                          className={`p-5 rounded-xl border-2 text-left transition-all ${
+                            selectedPlan === 'semester' ? 'border-primary-500 bg-primary-50 shadow-md' : 'border-gray-200 hover:border-gray-300 bg-white'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between mb-3">
+                            <h4 className="font-bold text-gray-900">Semestral</h4>
+                            {selectedPlan === 'semester' && <CheckCircle size={18} className="text-primary-600" />}
+                          </div>
+                          <p className="text-2xl font-black text-gray-900">$51.000</p>
+                          <p className="text-xs text-gray-500 mb-3">
+                            <span className="text-green-600 font-semibold">15% descuento</span> - <span className="line-through text-gray-400">$60.000</span>
+                          </p>
+                          <ul className="space-y-1.5">
+                            {['Perfil visible en busquedas', 'Recibir contactos', 'Sin comisiones', 'Panel de control', 'Ahorro del 15%'].map((b, i) => (
+                              <li key={i} className="flex items-start gap-1.5 text-xs text-gray-600">
+                                <CheckCircle size={12} className="text-green-500 mt-0.5 shrink-0" /> {b}
+                              </li>
+                            ))}
+                          </ul>
+                        </button>
+                      </div>
+
+                      <button onClick={() => handleCreatePayment(selectedPlan)}
+                        disabled={creatingPayment}
+                        className="w-full flex items-center justify-center gap-2 px-5 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 transition-all disabled:opacity-50"
+                      >
+                        {creatingPayment ? 'Generando pago...' : `Pagar $${selectedPlan === 'semester' ? '51.000' : '10.000'} ARS`} <CreditCard size={16} />
+                      </button>
+                    </>
+                  )}
+
+                  {subscription.status === 'expired' && (
+                    <div className="p-5 bg-red-50 border border-red-200 rounded-xl">
+                      <div className="flex items-center gap-2 mb-3">
+                        <AlertTriangle size={18} className="text-red-500" />
+                        <h4 className="font-bold text-gray-900 text-sm">Suscripcion Vencida</h4>
+                      </div>
+                      <p className="text-xs text-red-700 mb-4">Tu suscripcion ha expirado. Renova para seguir visible en el marketplace.</p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+                        <button onClick={() => { setSelectedPlan('monthly'); handleCreatePayment('monthly'); }}
+                          disabled={creatingPayment}
+                          className="flex-1 px-4 py-2.5 bg-primary-600 text-white font-bold rounded-xl hover:bg-primary-700 text-sm disabled:opacity-50"
+                        >Renovar $10.000 ARS / mes</button>
+                        <button onClick={() => { setSelectedPlan('semester'); handleCreatePayment('semester'); }}
+                          disabled={creatingPayment}
+                          className="flex-1 px-4 py-2.5 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 text-sm disabled:opacity-50"
+                        >Renovar $51.000 ARS / 6 meses</button>
+                      </div>
+                    </div>
+                  )}
 
                   <div className="p-5 bg-gray-50 rounded-xl border border-gray-200">
                     <h4 className="font-bold text-gray-900 text-sm mb-3">Beneficios de la suscripcion</h4>
                     <ul className="space-y-2">
                       {[
-                        'Perfil visible en el marketplace',
+                        'Perfil destacado en los resultados de busqueda',
                         'Recibir contactos de clientes directamente',
-                        'Sin comisiones por servicio',
+                        'Sin comisiones por servicio prestado',
                         'Panel de control con estadisticas',
                         'Soporte prioritario',
                       ].map((b, i) => (
                         <li key={i} className="flex items-start gap-2 text-sm text-gray-600">
-                          <CheckCircle size={14} className="text-green-500 mt-0.5 shrink-0" />
-                          {b}
+                          <CheckCircle size={14} className="text-green-500 mt-0.5 shrink-0" /> {b}
                         </li>
                       ))}
                     </ul>
                   </div>
 
-                  <div className="flex flex-col sm:flex-row gap-3">
-                    {subscription.status === 'inactive' && !subscription.trialEnd && (
-                      <button onClick={handleActivateTrial}
-                        disabled={activatingTrial}
-                        className="flex-1 flex items-center justify-center gap-2 px-5 py-3 bg-primary-600 text-white font-bold rounded-xl hover:bg-primary-700 transition-all disabled:opacity-50"
-                      >
-                        {activatingTrial ? 'Activando...' : 'Activar 30 dias gratis'} <Sparkles size={16} />
-                      </button>
-                    )}
-                    {(subscription.status === 'expired_trial' || subscription.status === 'active' || subscription.status === 'trial') && (
-                      <button onClick={handleCreatePayment}
-                        disabled={creatingPayment}
-                        className="flex-1 flex items-center justify-center gap-2 px-5 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 transition-all disabled:opacity-50"
-                      >
-                        {creatingPayment ? 'Generando...' : subscription.status === 'active' ? 'Renovar suscripcion' : 'Pagar $10.000 ARS'} <CreditCard size={16} />
-                      </button>
-                    )}
-                  </div>
-
-                  {subscription.isVisible === false && (
+                  {subscription.isVisible === false && subscription.status === 'inactive' && (
                     <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3">
                       <AlertTriangle size={18} className="text-amber-600 shrink-0 mt-0.5" />
                       <div>
