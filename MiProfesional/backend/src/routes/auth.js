@@ -438,28 +438,23 @@ router.post('/forgot-password', [
       logger.logAuth('forgot_password', null, req.ip, false, { email, reason: 'user_not_found' });
       return res.json({
         success: true,
-        message: 'If an account with this email exists, a password reset link has been sent'
+        message: 'Si el email existe, recibiras un enlace de recuperacion'
       });
     }
 
-    // Generate reset token
-    const resetToken = user.generatePasswordResetToken();
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetTokenHash = await bcrypt.hash(resetToken, 10);
+    user.resetPasswordToken = resetTokenHash;
+    user.resetPasswordExpires = Date.now() + 3600000;
     await user.save();
 
-    // In a real implementation, send email with reset link
-    // For now, we'll just log it
-    logger.info('Password reset requested', {
-      userId: user._id,
-      email,
-      resetToken,
-      ip: req.ip
-    });
+    await sendPasswordResetEmail(email, user.name, resetToken).catch(() => {});
 
     logger.logAuth('forgot_password', user._id, req.ip, true);
 
     res.json({
       success: true,
-      message: 'If an account with this email exists, a password reset link has been sent'
+      message: 'Si el email existe, recibiras un enlace de recuperacion'
     });
 
   } catch (error) {
@@ -753,33 +748,6 @@ router.get('/verify-email/:token', async (req, res) => {
 });
 
 // Forgot Password
-router.post('/forgot-password', async (req, res) => {
-  try {
-    const { email } = req.body;
-    if (!email) return res.status(400).json({ success: false, error: 'Email requerido' });
-
-    const user = await User.findOne({ email });
-    if (!user) {
-      return res.json({ success: true, message: 'Si el email existe, recibiras un enlace de recuperacion' });
-    }
-
-    const resetToken = crypto.randomBytes(32).toString('hex');
-    const resetTokenHash = await bcrypt.hash(resetToken, 10);
-    user.resetPasswordToken = resetTokenHash;
-    user.resetPasswordExpires = Date.now() + 3600000;
-    await user.save();
-
-    await sendPasswordResetEmail(email, user.name, resetToken);
-
-    logger.logAuth('password_reset_requested', user._id, req.ip, true);
-    res.json({ success: true, message: 'Si el email existe, recibiras un enlace de recuperacion' });
-  } catch (error) {
-    logger.error('Forgot password error', { error: error.message });
-    res.status(500).json({ success: false, error: 'Error al procesar la solicitud' });
-  }
-});
-
-// Reset Password
 router.post('/reset-password', async (req, res) => {
   try {
     const { token, password } = req.body;
