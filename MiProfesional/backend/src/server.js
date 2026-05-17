@@ -65,6 +65,7 @@ function isAllowedOrigin(origin, allowedOrigins) {
     if (hostname.endsWith(".vercel.app")) return true;
     if (hostname.endsWith(".onrender.com")) return true;
     if (hostname === "miprofesional.com" || hostname === "www.miprofesional.com") return true;
+    if (hostname === "miprofesional.online" || hostname === "www.miprofesional.online") return true;
   } catch {
     return false;
   }
