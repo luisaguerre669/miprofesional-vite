@@ -7,6 +7,8 @@ const { authenticate } = require("../middleware/auth");
 const logger = require("../utils/logger");
 const { MercadoPagoConfig, Preference, Payment: MpPayment } = require("mercadopago");
 
+const FRONTEND_URL = "https://frontend-rust-chi-eom3nydslb.vercel.app";
+
 const router = express.Router();
 
 const SUBSCRIPTION_PRICE = 10000;
@@ -121,7 +123,7 @@ router.post("/create-preference", authenticate, async (req, res) => {
     if (!user) return res.status(404).json({ success: false, message: "Usuario no encontrado" });
 
     const externalReference = `sub_${req.userId}_${Date.now()}`;
-    const client = new MercadoPagoConfig({ accessToken: process.env.MERCADO_PAGO_ACCESS_TOKEN });
+    const client = new MercadoPagoConfig({ accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN });
     const preference = new Preference(client);
 
     const mpResponse = await preference.create({
@@ -139,13 +141,13 @@ router.post("/create-preference", authenticate, async (req, res) => {
           email: user.email || "",
         },
         back_urls: {
-          success: `${process.env.FRONTEND_URL || "http://localhost:5173"}/dashboard?payment=success`,
-          failure: `${process.env.FRONTEND_URL || "http://localhost:5173"}/dashboard?payment=failure`,
-          pending: `${process.env.FRONTEND_URL || "http://localhost:5173"}/dashboard?payment=pending`,
+          success: `${FRONTEND_URL}/payment/success`,
+          failure: `${FRONTEND_URL}/payment/failure`,
+          pending: `${FRONTEND_URL}/payment/pending`,
         },
         auto_return: "approved",
         external_reference: externalReference,
-        notification_url: `${process.env.API_URL || "http://localhost:10000"}/api/subscription/webhook`,
+        notification_url: `https://miprofesional-backend.onrender.com/api/subscription/webhook`,
         purpose: "subscription",
       }
     });
@@ -200,7 +202,7 @@ router.post("/webhook", async (req, res) => {
 
     if (type === "payment") {
       const paymentId = data.id;
-      const client = new MercadoPagoConfig({ accessToken: process.env.MERCADO_PAGO_ACCESS_TOKEN });
+    const client = new MercadoPagoConfig({ accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN });
       const mpPaymentClient = new MpPayment(client);
 
       const mpPayment = await mpPaymentClient.get({ id: paymentId });
