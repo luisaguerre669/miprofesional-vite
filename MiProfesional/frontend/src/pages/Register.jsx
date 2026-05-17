@@ -31,6 +31,7 @@ const Register = () => {
   const [phoneCode, setPhoneCode] = useState('');
   const [phoneStep, setPhoneStep] = useState('none');
   const [registered, setRegistered] = useState(false);
+  const [customProfession, setCustomProfession] = useState('');
 
   const isProfessional = formData.role === 'professional';
   const licenseRequired = isProfessional && LICENSED_PROFESSIONS.includes(formData.profession);
@@ -74,7 +75,6 @@ const Register = () => {
         { phone: formData.phone, profession: finalProfession }
       );
       if (result.success) {
-        // Upload license if professional with license
         if (isProfessional && licenseRequired && formData.licenseFile) {
           const form = new FormData();
           form.append('license', formData.licenseFile);
@@ -82,7 +82,11 @@ const Register = () => {
             headers: { 'Content-Type': 'multipart/form-data' }
           }).catch(() => {});
         }
-        setRegistered(true);
+        if (isProfessional) {
+          navigate('/dashboard');
+        } else {
+          setRegistered(true);
+        }
       } else {
         setError(result.error || 'Error al registrarse');
       }
@@ -101,20 +105,12 @@ const Register = () => {
           </div>
           <h2 className="text-xl font-bold text-gray-900 mb-2">Registro Exitoso</h2>
           <p className="text-gray-500 text-sm mb-6">
-            {isProfessional
-              ? 'Tu perfil profesional fue creado. Ahora elegi un plan de suscripcion para empezar a recibir clientes.'
-              : 'Tu cuenta fue creada exitosamente. Revisa tu correo para verificar tu cuenta.'}
+            Tu cuenta fue creada exitosamente. Revisa tu correo para verificar tu cuenta.
           </p>
           <div className="flex flex-col gap-2">
-            {isProfessional ? (
-              <Link to="/dashboard" className="inline-flex items-center justify-center gap-2 px-6 py-2.5 bg-primary-600 text-white font-semibold rounded-xl hover:bg-primary-700 transition-all text-sm">
-                Elegir plan de suscripcion <CreditCard size={16} />
-              </Link>
-            ) : (
-              <Link to="/login" className="inline-flex items-center justify-center gap-2 px-6 py-2.5 bg-primary-600 text-white font-semibold rounded-xl hover:bg-primary-700 transition-all text-sm">
-                Iniciar Sesion <ArrowRight size={16} />
-              </Link>
-            )}
+            <Link to="/login" className="inline-flex items-center justify-center gap-2 px-6 py-2.5 bg-primary-600 text-white font-semibold rounded-xl hover:bg-primary-700 transition-all text-sm">
+              Iniciar Sesion <ArrowRight size={16} />
+            </Link>
             <Link to="/search" className="text-primary-600 text-xs font-medium hover:underline">
               Explorar servicios mientras tanto
             </Link>
@@ -123,8 +119,6 @@ const Register = () => {
       </div>
     );
   }
-
-  const [customProfession, setCustomProfession] = useState('');
 
   const PROFESSIONS = [
     { value: '', label: 'Selecciona tu profesion...' },
