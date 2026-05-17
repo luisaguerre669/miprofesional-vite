@@ -121,14 +121,20 @@ const Home = () => {
       .finally(() => setLoading(false));
   }, []);
 
+  const [manualCity, setManualCity] = useState('');
+
   useEffect(() => {
     if ('geolocation' in navigator) {
       navigator.geolocation.getCurrentPosition(
         (pos) => setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-        () => setUserLocation({ lat: -34.6037, lng: -58.3816 })
+        () => {
+          fetch('https://ipapi.co/json/')
+            .then(r => r.json())
+            .then(d => d && d.latitude && d.longitude ? setUserLocation({ lat: d.latitude, lng: d.longitude }) : null)
+            .catch(() => {});
+        },
+        { timeout: 5000 }
       );
-    } else {
-      setUserLocation({ lat: -34.6037, lng: -58.3816 });
     }
   }, []);
 
@@ -400,9 +406,18 @@ const Home = () => {
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900">Profesionales cerca tuyo</h2>
             <p className="text-gray-500 mt-1">Busca profesionales en tu zona y contacta directamente</p>
           </div>
-          <Link to="/search"
-            className="hidden md:flex items-center gap-2 px-5 py-2.5 bg-gray-900 text-white font-semibold rounded-xl hover:bg-gray-800 transition-all text-sm"
-          ><Search size={16} /> Buscar ahora</Link>
+          <div className="hidden md:flex items-center gap-3">
+            <form onSubmit={(e) => { e.preventDefault(); if (manualCity.trim()) navigate(`/search?q=${encodeURIComponent(manualCity.trim())}`); }}
+              className="flex items-center gap-2 bg-gray-100 rounded-xl px-3 py-1.5">
+              <MapPin size={14} className="text-gray-400" />
+              <input type="text" value={manualCity} onChange={e => setManualCity(e.target.value)}
+                placeholder="Tu ciudad..." className="bg-transparent text-sm w-32 focus:outline-none text-gray-700 placeholder-gray-400" />
+              <button type="submit" className="text-primary-600 text-xs font-medium hover:underline">Ir</button>
+            </form>
+            <Link to="/search"
+              className="flex items-center gap-2 px-5 py-2.5 bg-gray-900 text-white font-semibold rounded-xl hover:bg-gray-800 transition-all text-sm"
+            ><Search size={16} /> Buscar ahora</Link>
+          </div>
         </div>
         {userLocation ? (
           <div className="h-[400px] rounded-2xl overflow-hidden border border-gray-200 shadow-sm relative">
@@ -441,7 +456,17 @@ const Home = () => {
           </div>
         ) : (
           <div className="h-80 rounded-2xl overflow-hidden border border-gray-200 bg-gray-100 flex items-center justify-center">
-            <div className="text-center"><MapPin size={32} className="mx-auto text-gray-400 mb-3" /><p className="text-gray-500 font-medium">Cargando mapa...</p></div>
+            <div className="text-center">
+              <MapPin size={32} className="mx-auto text-gray-400 mb-3" />
+              <p className="text-gray-500 font-medium mb-2">Activa la ubicacion o ingresa tu ciudad</p>
+              <form onSubmit={(e) => { e.preventDefault(); if (manualCity.trim()) navigate(`/search?q=${encodeURIComponent(manualCity.trim())}`); }}
+                className="flex items-center gap-2 bg-white rounded-xl px-3 py-2 shadow-sm max-w-xs mx-auto">
+                <MapPin size={14} className="text-gray-400" />
+                <input type="text" value={manualCity} onChange={e => setManualCity(e.target.value)}
+                  placeholder="Ej: Buenos Aires..." className="bg-transparent text-sm flex-1 focus:outline-none text-gray-700 placeholder-gray-400" />
+                <button type="submit" className="px-3 py-1 bg-primary-600 text-white text-xs font-medium rounded-lg hover:bg-primary-700">Buscar</button>
+              </form>
+            </div>
           </div>
         )}
       </section>
