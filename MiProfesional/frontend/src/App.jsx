@@ -15,6 +15,7 @@ import ServiceDetail from './pages/ServiceDetail';
 import Search from './pages/Search';
 import CategoryPage from './pages/CategoryPage';
 import CategoriesPage from './pages/CategoriesPage';
+import VerifyEmail from './pages/VerifyEmail';
 
 // Protected pages
 import ClientDashboard from './pages/ClientDashboard';
@@ -59,6 +60,7 @@ function AppRoutes() {
       <Route path="/categoria/:slug" element={<Layout><CategoryPage /></Layout>} />
       <Route path="/categorias" element={<Layout><CategoriesPage /></Layout>} />
       <Route path="/profesionales/:slug" element={<Layout><CategoryPage /></Layout>} />
+      <Route path="/verify-email" element={<Layout><VerifyEmail /></Layout>} />
 
       {/* Client Routes */}
       <Route

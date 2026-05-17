@@ -24,6 +24,7 @@ const Login = () => {
       navigate('/', { replace: true });
     }
     if (verified === 'true') setSuccess('Correo verificado exitosamente. Ya podes iniciar sesion.');
+    if (verified === 'false') setError('El enlace de verificacion es invalido o ha expirado.');
     if (errorParam === 'google_auth_failed') setError('La autenticacion con Google fallo. Intenta de nuevo.');
   }, []);
 
