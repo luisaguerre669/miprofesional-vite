@@ -5,7 +5,7 @@ import api from '../lib/axios';
 import {
   UserPlus, Shield, ArrowRight, CheckCircle, AlertCircle,
   Eye, EyeOff, Phone, Mail, Lock, User, Briefcase, Upload,
-  FileText, Building2, Sparkles
+  FileText, Building2, Sparkles, Smartphone, Info
 } from 'lucide-react';
 
 const LICENSED_PROFESSIONS = [
@@ -60,8 +60,10 @@ const Register = () => {
     setError('');
     setLoading(true);
 
-    if (isProfessional && !formData.profession) {
-      setError('Selecciona tu profesion');
+    const finalProfession = formData.profession === '__other__' ? customProfession : formData.profession;
+
+    if (isProfessional && !finalProfession) {
+      setError('Selecciona o escribe tu profesion');
       setLoading(false);
       return;
     }
@@ -69,7 +71,7 @@ const Register = () => {
     try {
       const result = await register(
         formData.name, formData.email, formData.password, formData.role,
-        { phone: formData.phone }
+        { phone: formData.phone, profession: finalProfession }
       );
       if (result.success) {
         // Upload license if professional with license
@@ -122,8 +124,11 @@ const Register = () => {
     );
   }
 
+  const [customProfession, setCustomProfession] = useState('');
+
   const PROFESSIONS = [
     { value: '', label: 'Selecciona tu profesion...' },
+    { value: '__other__', label: 'Otra (escribir profesion)' },
     { group: 'Construccion', items: [
       { value: 'albanil', label: 'Albanil' },
       { value: 'plomero', label: 'Plomero' },
@@ -133,21 +138,88 @@ const Register = () => {
       { value: 'carpintero', label: 'Carpintero' },
       { value: 'techista', label: 'Techista' },
       { value: 'herrero', label: 'Herrero' },
+      { value: 'pisero', label: 'Pisero' },
+      { value: 'yesero', label: 'Yesero' },
+      { value: 'estructuras-metalicas', label: 'Estructuras Metalicas' },
     ]},
-    { group: 'Servicios', items: [
+    { group: 'Servicios Generales', items: [
       { value: 'jardineria', label: 'Jardineria' },
       { value: 'limpieza', label: 'Limpieza' },
       { value: 'mudanzas', label: 'Mudanzas' },
+      { value: 'fumigacion', label: 'Fumigacion / Control de Plagas' },
+      { value: 'piletero', label: 'Piletero / Mantenimiento de Piletas' },
+      { value: 'cerrajero', label: 'Cerrajero' },
     ]},
-    { group: 'Emergencias', items: [
+    { group: 'Emergencias 24/7', items: [
       { value: 'medico-domicilio', label: 'Medico a Domicilio' },
       { value: 'enfermero', label: 'Enfermero/a' },
       { value: 'psicologo-urgencia', label: 'Psicologo de Urgencia' },
-      { value: 'cerrajero-urgente', label: 'Cerrajero' },
+      { value: 'ambulancia', label: 'Servicio de Ambulancia' },
+      { value: 'vigilancia', label: 'Vigilancia Privada' },
     ]},
-    { group: 'Otros', items: [
-      { value: 'tecnologia', label: 'Tecnologia / IT' },
-      { value: 'mecanico', label: 'Mecanico' },
+    { group: 'Hogar y Confort', items: [
+      { value: 'decorador', label: 'Decorador de Interiores' },
+      { value: 'arquitecto', label: 'Arquitecto' },
+      { value: 'disenador-interiores', label: 'Disenador de Interiores' },
+      { value: 'domotica', label: 'Domotica / Hogar Inteligente' },
+      { value: 'tapicero', label: 'Tapicero' },
+    ]},
+    { group: 'Belleza y Cuidado', items: [
+      { value: 'peluquero', label: 'Peluquero/a' },
+      { value: 'manicura', label: 'Manicura / Unias' },
+      { value: 'masajista', label: 'Masajista' },
+      { value: 'cosmetologo', label: 'Cosmetologo/a' },
+      { value: 'barbero', label: 'Barbero' },
+      { value: 'maquillador', label: 'Maquillador/a' },
+      { value: 'depilacion', label: 'Depilacion' },
+      { value: 'personal-trainer', label: 'Personal Trainer / Instructor' },
+    ]},
+    { group: 'Gastronomia', items: [
+      { value: 'chef', label: 'Chef / Cocinero/a' },
+      { value: 'catering', label: 'Servicio de Catering' },
+      { value: 'pastelero', label: 'Pastelero/a' },
+      { value: 'bartender', label: 'Bartender / Cocteleria' },
+      { value: 'eventos-gastronomicos', label: 'Eventos Gastronomicos' },
+    ]},
+    { group: 'Mascotas', items: [
+      { value: 'veterinario', label: 'Veterinario/a' },
+      { value: 'paseador', label: 'Paseador de Perros' },
+      { value: 'peluquero-mascotas', label: 'Peluquero/a de Mascotas' },
+      { value: 'adiestrador', label: 'Adiestrador/a' },
+      { value: 'guarderia-mascotas', label: 'Guarderia de Mascotas' },
+    ]},
+    { group: 'Tecnologia', items: [
+      { value: 'reparacion-pc', label: 'Reparacion de PC / Notebook' },
+      { value: 'reparacion-celulares', label: 'Reparacion de Celulares' },
+      { value: 'desarrollador', label: 'Desarrollador / Programador' },
+      { value: 'disenador-web', label: 'Disenador Web / UX/UI' },
+      { value: 'soporte-tecnico', label: 'Soporte Tecnico / Redes' },
+      { value: 'instalacion-camaras', label: 'Instalacion de Camaras / Alarmas' },
+    ]},
+    { group: 'Automotor', items: [
+      { value: 'mecanico', label: 'Mecanico Automotriz' },
+      { value: 'electricista-auto', label: 'Electricista Automotriz' },
+      { value: 'chapista', label: 'Chapista / Pintura' },
+      { value: 'gomerias', label: 'Gomeria / Neumaticos' },
+      { value: 'lavadero', label: 'Lavadero de Autos' },
+      { value: 'cerrajero-auto', label: 'Cerrajero de Autos' },
+    ]},
+    { group: 'Transporte y Turismo', items: [
+      { value: 'remis', label: 'Remis / Taxi' },
+      { value: 'flete', label: 'Flete / Camioneta' },
+      { value: 'tour-guide', label: 'Guia de Turismo' },
+      { value: 'transporte-escolar', label: 'Transporte Escolar' },
+      { value: 'viajes-egresados', label: 'Viajes de Egresados' },
+    ]},
+    { group: 'Empresas', items: [
+      { value: 'contador', label: 'Contador/a' },
+      { value: 'abogado', label: 'Abogado/a' },
+      { value: 'seguros', label: 'Productor de Seguros' },
+      { value: 'marketing', label: 'Marketing / Publicidad' },
+      { value: 'fotografo', label: 'Fotografo/a' },
+      { value: 'traductor', label: 'Traductor/a' },
+      { value: 'community-manager', label: 'Community Manager' },
+      { value: 'video-editor', label: 'Editor de Video' },
     ]},
   ];
 
@@ -269,6 +341,9 @@ const Register = () => {
                     className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm bg-white"
                   >
                     <option value="">Selecciona tu profesion...</option>
+                    {PROFESSIONS.filter(p => !p.group).map(p => (
+                      <option key={p.value} value={p.value}>{p.label}</option>
+                    ))}
                     {PROFESSIONS.filter(g => g.group).map(group => (
                       <optgroup key={group.group} label={group.group}>
                         {group.items.map(item => (
@@ -278,6 +353,15 @@ const Register = () => {
                     ))}
                   </select>
                 </div>
+
+                {formData.profession === '__other__' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Escribe tu profesion</label>
+                    <input name="customProfession" value={customProfession} onChange={e => setCustomProfession(e.target.value)}
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
+                      placeholder="Ej: Musicoterapeuta, Organizador de Eventos..." />
+                  </div>
+                )}
 
                 {licenseRequired && (
                   <>
