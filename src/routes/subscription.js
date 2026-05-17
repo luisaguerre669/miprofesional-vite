@@ -139,7 +139,6 @@ router.post("/create-preference", authenticate, async (req, res) => {
       externalReference,
       userId: req.userId,
       type: "subscription",
-      plan,
       status: "pending",
       amount,
       description,
