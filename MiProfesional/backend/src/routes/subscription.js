@@ -7,7 +7,7 @@ const { authenticate } = require("../middleware/auth");
 const logger = require("../utils/logger");
 const { MercadoPagoConfig, Preference, Payment: MpPayment } = require("mercadopago");
 
-const FRONTEND_URL = "https://frontend-rust-chi-eom3nydslb.vercel.app";
+const FRONTEND_URL = process.env.FRONTEND_URL || "https://www.miprofesional.online";
 
 const router = express.Router();
 
