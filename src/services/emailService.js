@@ -1,6 +1,6 @@
 const logger = require("../utils/logger");
 
-const FRONTEND_URL = process.env.FRONTEND_URL || "https://frontend-rust-chi-eom3nydslb.vercel.app";
+const FRONTEND_URL = process.env.FRONTEND_URL || "https://www.miprofesional.online";
 
 function getTransporter() {
   const nodemailer = require("nodemailer");
