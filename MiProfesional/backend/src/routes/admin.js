@@ -18,6 +18,37 @@ const handleValidationErrors = (req, res, next) => {
 
 router.use(authenticate, requireAdmin);
 
+router.post("/seed-categories", async (req, res) => {
+  try {
+    const cats = await Category.find();
+    if (cats.length > 0) return res.json({ success: true, message: `Ya existen ${cats.length} categorias` });
+    const categories = [
+      { title: "Construccion", slug: "construccion", description: "Albaniles, plomeros, electricistas, gasistas, pintores, carpinteros, techistas, herreros y mas.", image: "https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?w=800&q=80", icon: "Building2", metadata: { color: "#b45309", featured: true }, sortOrder: 1 },
+      { title: "Servicios Generales", slug: "servicios-generales", description: "Limpieza, jardineria, mudanzas, mantenimiento y reparaciones del hogar.", image: "https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=800&q=80", icon: "Wrench", metadata: { color: "#0f7a5a", featured: true }, sortOrder: 2 },
+      { title: "Emergencias 24/7", slug: "emergencias", description: "Medicos, enfermeros, cuidadores, cerrajeros y servicios urgentes.", image: "https://images.unsplash.com/photo-1587745416684-47953f16fdd1?w=800&q=80", icon: "AlertTriangle", metadata: { color: "#dc2626", featured: true }, sortOrder: 3 },
+      { title: "Empresas y Equipos", slug: "empresas", description: "Empresas constructoras, cuadrillas, equipos de limpieza y servicios corporativos.", image: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800&q=80", icon: "Briefcase", metadata: { color: "#1d4ed8", featured: true }, sortOrder: 4 },
+      { title: "Tecnologia", slug: "tecnologia", description: "Reparacion de PC, redes, camaras, soporte IT y desarrollo web.", image: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=800&q=80", icon: "Monitor", metadata: { color: "#7c3aed", featured: false }, sortOrder: 5 },
+      { title: "Automotor", slug: "automotor", description: "Mecanica, electricidad automotriz, chapista, gomeria, lavadero y auxilio.", image: "https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?w=800&q=80", icon: "Car", metadata: { color: "#0891b2", featured: false }, sortOrder: 6 },
+      { title: "Hogar y Confort", slug: "hogar", description: "Decoracion, arquitectura, diseno de interiores, domotica y tapiceria.", image: "https://images.unsplash.com/photo-1618220179428-22790b461013?w=800&q=80", icon: "Home", metadata: { color: "#d97706", featured: false }, sortOrder: 7 },
+      { title: "Mascotas", slug: "mascotas", description: "Veterinarios, paseadores, peluqueros, adiestradores y guarderias.", image: "https://images.unsplash.com/photo-1548199973-03cce0bbc87b?w=800&q=80", icon: "Dog", metadata: { color: "#0891b2", featured: false }, sortOrder: 8 },
+      { title: "Belleza y Cuidado", slug: "belleza", description: "Peluqueria, manicura, masajes, cosmetologia, barberia y depilacion.", image: "https://images.unsplash.com/photo-1560066984-138dadb4c035?w=800&q=80", icon: "Sparkles", metadata: { color: "#db2777", featured: false }, sortOrder: 9 },
+      { title: "Gastronomia", slug: "gastronomia", description: "Chefs, catering, pasteleria, bartender y eventos gastronomicos.", image: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800&q=80", icon: "ChefHat", metadata: { color: "#dc2626", featured: false }, sortOrder: 10 },
+      { title: "Transporte y Turismo", slug: "transporte", description: "Remis, fletes, guias de turismo, transporte escolar y viajes.", image: "https://images.unsplash.com/photo-1603796846097-bee99e4a601f?w=800&q=80", icon: "Truck", metadata: { color: "#1d4ed8", featured: false }, sortOrder: 11 },
+      { title: "Cerrajeria", slug: "cerrajeria", description: "Cerrajeros, apertura de puertas, instalacion de cerraduras y cajas de seguridad.", image: "https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=800&q=80", icon: "Lock", metadata: { color: "#65a30d", featured: false }, sortOrder: 12 },
+    ];
+    let created = 0;
+    for (const cat of categories) {
+      const exists = await Category.findOne({ slug: cat.slug });
+      if (!exists) { await Category.create(cat); created++; }
+    }
+    logger.info("Categories seeded:", { created });
+    res.json({ success: true, message: `Categorias seeded: ${created} creadas, ${categories.length - created} ya existian` });
+  } catch (error) {
+    logger.error("Seed categories error:", error);
+    res.status(500).json({ success: false, message: "Error al seedear categorias" });
+  }
+});
+
 router.get("/dashboard", async (req, res) => {
   try {
     const [totalUsers, totalProfessionals, totalBookings, totalRevenue, recentUsers, recentBookings] = await Promise.all([

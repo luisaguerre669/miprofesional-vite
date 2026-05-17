@@ -12,7 +12,7 @@ const { generarToken, verificarToken } = require('../config/jwt');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 
-const { sendVerificationEmail } = require('../services/emailService');
+const { sendVerificationEmail, sendPasswordResetEmail } = require('../services/emailService');
 
 const router = express.Router();
 
@@ -729,6 +729,73 @@ router.get('/verify-email/:token', async (req, res) => {
       error: 'Error de verificacion',
       message: 'No se pudo verificar el correo electronico'
     });
+  }
+});
+
+// Forgot Password
+router.post('/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ success: false, error: 'Email requerido' });
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.json({ success: true, message: 'Si el email existe, recibiras un enlace de recuperacion' });
+    }
+
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetTokenHash = await bcrypt.hash(resetToken, 10);
+    user.resetPasswordToken = resetTokenHash;
+    user.resetPasswordExpires = Date.now() + 3600000;
+    await user.save();
+
+    await sendPasswordResetEmail(email, user.name, resetToken);
+
+    logger.logAuth('password_reset_requested', user._id, req.ip, true);
+    res.json({ success: true, message: 'Si el email existe, recibiras un enlace de recuperacion' });
+  } catch (error) {
+    logger.error('Forgot password error', { error: error.message });
+    res.status(500).json({ success: false, error: 'Error al procesar la solicitud' });
+  }
+});
+
+// Reset Password
+router.post('/reset-password', async (req, res) => {
+  try {
+    const { token, password } = req.body;
+    if (!token || !password) {
+      return res.status(400).json({ success: false, error: 'Token y contrasena requeridos' });
+    }
+    if (password.length < 6) {
+      return res.status(400).json({ success: false, error: 'La contrasena debe tener al menos 6 caracteres' });
+    }
+
+    const users = await User.find({
+      resetPasswordExpires: { $gt: Date.now() }
+    });
+
+    let user = null;
+    for (const u of users) {
+      if (u.resetPasswordToken) {
+        const valid = await bcrypt.compare(token, u.resetPasswordToken);
+        if (valid) { user = u; break; }
+      }
+    }
+
+    if (!user) {
+      return res.status(400).json({ success: false, error: 'Token invalido o expirado' });
+    }
+
+    user.password = password;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
+    await user.save();
+
+    logger.logAuth('password_reset_completed', user._id, req.ip, true);
+    res.json({ success: true, message: 'Contrasena restablecida exitosamente' });
+  } catch (error) {
+    logger.error('Reset password error', { error: error.message });
+    res.status(500).json({ success: false, error: 'Error al restablecer la contrasena' });
   }
 });
 

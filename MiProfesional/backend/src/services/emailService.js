@@ -59,4 +59,44 @@ async function sendVerificationEmail(email, name, token) {
   }
 }
 
-module.exports = { sendVerificationEmail };
+async function sendPasswordResetEmail(email, name, token) {
+  const resetUrl = `${FRONTEND_URL}/reset-password?token=${token}`;
+
+  try {
+    const transporter = getTransporter();
+
+    if (!transporter) {
+      logger.info("Email service not configured. Reset link:", resetUrl);
+      return { sent: false, resetUrl };
+    }
+
+    await transporter.sendMail({
+      from: `"MiProfesional" <${process.env.SMTP_USER}>`,
+      to: email,
+      subject: "Restablece tu contrasena en MiProfesional",
+      html: `
+        <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:20px">
+          <div style="text-align:center;margin-bottom:24px">
+            <div style="width:48px;height:48px;background:#0f7a5a;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:20px">MP</div>
+          </div>
+          <h1 style="font-size:20px;color:#111;text-align:center">Restablece tu contrasena</h1>
+          <p style="color:#555;font-size:14px;text-align:center">Recibimos una solicitud para restablecer la contrasena de tu cuenta en MiProfesional. Hace clic en el boton de abajo para crear una nueva contrasena.</p>
+          <div style="text-align:center;margin:24px 0">
+            <a href="${resetUrl}" style="display:inline-block;padding:12px 32px;background:#0f7a5a;color:white;text-decoration:none;border-radius:8px;font-weight:bold;font-size:14px">Restablecer contrasena</a>
+          </div>
+          <p style="color:#888;font-size:12px;text-align:center">Si no solicitaste este cambio, ignora este mensaje.</p>
+          <hr style="border:none;border-top:1px solid #eee;margin:20px 0" />
+          <p style="color:#aaa;font-size:11px;text-align:center">MiProfesional - Plataforma de conexion entre clientes y profesionales</p>
+        </div>
+      `,
+    });
+
+    logger.info("Password reset email sent:", { email });
+    return { sent: true, resetUrl };
+  } catch (error) {
+    logger.error("Error sending password reset email:", error);
+    return { sent: false, resetUrl };
+  }
+}
+
+module.exports = { sendVerificationEmail, sendPasswordResetEmail };
