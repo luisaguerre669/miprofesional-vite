@@ -225,6 +225,7 @@ router.post("/webhook", async (req, res) => {
 
           const professional = await Professional.findOne({ userId });
           if (professional) {
+            professional.isActive = true;
             professional.subscription = {
               ...(professional.subscription || {}),
               status: "active",
@@ -254,9 +255,12 @@ router.post("/cancel", authenticate, async (req, res) => {
     await user.save();
 
     const professional = await Professional.findOne({ userId: req.userId });
-    if (professional && professional.subscription) {
-      professional.subscription.status = "cancelled";
-      professional.subscription.cancelledAt = new Date();
+    if (professional) {
+      professional.isActive = false;
+      if (professional.subscription) {
+        professional.subscription.status = "cancelled";
+        professional.subscription.cancelledAt = new Date();
+      }
       await professional.save();
     }
 

@@ -16,11 +16,11 @@ export default function SubscriptionPage() {
   useEffect(() => {
     Promise.all([
       api.get('/subscription/plans'),
-      api.get('/subscription/current'),
+      api.get('/subscription/status'),
     ])
       .then(([plansRes, subRes]) => {
-        setPlans(plansRes.data?.plans ?? plansRes.data ?? []);
-        setCurrentPlan(subRes.data?.plan ?? subRes.data ?? null);
+        setPlans(plansRes.data?.data ?? plansRes.data ?? []);
+        setCurrentPlan(subRes.data?.data ?? subRes.data ?? null);
       })
       .catch(() => setMessage({ type: 'error', text: 'Error al cargar los planes.' }))
       .finally(() => setLoading(false));
@@ -30,11 +30,15 @@ export default function SubscriptionPage() {
     setActionLoading(planName);
     setMessage(null);
     try {
-      const res = await api.post('/subscription/upgrade', { plan: planName });
-      setCurrentPlan(res.data?.plan ?? planName);
-      setMessage({ type: 'success', text: `Suscripción actualizada a ${planName}.` });
+      const res = await api.post('/subscription/create-preference', { plan: planName });
+      const initPoint = res.data?.data?.initPoint || res.data?.initPoint;
+      if (initPoint) {
+        window.location.href = initPoint;
+      } else {
+        setMessage({ type: 'error', text: 'Error al redirigir al pago.' });
+      }
     } catch {
-      setMessage({ type: 'error', text: 'Error al actualizar la suscripción.' });
+      setMessage({ type: 'error', text: 'Error al crear la preferencia de pago.' });
     } finally {
       setActionLoading(null);
     }
@@ -78,7 +82,8 @@ export default function SubscriptionPage() {
     );
   }
 
-  const currentPlanName = currentPlan?.name?.toLowerCase() ?? currentPlan?.toLowerCase() ?? 'free';
+  const currentPlanName = currentPlan?.plan?.toLowerCase() ?? currentPlan?.name?.toLowerCase() ?? currentPlan?.toLowerCase() ?? 'free';
+  const currentStatus = currentPlan?.status ?? 'inactive';
 
   return (
     <div className="min-h-screen bg-gray-50 py-10 px-4">
@@ -114,7 +119,7 @@ export default function SubscriptionPage() {
                   isCurrent ? 'ring-2 ring-primary-500' : ''
                 }`}
               >
-                {isCurrent && (
+                {(isCurrent || currentStatus === 'active') && (
                   <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary-600 text-white text-xs font-semibold px-3 py-1 rounded-full">
                     Plan Actual
                   </span>

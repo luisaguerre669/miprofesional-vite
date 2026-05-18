@@ -302,7 +302,7 @@ const professionalSchema = new mongoose.Schema({
   },
   isActive: {
     type: Boolean,
-    default: true
+    default: false
   },
   isFeatured: {
     type: Boolean,
