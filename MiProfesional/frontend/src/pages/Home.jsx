@@ -123,18 +123,28 @@ const Home = () => {
   }, []);
 
   const [manualCity, setManualCity] = useState('');
+  const [showCityInput, setShowCityInput] = useState(false);
 
   useEffect(() => {
+    const cached = localStorage.getItem('miprofesional_location');
+    if (cached) {
+      try { const p = JSON.parse(cached); if (p.lat && p.lng) { setUserLocation(p); return; } } catch {}
+    }
     if ('geolocation' in navigator) {
       navigator.geolocation.getCurrentPosition(
-        (pos) => setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+        (pos) => {
+          const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+          setUserLocation(loc);
+          localStorage.setItem('miprofesional_location', JSON.stringify(loc));
+        },
         () => {
           fetch('https://ipapi.co/json/')
             .then(r => r.json())
-            .then(d => d && d.latitude && d.longitude ? setUserLocation({ lat: d.latitude, lng: d.longitude }) : null)
+            .then(d => d && d.latitude && d.longitude ? { lat: d.latitude, lng: d.longitude } : null)
+            .then(loc => { if (loc) { setUserLocation(loc); localStorage.setItem('miprofesional_location', JSON.stringify(loc)); } })
             .catch(() => {});
         },
-        { timeout: 5000 }
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 300000 }
       );
     }
   }, []);
@@ -420,7 +430,7 @@ const Home = () => {
             ><Search size={16} /> Buscar ahora</Link>
           </div>
         </div>
-        {userLocation ? (
+        {userLocation && !showCityInput ? (
           <div className="h-[400px] rounded-2xl overflow-hidden border border-gray-200 shadow-sm relative">
             <MapContainer center={[userLocation.lat, userLocation.lng]} zoom={13} className="h-full w-full" zoomControl={false}>
               <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
@@ -452,6 +462,7 @@ const Home = () => {
                 <MapPin size={16} className="text-primary-500 shrink-0" />
                 <span className="text-gray-600">Mostrando profesionales cerca de tu ubicacion</span>
                 <Link to="/search" className="px-4 py-1.5 bg-primary-500 text-white font-medium rounded-lg hover:bg-primary-600 transition-all text-xs">Explorar mapa</Link>
+                <button onClick={() => setShowCityInput(true)} className="text-xs text-gray-400 hover:text-gray-600 underline ml-1">ubicacion incorrecta?</button>
               </div>
             </div>
           </div>
@@ -459,7 +470,7 @@ const Home = () => {
           <div className="h-80 rounded-2xl overflow-hidden border border-gray-200 bg-gray-100 flex items-center justify-center">
             <div className="text-center">
               <MapPin size={32} className="mx-auto text-gray-400 mb-3" />
-              <p className="text-gray-500 font-medium mb-2">Activa la ubicacion o ingresa tu ciudad</p>
+              <p className="text-gray-500 font-medium mb-2">{showCityInput ? 'Ingresa tu ciudad para buscar profesionales' : 'Activa la ubicacion o ingresa tu ciudad'}</p>
               <form onSubmit={(e) => { e.preventDefault(); if (manualCity.trim()) navigate(`/search?q=${encodeURIComponent(manualCity.trim())}`); }}
                 className="flex items-center gap-2 bg-white rounded-xl px-3 py-2 shadow-sm max-w-xs mx-auto">
                 <MapPin size={14} className="text-gray-400" />
@@ -467,6 +478,9 @@ const Home = () => {
                   placeholder="Ej: Buenos Aires..." className="bg-transparent text-sm flex-1 focus:outline-none text-gray-700 placeholder-gray-400" />
                 <button type="submit" className="px-3 py-1 bg-primary-600 text-white text-xs font-medium rounded-lg hover:bg-primary-700">Buscar</button>
               </form>
+              {showCityInput && (
+                <button onClick={() => { setShowCityInput(false); localStorage.removeItem('miprofesional_location'); window.location.reload(); }} className="text-xs text-gray-400 hover:text-gray-600 underline mt-3">volver al mapa</button>
+              )}
             </div>
           </div>
         )}
