@@ -85,8 +85,9 @@ class Logger {
     const start = Date.now();
     const { method, url, ip, headers } = req;
     const reqId = req.requestId || 'unknown';
-    
-    this.info('Request started', { method, url, ip, requestId: reqId, userAgent: headers['user-agent'] });
+    const _self = this;
+
+    _self.info('Request started', { method, url, ip, requestId: reqId, userAgent: headers['user-agent'] });
 
     const originalEnd = res.end;
     res.end = function(chunk, encoding) {
@@ -94,9 +95,9 @@ class Logger {
       const { statusCode } = res;
       const logData = { method, url, statusCode, duration: `${duration}ms`, ip, requestId: reqId };
       if (statusCode >= 400) {
-        logger.error('Request completed with error', logData);
+        _self.error('Request completed with error', logData);
       } else {
-        logger.info('Request completed', logData);
+        _self.info('Request completed', logData);
       }
       originalEnd.call(this, chunk, encoding);
     };
