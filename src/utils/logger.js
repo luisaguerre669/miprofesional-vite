@@ -2,6 +2,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const errorStore = require('./errorStore');
 
 class Logger {
   constructor() {
@@ -13,7 +14,9 @@ class Logger {
       info: 2,
       debug: 3
     };
-    
+    this.requestCount = 0;
+    this.startTime = Date.now();
+
     // Ensure logs directory exists
     this.ensureLogDirectory();
   }
@@ -47,6 +50,9 @@ class Logger {
     const formattedMessage = this.formatMessage('error', message, meta);
     console.error(formattedMessage);
     this.writeToFile(formattedMessage);
+    if (typeof message === 'string' || message instanceof Error) {
+      errorStore.push({ message: message instanceof Error ? message.message : message, meta, stack: message instanceof Error ? message.stack : undefined });
+    }
   }
 
   warn(message, meta = {}) {
@@ -75,43 +81,23 @@ class Logger {
 
   // Request logging middleware helper
   logRequest(req, res, next) {
+    this.requestCount++;
     const start = Date.now();
     const { method, url, ip, headers } = req;
+    const reqId = req.requestId || 'unknown';
     
-    // Log request
-    this.info('Request started', {
-      method,
-      url,
-      ip,
-      userAgent: headers['user-agent'],
-      timestamp: new Date().toISOString()
-    });
+    this.info('Request started', { method, url, ip, requestId: reqId, userAgent: headers['user-agent'] });
 
-    // Override res.end to log response
     const originalEnd = res.end;
     res.end = function(chunk, encoding) {
       const duration = Date.now() - start;
       const { statusCode } = res;
-      
-      // Log response
+      const logData = { method, url, statusCode, duration: `${duration}ms`, ip, requestId: reqId };
       if (statusCode >= 400) {
-        logger.error('Request completed with error', {
-          method,
-          url,
-          statusCode,
-          duration: `${duration}ms`,
-          ip
-        });
+        logger.error('Request completed with error', logData);
       } else {
-        logger.info('Request completed', {
-          method,
-          url,
-          statusCode,
-          duration: `${duration}ms`,
-          ip
-        });
+        logger.info('Request completed', logData);
       }
-      
       originalEnd.call(this, chunk, encoding);
     };
 
@@ -282,6 +268,26 @@ class Logger {
       return null;
     }
   }
+
+  // Get server stats
+  getStats() {
+    const mem = process.memoryUsage();
+    return {
+      uptime: process.uptime(),
+      startTime: this.startTime,
+      requestCount: this.requestCount,
+      memory: { rss: `${Math.round(mem.rss / 1024 / 1024)} MB`, heapUsed: `${Math.round(mem.heapUsed / 1024 / 1024)} MB` },
+      nodeVersion: process.version,
+      env: process.env.NODE_ENV || 'development',
+      recentErrors: errorStore.count()
+    };
+  }
+
+  // Get recent errors
+  getRecentErrors(limit) { return errorStore.list(limit); }
+
+  // Clear error log
+  clearErrors() { errorStore.clear(); }
 
   // Clean old logs
   cleanOldLogs(daysToKeep = 30) {
