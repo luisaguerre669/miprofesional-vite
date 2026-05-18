@@ -1,36 +1,44 @@
 # PRODUCTION SUMMARY - MiProfesional
 
-## Status: DEPLOYED
+## Status: FULLY OPERATIONAL
 
 ### Frontend
 - URL: https://www.miprofesional.online
 - Platform: Vercel (project: miprofesional-vite)
 - Build: 0 errors, 2221 modules
-- Last deploy: OK
+- Last deploy: manual via Vercel CLI (commit 86d3209)
 
 ### Backend
 - URL: https://miprofesional-backend.onrender.com
 - Platform: Render (service: miprofesional-backend)
+- Runtime: Node.js 26.1.0
 - Health: OK
-- GitHub: https://github.com/luisaguerre669/miprofesional-backend
+- GitHub: https://github.com/luisaguerre669/miprofesional-backend (commit 0710b6e)
+
+## End-to-End Tests (PASSING)
+| Test | Result |
+|------|--------|
+| POST /api/auth/register | 201 OK |
+| POST /api/auth/login | 200 OK |
+| POST /api/auth/forgot-password | 200 OK |
 
 ## Fixed Issues
 
 ### CRITICAL (resolved by code changes)
-- POST JSON requests: sanitizer simplified (removed isomorphic-dompurify)
-- Register 500: phone/location empty string duplicate key error fixed
-- Forgot-password: combined duplicate routes, now sends email
-- Login: working (returns proper auth errors)
+- POST JSON requests 500: sanitizer simplified (removed isomorphic-dompurify, regex replace instead)
+- Register 500: MongoDB unique index on `phone_1` was stale (created from old schema version) - dropped on startup + phone field excluded when empty
+- Forgot-password: combined duplicate routes, now calls `sendPasswordResetEmail`
+- Login: working (returns 401 for invalid, 200 for valid)
 - Double `/api` paths: fixed in ForgotPassword, ResetPassword, NearbyProfessionals, AdminPayments, AdminGeo
 - Missing `useNavigate` import: fixed in Home.jsx
-- Shadcn/ui missing components: created Card, Button, Badge, Input, Slider
+- Shadcn/ui missing components: created Card, Button, Badge, Input, Slider (native Tailwind)
 - `Verified` icon: replaced with `BadgeCheck` (valid lucide-react icon)
 - Professional redirect: `/dashboard` -> `/dashboard/professional`
-- Login raw fetch: replaced with axios instance
+- Login raw fetch: replaced with axios instance (was breaking in production without Vite proxy)
 - Canonical URLs: `miprofesional.com` -> `www.miprofesional.online`
 - Contact email: `hola@miprofesional.com` -> `hola@miprofesional.online`
 - Google OAuth fallback email: `@google-oauth.miprofesional.com` -> `.online`
-- Webhook URL: now uses `BACKEND_URL` env var
+- Webhook URL: now uses `BACKEND_URL` env var via process.env
 
 ## PENDING - Must manually configure
 
