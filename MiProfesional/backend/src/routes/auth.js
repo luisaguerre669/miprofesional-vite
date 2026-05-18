@@ -156,10 +156,58 @@ router.post('/register', registerLimiter, [
     const existingUser = await User.findOne({ email });
 
     if (existingUser) {
-      return res.status(409).json({
-        success: false,
-        error: 'User already exists',
-        message: 'A user with this email already exists'
+      if (existingUser.isActive) {
+        return res.status(409).json({
+          success: false,
+          error: 'User already exists',
+          message: 'A user with this email already exists'
+        });
+      }
+
+      // Reactivate deactivated account
+      existingUser.name = name;
+      existingUser.password = password;
+      existingUser.role = role;
+      if (phone) existingUser.phone = phone;
+      if (location) existingUser.location = location;
+      existingUser.isActive = true;
+      existingUser.deactivatedAt = undefined;
+      existingUser.preferences = {
+        emailAlerts: acceptMarketing || false,
+        notifications: true,
+        language: 'es',
+        currency: 'ARS'
+      };
+      existingUser.generateVerificationToken();
+      await existingUser.save();
+
+      if (role === 'professional') {
+        await Professional.updateMany(
+          { userId: existingUser._id },
+          { isActive: false, 'subscription.status': 'pending_payment' }
+        );
+      }
+
+      sendVerificationEmail(existingUser.email, existingUser.name, existingUser.verificationToken).catch(() => {});
+
+      const { accessToken, refreshToken } = generateTokens(existingUser._id);
+      logger.logAuth('register_reactivated', existingUser._id, req.ip, true);
+      const publicUser = existingUser.toJSON();
+
+      return res.status(200).json({
+        success: true,
+        message: 'Cuenta reactivada. Revise su correo para verificar la cuenta.',
+        user: publicUser,
+        accessToken,
+        refreshToken,
+        data: {
+          user: publicUser,
+          token: accessToken,
+          accessToken,
+          refreshToken,
+          expiresIn: process.env.JWT_EXPIRES_IN || '24h',
+          emailVerified: existingUser.emailVerified || false
+        }
       });
     }
 
