@@ -83,7 +83,7 @@ const Register = () => {
           }).catch(() => {});
         }
         if (isProfessional) {
-          navigate('/dashboard/professional');
+          navigate('/subscriptions');
         } else {
           setRegistered(true);
         }
@@ -418,10 +418,11 @@ const Register = () => {
                 </div>
 
                 {isProfessional && (
-                  <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-                    <p className="text-xs text-gray-600">
-                      <strong className="text-gray-900">Suscripcion Profesional:</strong> $10.000 ARS / mes.
-                      La plataforma solo conecta clientes con profesionales. Sin comisiones por servicio.
+                  <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
+                    <p className="text-xs text-amber-800">
+                      <strong className="text-amber-900">Suscripcion obligatoria:</strong> $10.000 ARS / mes o $51.000 ARS / 6 meses (15% descuento).
+                      Despues del registro seras redirigido a la pagina de suscripcion para activar tu perfil.
+                      Sin suscripcion activa no apareceras en el marketplace.
                     </p>
                   </div>
                 )}
