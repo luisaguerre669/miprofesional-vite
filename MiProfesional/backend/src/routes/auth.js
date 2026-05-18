@@ -201,7 +201,7 @@ router.post('/register', registerLimiter, [
             profession: profession || 'pendiente',
             description: 'Completa tu perfil profesional',
             contact: { phone: phone || '+000000000000', email: existingUser.email },
-            location: { address: '', city: '', state: '', country: 'Argentina', coordinates: { type: 'Point', coordinates: [0, 0] } },
+            location: { address: 'pendiente', city: 'pendiente', state: 'pendiente', country: 'Argentina', coordinates: { type: 'Point', coordinates: [0, 0] } },
             pricing: { hourlyRate: 0, currency: 'ARS' },
             isActive: false,
             subscription: { status: 'pending_payment' },
@@ -262,9 +262,9 @@ router.post('/register', registerLimiter, [
           description: 'Completa tu perfil profesional',
           contact: { phone: phone || '+000000000000', email: user.email },
           location: {
-            address: '',
-            city: '',
-            state: '',
+            address: 'pendiente',
+            city: 'pendiente',
+            state: 'pendiente',
             country: 'Argentina',
             coordinates: { type: 'Point', coordinates: [0, 0] }
           },
