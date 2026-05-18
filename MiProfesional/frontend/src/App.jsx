@@ -27,6 +27,7 @@ import Chat from './pages/Chat';
 import Profile from './pages/Profile';
 import AdminPanel from './pages/AdminPanel';
 import SubscriptionPage from './pages/SubscriptionPage';
+import PaymentResult from './pages/PaymentResult';
 import Settings from './pages/Settings';
 import Notifications from './pages/Notifications';
 
@@ -152,6 +153,11 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
+
+      {/* Payment pages (public, no auth required - MP redirects here) */}
+      <Route path="/payment/success" element={<Layout><PaymentResult status="success" /></Layout>} />
+      <Route path="/payment/failure" element={<Layout><PaymentResult status="failure" /></Layout>} />
+      <Route path="/payment/pending" element={<Layout><PaymentResult status="pending" /></Layout>} />
 
       {/* 404 */}
       <Route path="*" element={<Navigate to="/" />} />

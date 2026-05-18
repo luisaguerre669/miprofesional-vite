@@ -96,7 +96,7 @@ async function processPayment(mpData, webhookData) {
         mpPaymentId: mpData.id.toString(),
         preferenceId: mpData.preference_id,
         externalReference: mpData.external_reference,
-        userId: mpData.external_reference.split('-')[0] || 'unknown', // Extraer userId de la referencia
+        userId: (mpData.external_reference || '').split('_')[2] || mpData.external_reference?.split('-')[0] || 'unknown',
         type: detectPaymentType(mpData.external_reference),
         status: mpData.status,
         amount: mpData.transaction_amount,
@@ -208,20 +208,48 @@ async function activateSubscription(payment) {
     userId: payment.userId,
     paymentId: payment._id
   });
-  
-  // Aquí iría la lógica para:
-  // 1. Buscar al profesional por userId
-  // 2. Activar su cuenta premium
-  // 3. Establecer fecha de vencimiento
-  // 4. Enviar notificación de activación
-  
-  // Ejemplo:
-  // const Professional = require('../models/Professional');
-  // await Professional.findByIdAndUpdate(payment.userId, {
-  //   subscriptionStatus: 'active',
-  //   subscriptionExpiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 días
-  //   lastPaymentId: payment._id
-  // });
+
+  try {
+    const User = require('../models/User');
+    const Professional = require('../models/Professional');
+
+    const refParts = (payment.externalReference || '').split('_');
+    const plan = refParts[1] || 'monthly';
+    const userId = refParts[2] || payment.userId;
+    const isSemester = plan === 'semester';
+    const months = isSemester ? 6 : 1;
+
+    const expiresAt = new Date();
+    expiresAt.setMonth(expiresAt.getMonth() + months);
+
+    const user = await User.findById(userId);
+    if (user) {
+      user.membership = {
+        type: 'premium',
+        plan,
+        expiresAt,
+        benefits: ['Perfil destacado en busquedas', 'Recibe contactos de clientes', 'Sin comisiones por servicio', 'Panel de control', 'Soporte prioritario']
+      };
+      await user.save();
+    }
+
+    const professional = await Professional.findOne({ userId });
+    if (professional) {
+      professional.isActive = true;
+      professional.subscription = {
+        ...(professional.subscription || {}),
+        status: 'active',
+        plan,
+        lastPayment: new Date(),
+        nextBilling: expiresAt,
+      };
+      await professional.save();
+    }
+
+    logger.info('Subscription activated:', { userId, plan, expiresAt, months });
+  } catch (error) {
+    logger.error('activateSubscription error:', error);
+  }
 }
 
 /**
