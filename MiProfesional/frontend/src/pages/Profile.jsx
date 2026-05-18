@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../lib/axios';
 import { useAuth } from '../context/AuthContext';
 import { User, Mail, Phone, MapPin, Save, Briefcase, CheckCircle, Camera } from 'lucide-react';
 
 const Profile = () => {
+  const navigate = useNavigate();
   const { user, isProfessional, updateProfile } = useAuth();
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
@@ -87,11 +89,13 @@ const Profile = () => {
 
       if (professional) {
         await api.put(`/professionals/${professional._id}`, payload);
+        setMessage('Perfil profesional actualizado');
+        fetchProfessional();
       } else {
         await api.post('/professionals', payload);
+        setMessage('Perfil profesional creado. Ahora suscribite para activarlo.');
+        setTimeout(() => navigate('/subscriptions'), 1500);
       }
-      setMessage('Perfil profesional actualizado');
-      fetchProfessional();
     } catch (error) {
       setMessage(error.response?.data?.message || 'Error al actualizar');
     } finally {
