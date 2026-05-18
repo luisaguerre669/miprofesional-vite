@@ -380,4 +380,55 @@ router.post("/reprocess-webhook/:userId", async (req, res) => {
   }
 });
 
+// ── Data Cleanup ────────────────────────────────────────────
+
+router.post("/clean-test-data", async (req, res) => {
+  try {
+    const patterns = [
+      /^test/i, /^fix/i, /^idx/i, /^flow/i, /^final/i, /^prueba/i,
+      /^demo/i, /^fake/i, /^temp/i, /^dummy/i, /^sample/i, /^a@a\./i,
+      /^b@b\./i, /^user\d/i,
+    ];
+    const allUsers = await User.find({}, '_id email');
+    const toDelete = allUsers.filter(u => patterns.some(p => p.test(u.email)));
+    const ids = toDelete.map(u => u._id);
+
+    const result = { users: 0, professionals: 0, bookings: 0, payments: 0 };
+
+    if (ids.length > 0) {
+      result.payments = (await Payment.deleteMany({ userId: { $in: ids } })).deletedCount;
+      result.bookings = (await Booking.deleteMany({ userId: { $in: ids } })).deletedCount;
+      result.professionals = (await Professional.deleteMany({ userId: { $in: ids } })).deletedCount;
+      result.users = (await User.deleteMany({ _id: { $in: ids } })).deletedCount;
+    }
+
+    logger.info("Test data cleaned", result);
+    res.json({ success: true, message: `Datos de prueba eliminados: ${result.users} usuarios, ${result.professionals} profesionales, ${result.bookings} reservas, ${result.payments} pagos`, deleted: result });
+  } catch (error) {
+    logger.error("Clean test data error:", error);
+    res.status(500).json({ success: false, message: "Error al limpiar datos de prueba" });
+  }
+});
+
+// Delete a user and all their associated data
+router.delete("/users/:id", async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ success: false, message: "Usuario no encontrado" });
+    if (user.role === 'admin') return res.status(400).json({ success: false, message: "No se puede eliminar un administrador" });
+
+    const result = {};
+    result.payments = (await Payment.deleteMany({ userId: user._id })).deletedCount;
+    result.bookings = (await Booking.deleteMany({ userId: user._id })).deletedCount;
+    result.professionals = (await Professional.deleteMany({ userId: user._id })).deletedCount;
+    await User.findByIdAndDelete(user._id);
+
+    logger.info("User deleted by admin", { userId: user._id, email: user.email, related: result });
+    res.json({ success: true, message: `Usuario y ${result.professionals + result.bookings + result.payments} registros asociados eliminados` });
+  } catch (error) {
+    logger.error("Admin delete user error:", error);
+    res.status(500).json({ success: false, message: "Error al eliminar usuario" });
+  }
+});
+
 module.exports = router;
