@@ -131,7 +131,6 @@ router.post("/create-preference", authenticate, async (req, res) => {
         auto_return: "approved",
         external_reference: externalReference,
         notification_url: `${process.env.BACKEND_URL || "https://miprofesional-backend.onrender.com"}/api/subscription/webhook`,
-        purpose: "subscription",
       }
     });
 
