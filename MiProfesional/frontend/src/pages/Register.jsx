@@ -83,7 +83,7 @@ const Register = () => {
           }).catch(() => {});
         }
         if (isProfessional) {
-          navigate('/subscriptions');
+          navigate('/profile');
         } else {
           setRegistered(true);
         }
@@ -421,8 +421,7 @@ const Register = () => {
                   <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
                     <p className="text-xs text-amber-800">
                       <strong className="text-amber-900">Suscripcion obligatoria:</strong> $10.000 ARS / mes o $51.000 ARS / 6 meses (15% descuento).
-                      Despues del registro seras redirigido a la pagina de suscripcion para activar tu perfil.
-                      Sin suscripcion activa no apareceras en el marketplace.
+                      Despues del registro completa tu perfil y luego suscribite para activar tu visibilidad en el marketplace.
                     </p>
                   </div>
                 )}
