@@ -46,6 +46,7 @@ const Layout = ({ children }) => {
                 { name: 'Buscar', path: '/search', icon: Search },
                 { name: 'Construcción', path: '/categoria/construccion', icon: Building2 },
                 { name: 'Servicios', path: '/categoria/servicios-generales', icon: Wrench },
+                ...(user?.role === 'admin' ? [{ name: 'Admin', path: '/admin', icon: Shield }] : []),
               ].map((link) => {
                 const Icon = link.icon;
                 const isActive = location.pathname === link.path;
@@ -208,6 +209,14 @@ const Layout = ({ children }) => {
                       <CreditCard size={18} />
                       <span>Suscripción</span>
                     </Link>
+                    {user?.role === 'admin' && (
+                      <Link to="/admin" onClick={() => setMobileMenuOpen(false)}
+                        className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-primary-600 bg-primary-50 hover:bg-primary-100"
+                      >
+                        <Shield size={18} />
+                        <span>Admin Panel</span>
+                      </Link>
+                    )}
                     <button onClick={() => { handleLogout(); setMobileMenuOpen(false); }}
                       className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-red-600 hover:bg-red-50 w-full"
                     >
@@ -313,12 +322,12 @@ const Layout = ({ children }) => {
 
       <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 safe-area-bottom">
         <div className="flex items-center justify-around h-16 px-2">
-          {[
-            { name: 'Inicio', path: '/', icon: Home },
-            { name: 'Buscar', path: '/search', icon: Search },
-            { name: 'Dashboard', path: isAuthenticated ? (isProfessional ? '/dashboard/professional' : '/dashboard/client') : '/login', icon: LayoutDashboard },
-            { name: isAuthenticated ? 'Perfil' : 'Ingresar', path: isAuthenticated ? '/profile' : '/login', icon: User },
-          ].map((link) => {
+              {[
+                { name: 'Inicio', path: '/', icon: Home },
+                { name: 'Buscar', path: '/search', icon: Search },
+                { name: 'Dashboard', path: isAuthenticated ? (isProfessional ? '/dashboard/professional' : '/dashboard/client') : '/login', icon: LayoutDashboard },
+                ...(user?.role === 'admin' ? [{ name: 'Admin', path: '/admin', icon: Shield }] : [{ name: isAuthenticated ? 'Perfil' : 'Ingresar', path: isAuthenticated ? '/profile' : '/login', icon: User }]),
+              ].map((link) => {
             const Icon = link.icon;
             const isActive = location.pathname === link.path;
             return (
