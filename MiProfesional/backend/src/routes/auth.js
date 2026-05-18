@@ -189,9 +189,9 @@ router.post('/register', registerLimiter, [
         const professional = new Professional({
           userId: user._id,
           businessName: name,
-          profession: profession || '',
+          profession: profession || 'pendiente',
           description: 'Completa tu perfil profesional',
-          contact: { phone: phone || 'pendiente', email: user.email },
+          contact: { phone: phone || '+000000000000', email: user.email },
           location: {
             address: '',
             city: '',
