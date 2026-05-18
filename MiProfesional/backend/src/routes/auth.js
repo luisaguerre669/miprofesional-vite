@@ -164,20 +164,21 @@ router.post('/register', registerLimiter, [
     }
 
     // Create new user
-    const user = new User({
+    const userData = {
       name,
       email,
       password,
       role,
-      phone: phone || undefined,
-      location: location || undefined,
       preferences: {
         emailAlerts: acceptMarketing || false,
         notifications: true,
         language: 'es',
         currency: 'ARS'
       }
-    });
+    };
+    if (phone) userData.phone = phone;
+    if (location) userData.location = location;
+    const user = new User(userData);
 
     user.generateVerificationToken();
     await user.save();
