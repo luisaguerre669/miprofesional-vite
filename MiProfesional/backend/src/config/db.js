@@ -15,6 +15,18 @@ const connectDB = async () => {
     });
 
     console.log("Base de datos conectada correctamente");
+
+    try {
+      const db = mongoose.connection.db;
+      const indexes = await db.collection("users").indexes();
+      const phoneIndex = indexes.find(idx => idx.name === "phone_1");
+      if (phoneIndex && phoneIndex.unique) {
+        await db.collection("users").dropIndex("phone_1");
+        console.log("Dropped stale unique index on phone_1");
+      }
+    } catch (idxErr) {
+      console.log("Index cleanup note:", idxErr.message);
+    }
   } catch (error) {
     console.error("Error conectando a la base de datos:");
     console.error(error.message);
