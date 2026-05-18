@@ -188,13 +188,20 @@ router.post('/register', registerLimiter, [
       try {
         const professional = new Professional({
           userId: user._id,
+          businessName: name,
           profession: profession || '',
-          isActive: false,
-          subscription: {
-            status: 'pending_payment',
+          description: 'Completa tu perfil profesional',
+          contact: { phone: phone || 'pendiente', email: user.email },
+          location: {
+            address: '',
+            city: '',
+            state: '',
+            country: 'Argentina',
+            coordinates: { type: 'Point', coordinates: [0, 0] }
           },
-          contact: { email: user.email },
-          location: { country: 'Argentina', coordinates: { type: 'Point', coordinates: [0, 0] } },
+          pricing: { hourlyRate: 0, currency: 'ARS' },
+          isActive: false,
+          subscription: { status: 'pending_payment' },
         });
         await professional.save();
       } catch (proErr) {
