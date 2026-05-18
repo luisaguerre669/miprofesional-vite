@@ -181,11 +181,32 @@ router.post('/register', registerLimiter, [
       existingUser.generateVerificationToken();
       await existingUser.save();
 
+      // Deactivate any existing professional profile
+      await Professional.updateMany(
+        { userId: existingUser._id },
+        { isActive: false, 'subscription.status': 'inactive' }
+      );
+
+      // If re-registering as professional, set up pending payment
       if (role === 'professional') {
-        await Professional.updateMany(
-          { userId: existingUser._id },
-          { isActive: false, 'subscription.status': 'pending_payment' }
-        );
+        const existingPro = await Professional.findOne({ userId: existingUser._id });
+        if (existingPro) {
+          existingPro.isActive = false;
+          existingPro.subscription = { status: 'pending_payment' };
+          await existingPro.save();
+        } else {
+          await new Professional({
+            userId: existingUser._id,
+            businessName: name,
+            profession: profession || 'pendiente',
+            description: 'Completa tu perfil profesional',
+            contact: { phone: phone || '+000000000000', email: existingUser.email },
+            location: { address: '', city: '', state: '', country: 'Argentina', coordinates: { type: 'Point', coordinates: [0, 0] } },
+            pricing: { hourlyRate: 0, currency: 'ARS' },
+            isActive: false,
+            subscription: { status: 'pending_payment' },
+          }).save();
+        }
       }
 
       sendVerificationEmail(existingUser.email, existingUser.name, existingUser.verificationToken).catch(() => {});
