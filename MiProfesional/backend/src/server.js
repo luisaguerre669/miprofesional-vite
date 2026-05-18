@@ -8,8 +8,10 @@ const rateLimit = require("express-rate-limit");
 const http = require("http");
 const { Server: SocketServer } = require("socket.io");
 const path = require("path");
+const mongoose = require("mongoose");
 const connectDB = require("./config/db");
 const logger = require("./utils/logger");
+const requestId = require("./middleware/requestId");
 
 // Routes
 const authRoutes = require("./routes/auth");
@@ -106,6 +108,8 @@ class Server {
     }));
 
     this.app.use(compression());
+    this.app.use(requestId);
+    this.app.use(logger.logRequest.bind(logger));
 
     const limiter = rateLimit({
       windowMs: 15 * 60 * 1000,
@@ -204,12 +208,24 @@ class Server {
       if (err.message && err.message.startsWith("CORS origin not allowed")) {
         return res.status(403).json({ ok: false, message: "Origin not allowed", origin: req.headers.origin || null });
       }
-      logger.error("Server error:", err);
-      res.status(500).json({ ok: false, message: "Error interno del servidor" });
+      const errData = { method: req.method, url: req.originalUrl, ip: req.ip, requestId: req.requestId, statusCode: err.statusCode || 500, message: err.message, stack: err.stack };
+      logger.error("Server error:", errData);
+      res.status(500).json({ ok: false, message: "Error interno del servidor", requestId: req.requestId });
+    });
+  }
+
+  setupProcessHandlers() {
+    process.on("uncaughtException", (err) => {
+      logger.error("UNCAUGHT EXCEPTION", { message: err.message, stack: err.stack });
+      this.gracefulShutdown("uncaughtException");
+    });
+    process.on("unhandledRejection", (reason) => {
+      logger.error("UNHANDLED REJECTION", { message: reason?.message || String(reason), stack: reason?.stack });
     });
   }
 
   async start() {
+    this.setupProcessHandlers();
     try {
       await connectDB();
       this.server.listen(this.port, () => {

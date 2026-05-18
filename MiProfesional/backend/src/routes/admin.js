@@ -8,6 +8,9 @@ const Payment = require("../models/Payment");
 const { authenticate, requireAdmin } = require("../middleware/auth");
 const logger = require("../utils/logger");
 
+let maintenanceMode = { active: false, message: '' };
+let featureFlags = {};
+
 const router = express.Router();
 
 const handleValidationErrors = (req, res, next) => {
@@ -17,6 +20,14 @@ const handleValidationErrors = (req, res, next) => {
 };
 
 router.use(authenticate, requireAdmin);
+
+// Maintenance mode middleware
+router.use((req, res, next) => {
+  if (maintenanceMode.active && req.method !== 'GET') {
+    return res.status(503).json({ success: false, message: maintenanceMode.message || 'Sistema en mantenimiento' });
+  }
+  next();
+});
 
 router.post("/seed-categories", async (req, res) => {
   try {
@@ -255,6 +266,117 @@ router.get("/stats", async (req, res) => {
   } catch (error) {
     logger.error("Admin stats error:", error);
     res.status(500).json({ success: false, message: "Error al obtener estadisticas" });
+  }
+});
+
+// ── Observability ──────────────────────────────────────────
+
+router.get("/system-status", async (req, res) => {
+  try {
+    const mongoose = require('mongoose');
+    const dbState = mongoose.connection.readyState;
+    const dbStates = { 0: 'disconnected', 1: 'connected', 2: 'connecting', 3: 'disconnecting' };
+
+    const [userCount, proCount, bookingCount, paymentCount] = await Promise.all([
+      User.countDocuments(), Professional.countDocuments(),
+      Booking.countDocuments(), Payment.countDocuments()
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        server: logger.getStats(),
+        database: { state: dbStates[dbState] || 'unknown', collections: { users: userCount, professionals: proCount, bookings: bookingCount, payments: paymentCount } },
+        maintenance: maintenanceMode,
+        features: featureFlags,
+        recentErrors: logger.getRecentErrors(20),
+        logs: logger.getLogStats()
+      }
+    });
+  } catch (error) {
+    logger.error("System status error:", error);
+    res.status(500).json({ success: false, message: "Error al obtener estado del sistema" });
+  }
+});
+
+router.post("/maintenance", async (req, res) => {
+  try {
+    const { active, message } = req.body;
+    if (typeof active !== 'boolean') return res.status(400).json({ success: false, message: "'active' debe ser booleano" });
+    maintenanceMode = { active, message: message || '' };
+    logger.info("Maintenance mode updated", maintenanceMode);
+    res.json({ success: true, data: maintenanceMode });
+  } catch (error) {
+    logger.error("Maintenance toggle error:", error);
+    res.status(500).json({ success: false, message: "Error al cambiar modo mantenimiento" });
+  }
+});
+
+router.get("/features", (req, res) => {
+  res.json({ success: true, data: featureFlags });
+});
+
+router.post("/features", async (req, res) => {
+  try {
+    const { key, value } = req.body;
+    if (!key) return res.status(400).json({ success: false, message: "'key' es requerido" });
+    featureFlags[key] = value;
+    logger.info("Feature flag updated", { key, value });
+    res.json({ success: true, data: featureFlags });
+  } catch (error) {
+    logger.error("Feature flag error:", error);
+    res.status(500).json({ success: false, message: "Error al actualizar feature flag" });
+  }
+});
+
+router.post("/clear-errors", (req, res) => {
+  logger.clearErrors();
+  res.json({ success: true, message: "Errores recientes limpiados" });
+});
+
+// Reprocess subscription webhook for a user (admin trigger)
+router.post("/reprocess-webhook/:userId", async (req, res) => {
+  try {
+    const User = require('../models/User');
+    const Professional = require('../models/Professional');
+    const Payment = require('../models/Payment');
+
+    const user = await User.findById(req.params.userId);
+    if (!user) return res.status(404).json({ success: false, message: "Usuario no encontrado" });
+
+    const payment = await Payment.findOne({ userId: user._id, status: 'approved' }).sort({ createdAt: -1 });
+    if (!payment) return res.status(404).json({ success: false, message: "No hay pagos aprobados para este usuario" });
+
+    const months = payment.plan === 'semester' ? 6 : 1;
+    const expiresAt = new Date();
+    expiresAt.setMonth(expiresAt.getMonth() + months);
+
+    user.membership = {
+      type: "premium", plan: payment.plan, expiresAt,
+      benefits: ["Perfil destacado en busquedas", "Recibe contactos de clientes", "Sin comisiones por servicio", "Panel de control", "Soporte prioritario"]
+    };
+    await user.save();
+
+    const professional = await Professional.findOne({ userId: user._id });
+    if (professional) {
+      professional.isActive = true;
+      professional.subscription = {
+        ...(professional.subscription || {}),
+        status: "active",
+        plan: payment.plan,
+        paymentId: String(payment.mpPaymentId || payment._id),
+        lastPayment: new Date(),
+        nextBilling: expiresAt,
+        activatedAt: new Date(),
+      };
+      await professional.save();
+    }
+
+    logger.info("Webhook reprocessed by admin", { userId: user._id, plan: payment.plan, paymentId: payment._id });
+    res.json({ success: true, message: "Suscripcion reactivada manualmente" });
+  } catch (error) {
+    logger.error("Reprocess webhook error:", error);
+    res.status(500).json({ success: false, message: "Error al reprocesar webhook" });
   }
 });
 
