@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import api from '../lib/axios';
 import {
   UserPlus, Shield, ArrowRight, CheckCircle, AlertCircle,
-  Eye, EyeOff, Phone, Mail, Lock, User, Briefcase, Upload,
+  Phone, Mail, Lock, User, Briefcase, Upload,
   FileText, Building2, Sparkles, Smartphone, Info, CreditCard
 } from 'lucide-react';
 
@@ -32,6 +32,7 @@ const Register = () => {
   const [phoneStep, setPhoneStep] = useState('none');
   const [registered, setRegistered] = useState(false);
   const [customProfession, setCustomProfession] = useState('');
+  const [selectedPlan, setSelectedPlan] = useState('monthly');
 
   const isProfessional = formData.role === 'professional';
   const licenseRequired = isProfessional && LICENSED_PROFESSIONS.includes(formData.profession);
@@ -83,7 +84,15 @@ const Register = () => {
           }).catch(() => {});
         }
         if (isProfessional) {
-          navigate('/profile');
+          try {
+            const prefRes = await api.post('/subscription/create-preference', { plan: selectedPlan });
+            const initPoint = prefRes.data?.data?.initPoint || prefRes.data?.initPoint;
+            if (initPoint) {
+              window.location.href = initPoint;
+              return;
+            }
+          } catch {}
+          navigate('/subscriptions');
         } else {
           setRegistered(true);
         }
@@ -418,18 +427,40 @@ const Register = () => {
                 </div>
 
                 {isProfessional && (
-                  <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
-                    <p className="text-xs text-amber-800">
-                      <strong className="text-amber-900">Suscripcion obligatoria:</strong> $10.000 ARS / mes o $51.000 ARS / 6 meses (15% descuento).
-                      Despues del registro completa tu perfil y luego suscribite para activar tu visibilidad en el marketplace.
-                    </p>
+                  <div className="space-y-3">
+                    <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
+                      <p className="text-xs text-amber-800">
+                        <strong className="text-amber-900">Suscripcion obligatoria:</strong> Elegi un plan para activar tu perfil profesional en el marketplace.
+                        Despues del pago vas a poder completar tu perfil.
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <button type="button" onClick={() => setSelectedPlan('monthly')}
+                        className={`p-3 rounded-xl border text-left transition-all ${
+                          selectedPlan === 'monthly' ? 'border-primary-500 bg-primary-50 ring-1 ring-primary-500' : 'border-gray-200 hover:border-gray-300'
+                        }`}>
+                        <p className="text-sm font-semibold text-gray-900">Mensual</p>
+                        <p className="text-lg font-bold text-primary-600">$10.000</p>
+                        <p className="text-xs text-gray-500">/mes</p>
+                      </button>
+                      <button type="button" onClick={() => setSelectedPlan('semester')}
+                        className={`p-3 rounded-xl border text-left transition-all ${
+                          selectedPlan === 'semester' ? 'border-primary-500 bg-primary-50 ring-1 ring-primary-500' : 'border-gray-200 hover:border-gray-300'
+                        }`}>
+                        <p className="text-sm font-semibold text-gray-900">Semestral</p>
+                        <p className="text-lg font-bold text-primary-600">$51.000</p>
+                        <p className="text-xs text-gray-500">$60.000 sin descuento</p>
+                      </button>
+                    </div>
                   </div>
                 )}
 
                 <div className="p-4 bg-blue-50 rounded-lg border border-blue-100 flex items-start gap-3">
                   <Info size={18} className="text-blue-500 shrink-0 mt-0.5" />
                   <p className="text-xs text-blue-800">
-                    Despues del registro, recibiros un correo de verificacion. Tu cuenta no sera visible hasta que verifiques tu correo electronico.
+                    {isProfessional
+                      ? 'Despues del registro seras redirigido a Mercado Pago para completar el pago. Una vez aprobado, tu perfil se activara automaticamente y podras completar tus datos.'
+                      : 'Despues del registro, recibiras un correo de verificacion. Tu cuenta no sera visible hasta que verifiques tu correo.'}
                     {isProfessional && licenseRequired && ' Ademas, tu matricula debe ser verificada por nuestro equipo.'}
                   </p>
                 </div>
