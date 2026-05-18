@@ -10,8 +10,10 @@ import {
   Hammer, Zap, Droplets, Paintbrush, Lock, TreePine,
   SprayCan, Truck, Stethoscope, Users, Heart, Briefcase,
   AlertTriangle, ChevronLeft, ChevronRight as ChevronRightIcon,
-  UserPlus, Shield, LayoutGrid, Clock, X, Megaphone
+  UserPlus, Shield, LayoutGrid, Clock, X, Phone
 } from 'lucide-react';
+import { ProfessionalCard } from '../components/professionals/ProfessionalCard';
+import { AdTopBanner, AdCard, AdPremiumSlot } from '../components/ads/AdComponents';
 
 const customIcon = new L.DivIcon({
   className: 'custom-marker',
@@ -166,6 +168,70 @@ const Home = () => {
     visiblePros.push(...remaining);
   }
 
+  const renderMap = () => {
+    if (!userLocation || showCityInput) {
+      return (
+        <div className="h-full rounded-2xl overflow-hidden border border-gray-200 bg-gray-100 flex items-center justify-center">
+          <div className="text-center px-4">
+            <MapPin size={32} className="mx-auto text-gray-400 mb-3" />
+            <p className="text-gray-500 font-medium mb-2 text-sm">
+              {showCityInput ? 'Ingresa tu ciudad para buscar profesionales' : 'Activa la ubicacion o ingresa tu ciudad'}
+            </p>
+            <form onSubmit={(e) => { e.preventDefault(); if (manualCity.trim()) navigate(`/search?q=${encodeURIComponent(manualCity.trim())}`); }}
+              className="flex items-center gap-2 bg-white rounded-xl px-3 py-2 shadow-sm max-w-xs mx-auto">
+              <MapPin size={14} className="text-gray-400" />
+              <input type="text" value={manualCity} onChange={e => setManualCity(e.target.value)}
+                placeholder="Ej: Buenos Aires..." className="bg-transparent text-sm flex-1 focus:outline-none text-gray-700 placeholder-gray-400" />
+              <button type="submit" className="px-3 py-1 bg-primary-600 text-white text-xs font-medium rounded-lg hover:bg-primary-700">Buscar</button>
+            </form>
+            {showCityInput && (
+              <button onClick={() => { setShowCityInput(false); localStorage.removeItem('miprofesional_location'); window.location.reload(); }}
+                className="text-xs text-gray-400 hover:text-gray-600 underline mt-3">volver al mapa</button>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="h-full rounded-2xl overflow-hidden border border-gray-200 shadow-sm relative">
+        <MapContainer center={[userLocation.lat, userLocation.lng]} zoom={13} className="h-full w-full" zoomControl={false}>
+          <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+          <Marker position={[userLocation.lat, userLocation.lng]} icon={userIcon}>
+            <Popup><div className="text-center"><p className="font-semibold text-sm">Tu ubicacion</p><p className="text-xs text-gray-500">Estas aqui</p></div></Popup>
+          </Marker>
+          {featuredPros.slice(0, 5).map((pro) => (
+            pro.location?.coordinates?.length === 2 && (
+              <Marker key={pro._id} position={[pro.location.coordinates[1], pro.location.coordinates[0]]} icon={customIcon}>
+                <Popup>
+                  <div className="text-center min-w-[180px]">
+                    <img src={pro.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(pro.businessName || pro.profession)}&background=0f7a5a&color=fff`}
+                      alt="" className="w-10 h-10 rounded-full mx-auto mb-2 object-cover" />
+                    <p className="font-semibold text-sm">{pro.businessName || pro.profession}</p>
+                    <p className="text-xs text-gray-500 mb-2">{pro.profession}</p>
+                    <div className="flex items-center justify-center gap-1 mb-2">
+                      <Star size={12} className="fill-amber-400 text-amber-400" />
+                      <span className="text-xs font-medium">{(pro.stats?.rating || 0).toFixed(1)}</span>
+                    </div>
+                    <Link to={`/service/${pro._id}`} className="text-xs text-primary-600 font-medium hover:underline">Ver perfil</Link>
+                  </div>
+                </Popup>
+              </Marker>
+            )
+          ))}
+        </MapContainer>
+        <div className="absolute bottom-4 left-4 right-4 z-[1000] flex justify-center">
+          <div className="bg-white/95 backdrop-blur-sm rounded-xl shadow-lg px-5 py-3 flex items-center gap-4 text-sm">
+            <MapPin size={16} className="text-primary-500 shrink-0" />
+            <span className="text-gray-600">Mostrando profesionales cerca de tu ubicacion</span>
+            <Link to="/search" className="px-4 py-1.5 bg-primary-500 text-white font-medium rounded-lg hover:bg-primary-600 transition-all text-xs">Explorar mapa</Link>
+            <button onClick={() => setShowCityInput(true)} className="text-xs text-gray-400 hover:text-gray-600 underline ml-1">ubicacion incorrecta?</button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <>
       <Helmet>
@@ -230,9 +296,7 @@ const Home = () => {
               {['Albanil', 'Plomero', 'Electricista', 'Medico', 'Cerrajero'].map(cat => (
                 <Link key={cat} to={`/search?q=${encodeURIComponent(cat)}`}
                   className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-gray-700 hover:border-primary-500/50 rounded-xl text-sm text-gray-300 hover:text-white transition-all"
-                >
-                  {cat}
-                </Link>
+                >{cat}</Link>
               ))}
             </div>
           </div>
@@ -283,30 +347,71 @@ const Home = () => {
         </section>
       )}
 
-      {/* BANNER PUBLICITARIO */}
-      {bannerVisible && (
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-6">
-          <div className="relative bg-gradient-to-r from-primary-600 to-primary-800 rounded-2xl overflow-hidden">
-            <button onClick={() => setBannerVisible(false)}
-              className="absolute top-3 right-3 p-1 rounded-lg bg-white/10 hover:bg-white/20 text-white/70 hover:text-white transition-all z-10"
-            ><X size={16} /></button>
-            <div className="relative z-10 p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-4">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center shrink-0">
-                  <Megaphone size={24} className="text-white" />
-                </div>
-                <div>
-                  <p className="text-white font-bold text-lg">Publicidad</p>
-                  <p className="text-primary-200 text-sm">Promociona tu negocio en MiProfesional — llega a miles de clientes</p>
-                </div>
-              </div>
-              <Link to="/register?role=professional"
-                className="shrink-0 px-5 py-2.5 bg-white text-primary-700 font-semibold rounded-xl hover:bg-primary-50 transition-all text-sm"
-              >Publicitar ahora</Link>
+      {/* MARKETPLACE: MAP + SIDEBAR */}
+      <section className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 mb-20">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900">Profesionales cerca tuyo</h2>
+            <p className="text-gray-500 mt-1">Busca profesionales en tu zona y contacta directamente</p>
+          </div>
+          <div className="hidden md:flex items-center gap-3">
+            <form onSubmit={(e) => { e.preventDefault(); if (manualCity.trim()) navigate(`/search?q=${encodeURIComponent(manualCity.trim())}`); }}
+              className="flex items-center gap-2 bg-gray-100 rounded-xl px-3 py-1.5">
+              <MapPin size={14} className="text-gray-400" />
+              <input type="text" value={manualCity} onChange={e => setManualCity(e.target.value)}
+                placeholder="Tu ciudad..." className="bg-transparent text-sm w-32 focus:outline-none text-gray-700 placeholder-gray-400" />
+              <button type="submit" className="text-primary-600 text-xs font-medium hover:underline">Ir</button>
+            </form>
+            <Link to="/search"
+              className="flex items-center gap-2 px-5 py-2.5 bg-gray-900 text-white font-semibold rounded-xl hover:bg-gray-800 transition-all text-sm"
+            ><Search size={16} /> Buscar ahora</Link>
+          </div>
+        </div>
+
+        <AdTopBanner visible={bannerVisible} onDismiss={() => setBannerVisible(false)} />
+
+        <div className="flex flex-col md:flex-row gap-6 mt-6">
+          {/* MAPA - 60% desktop, full mobile */}
+          <div className="w-full md:w-[60%] md:sticky md:top-4 md:self-start">
+            <div className="h-[40vh] md:h-[70vh]">
+              {renderMap()}
             </div>
           </div>
-        </section>
-      )}
+
+          {/* SIDEBAR - 40% desktop */}
+          <div className="w-full md:w-[40%]">
+            <div className="md:h-[70vh] md:overflow-y-auto md:space-y-4 md:pr-1">
+              {featuredPros.length > 0 ? (
+                featuredPros.map((pro, index) => (
+                  <React.Fragment key={pro._id}>
+                    <ProfessionalCard pro={pro} showDistance={!!userLocation} />
+                    {(index + 1) % 4 === 0 && index < featuredPros.length - 1 && <AdCard />}
+                  </React.Fragment>
+                ))
+              ) : (
+                !loading && (
+                  <div className="text-center py-12 bg-white rounded-xl border border-gray-200">
+                    <MapPin size={32} className="mx-auto text-gray-300 mb-3" />
+                    <p className="text-gray-500 font-medium text-sm">No hay profesionales destacados cerca</p>
+                    <p className="text-xs text-gray-400 mt-1">Activa la ubicacion o explora todas las categorias</p>
+                    <Link to="/search" className="mt-4 inline-flex px-4 py-2 bg-primary-600 text-white text-sm rounded-lg hover:bg-primary-700">
+                      Explorar profesionales
+                    </Link>
+                  </div>
+                )
+              )}
+
+              <div className="md:hidden">
+                <AdPremiumSlot />
+              </div>
+            </div>
+
+            <div className="hidden md:block mt-4">
+              <AdPremiumSlot />
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* 4 CLUSTERS */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-20">
@@ -376,116 +481,6 @@ const Home = () => {
         </div>
       </section>
 
-      {/* BANNER 2 */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-10">
-        <div className="bg-gradient-to-r from-primary-600 to-primary-800 rounded-2xl p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-4 border border-primary-400/20">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center shrink-0">
-              <UserPlus size={24} className="text-white" />
-            </div>
-            <div>
-              <p className="text-white font-bold text-lg">Sos profesional?</p>
-              <p className="text-primary-200 text-sm">Registrate y ofrece tus servicios a miles de clientes</p>
-            </div>
-          </div>
-          <Link to="/register?role=professional"
-            className="shrink-0 px-6 py-3 bg-white text-primary-700 font-bold rounded-xl hover:bg-primary-50 transition-all text-sm shadow-lg"
-          >Registrarme gratis</Link>
-        </div>
-      </section>
-
-      {/* MAS CATEGORIAS */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-20 text-center">
-        <div className="border border-dashed border-gray-300 rounded-2xl p-10 md:p-14 bg-white">
-          <div className="w-14 h-14 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-5">
-            <LayoutGrid size={28} className="text-gray-500" />
-          </div>
-          <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">Mas categorias</h2>
-          <p className="text-gray-500 mb-6 max-w-lg mx-auto">
-            Mascotas, Belleza, Gastronomia, Transporte, Cerrajeria, Tecnologia, Automotor, Hogar — explora todos los servicios disponibles en la plataforma.
-          </p>
-          <Link to="/categorias"
-            className="inline-flex items-center gap-2 px-6 py-3 bg-gray-900 text-white font-semibold rounded-xl hover:bg-gray-800 transition-all"
-          >Ver todas las categorias <ArrowRight size={18} /></Link>
-        </div>
-      </section>
-
-      {/* MAPA TIPO UBER */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-20">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900">Profesionales cerca tuyo</h2>
-            <p className="text-gray-500 mt-1">Busca profesionales en tu zona y contacta directamente</p>
-          </div>
-          <div className="hidden md:flex items-center gap-3">
-            <form onSubmit={(e) => { e.preventDefault(); if (manualCity.trim()) navigate(`/search?q=${encodeURIComponent(manualCity.trim())}`); }}
-              className="flex items-center gap-2 bg-gray-100 rounded-xl px-3 py-1.5">
-              <MapPin size={14} className="text-gray-400" />
-              <input type="text" value={manualCity} onChange={e => setManualCity(e.target.value)}
-                placeholder="Tu ciudad..." className="bg-transparent text-sm w-32 focus:outline-none text-gray-700 placeholder-gray-400" />
-              <button type="submit" className="text-primary-600 text-xs font-medium hover:underline">Ir</button>
-            </form>
-            <Link to="/search"
-              className="flex items-center gap-2 px-5 py-2.5 bg-gray-900 text-white font-semibold rounded-xl hover:bg-gray-800 transition-all text-sm"
-            ><Search size={16} /> Buscar ahora</Link>
-          </div>
-        </div>
-        {userLocation && !showCityInput ? (
-          <div className="h-[400px] rounded-2xl overflow-hidden border border-gray-200 shadow-sm relative">
-            <MapContainer center={[userLocation.lat, userLocation.lng]} zoom={13} className="h-full w-full" zoomControl={false}>
-              <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-              <Marker position={[userLocation.lat, userLocation.lng]} icon={userIcon}>
-                <Popup><div className="text-center"><p className="font-semibold text-sm">Tu ubicacion</p><p className="text-xs text-gray-500">Estas aqui</p></div></Popup>
-              </Marker>
-              {featuredPros.slice(0, 5).map((pro) => (
-                pro.location?.coordinates?.length === 2 && (
-                  <Marker key={pro._id} position={[pro.location.coordinates[1], pro.location.coordinates[0]]} icon={customIcon}>
-                    <Popup>
-                      <div className="text-center min-w-[180px]">
-                        <img src={pro.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(pro.businessName || pro.profession)}&background=0f7a5a&color=fff`}
-                          alt="" className="w-10 h-10 rounded-full mx-auto mb-2 object-cover" />
-                        <p className="font-semibold text-sm">{pro.businessName || pro.profession}</p>
-                        <p className="text-xs text-gray-500 mb-2">{pro.profession}</p>
-                        <div className="flex items-center justify-center gap-1 mb-2">
-                          <Star size={12} className="fill-amber-400 text-amber-400" />
-                          <span className="text-xs font-medium">{(pro.stats?.rating || 0).toFixed(1)}</span>
-                        </div>
-                        <Link to={`/service/${pro._id}`} className="text-xs text-primary-600 font-medium hover:underline">Ver perfil</Link>
-                      </div>
-                    </Popup>
-                  </Marker>
-                )
-              ))}
-            </MapContainer>
-            <div className="absolute bottom-4 left-4 right-4 z-[1000] flex justify-center">
-              <div className="bg-white/95 backdrop-blur-sm rounded-xl shadow-lg px-5 py-3 flex items-center gap-4 text-sm">
-                <MapPin size={16} className="text-primary-500 shrink-0" />
-                <span className="text-gray-600">Mostrando profesionales cerca de tu ubicacion</span>
-                <Link to="/search" className="px-4 py-1.5 bg-primary-500 text-white font-medium rounded-lg hover:bg-primary-600 transition-all text-xs">Explorar mapa</Link>
-                <button onClick={() => setShowCityInput(true)} className="text-xs text-gray-400 hover:text-gray-600 underline ml-1">ubicacion incorrecta?</button>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="h-80 rounded-2xl overflow-hidden border border-gray-200 bg-gray-100 flex items-center justify-center">
-            <div className="text-center">
-              <MapPin size={32} className="mx-auto text-gray-400 mb-3" />
-              <p className="text-gray-500 font-medium mb-2">{showCityInput ? 'Ingresa tu ciudad para buscar profesionales' : 'Activa la ubicacion o ingresa tu ciudad'}</p>
-              <form onSubmit={(e) => { e.preventDefault(); if (manualCity.trim()) navigate(`/search?q=${encodeURIComponent(manualCity.trim())}`); }}
-                className="flex items-center gap-2 bg-white rounded-xl px-3 py-2 shadow-sm max-w-xs mx-auto">
-                <MapPin size={14} className="text-gray-400" />
-                <input type="text" value={manualCity} onChange={e => setManualCity(e.target.value)}
-                  placeholder="Ej: Buenos Aires..." className="bg-transparent text-sm flex-1 focus:outline-none text-gray-700 placeholder-gray-400" />
-                <button type="submit" className="px-3 py-1 bg-primary-600 text-white text-xs font-medium rounded-lg hover:bg-primary-700">Buscar</button>
-              </form>
-              {showCityInput && (
-                <button onClick={() => { setShowCityInput(false); localStorage.removeItem('miprofesional_location'); window.location.reload(); }} className="text-xs text-gray-400 hover:text-gray-600 underline mt-3">volver al mapa</button>
-              )}
-            </div>
-          </div>
-        )}
-      </section>
-
       {/* COMO FUNCIONA */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-20">
         <div className="text-center mb-12">
@@ -515,38 +510,32 @@ const Home = () => {
 
       {/* SUSCRIPCION */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-20">
-        <div className="border border-gray-200 rounded-2xl p-8 md:p-10">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-            <div>
-              <div className="inline-flex items-center gap-2 bg-primary-50 text-primary-700 rounded-full px-3 py-1 text-xs font-semibold mb-4">
-                <Shield size={14} /> Suscripcion Profesional
-              </div>
-              <h3 className="text-2xl md:text-3xl font-bold text-gray-900 mb-3">Ofrece tus servicios</h3>
-              <p className="text-gray-600 text-sm mb-4">
-                Para formar parte del marketplace es requerida una suscripcion activa. La plataforma solo conecta clientes con profesionales.
-              </p>
-              <div className="text-3xl font-black text-gray-900 mb-2">$10.000 <span className="text-base font-normal text-gray-500">ARS / mes</span></div>
-              <ul className="space-y-2 mb-6">
-                {['Perfil destacado en busquedas', 'Recibe contactos de clientes', 'Sin comisiones por servicio', 'Panel de control'].map(f => (
-                  <li key={f} className="flex items-center gap-2 text-sm text-gray-600">
-                    <ArrowRight size={14} className="text-primary-500 shrink-0" /> {f}
-                  </li>
-                ))}
-              </ul>
-              <Link to="/register?role=professional"
-                className="inline-flex items-center gap-2 px-6 py-3 bg-primary-500 text-white font-semibold rounded-xl hover:bg-primary-600 transition-all"
-              >Registrarme como Profesional <ArrowRight size={18} /></Link>
-            </div>
-            <div className="bg-gray-50 rounded-xl p-6 md:p-8">
-              <h4 className="font-semibold text-gray-900 mb-3">Terminos Legales</h4>
-              <ul className="space-y-3 text-sm text-gray-600">
-                <li className="flex items-start gap-2"><div className="w-1.5 h-1.5 rounded-full bg-gray-400 mt-2 shrink-0" /><span>La plataforma no garantiza trabajo a los profesionales registrados.</span></li>
-                <li className="flex items-start gap-2"><div className="w-1.5 h-1.5 rounded-full bg-gray-400 mt-2 shrink-0" /><span>La plataforma no gestiona pagos entre clientes y profesionales.</span></li>
-                <li className="flex items-start gap-2"><div className="w-1.5 h-1.5 rounded-full bg-gray-400 mt-2 shrink-0" /><span>La plataforma no interviene en las transacciones acordadas.</span></li>
-                <li className="flex items-start gap-2"><div className="w-1.5 h-1.5 rounded-full bg-gray-400 mt-2 shrink-0" /><span>La plataforma no es responsable por trabajos, pagos o conflictos entre las partes.</span></li>
-                <li className="flex items-start gap-2"><div className="w-1.5 h-1.5 rounded-full bg-gray-400 mt-2 shrink-0" /><span>Toda relacion contractual es exclusivamente entre el cliente y el profesional.</span></li>
-              </ul>
-            </div>
+        <div className="text-center mb-12">
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-900">Suscripcion Profesional</h2>
+          <p className="text-gray-500 mt-2 max-w-xl mx-auto">Forma parte del marketplace y ofrece tus servicios</p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
+          <div className="bg-white border border-gray-200 rounded-2xl p-6 text-center">
+            <p className="text-lg font-bold text-gray-900">Plan Mensual</p>
+            <p className="text-4xl font-black text-primary-600 mt-3">$10.000</p>
+            <p className="text-sm text-gray-500 mt-1">ARS / mes</p>
+            <ul className="text-left space-y-2 mt-6 mb-6">
+              {['Perfil destacado', 'Recibe contactos', 'Sin comisiones', 'Panel de control'].map(f => (
+                <li key={f} className="flex items-center gap-2 text-sm text-gray-600"><ArrowRight size={14} className="text-primary-500 shrink-0" /> {f}</li>
+              ))}
+            </ul>
+            <Link to="/register?role=professional" className="block w-full py-2.5 bg-primary-600 text-white font-semibold rounded-xl hover:bg-primary-700 transition-all text-sm">Elegir Plan</Link>
+          </div>
+          <div className="bg-gradient-to-br from-primary-600 to-primary-800 rounded-2xl p-6 text-center text-white">
+            <p className="text-lg font-bold">Plan Semestral</p>
+            <p className="text-4xl font-black mt-3">$51.000</p>
+            <p className="text-sm text-primary-200 mt-1">$60.000 sin descuento (15% off)</p>
+            <ul className="text-left space-y-2 mt-6 mb-6">
+              {['Todo del plan mensual', 'Ahorro del 15%', 'Precio congelado', 'Soporte prioritario'].map(f => (
+                <li key={f} className="flex items-center gap-2 text-sm text-primary-100"><ArrowRight size={14} className="text-white shrink-0" /> {f}</li>
+              ))}
+            </ul>
+            <Link to="/register?role=professional" className="block w-full py-2.5 bg-white text-primary-700 font-semibold rounded-xl hover:bg-primary-50 transition-all text-sm">Elegir Plan</Link>
           </div>
         </div>
       </section>
