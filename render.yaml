@@ -27,3 +27,17 @@ services:
         value: 15000
       - key: MONGO_CONNECT_TIMEOUT_MS
         value: 15000
+      - key: MERCADOPAGO_ACCESS_TOKEN
+        sync: false
+      - key: MERCADOPAGO_PUBLIC_KEY
+        sync: false
+      - key: MERCADOPAGO_WEBHOOK_SECRET
+        sync: false
+      - key: BACKEND_URL
+        value: https://miprofesional-backend.onrender.com
+      - key: FRONTEND_URL
+        value: https://www.miprofesional.online
+      - key: EMAIL_USER
+        sync: false
+      - key: EMAIL_PASS
+        sync: false
