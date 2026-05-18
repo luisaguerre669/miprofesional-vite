@@ -13,7 +13,7 @@ const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 
 const { authenticate } = require('../middleware/auth');
-const { sendVerificationEmail, sendPasswordResetEmail } = require('../services/emailService');
+const eventBus = require('../services/eventBus');
 
 const router = express.Router();
 
@@ -209,7 +209,7 @@ router.post('/register', registerLimiter, [
         }
       }
 
-      sendVerificationEmail(existingUser.email, existingUser.name, existingUser.verificationToken).catch(() => {});
+      eventBus.emit('user:registered', { email: existingUser.email, name: existingUser.name, token: existingUser.verificationToken });
 
       const { accessToken, refreshToken } = generateTokens(existingUser._id);
       logger.logAuth('register_reactivated', existingUser._id, req.ip, true);
@@ -278,7 +278,7 @@ router.post('/register', registerLimiter, [
       }
     }
 
-    sendVerificationEmail(user.email, user.name, user.verificationToken).catch(() => {});
+    eventBus.emit('user:registered', { email: user.email, name: user.name, token: user.verificationToken });
 
     // Generate tokens
     const { accessToken, refreshToken } = generateTokens(user._id);
@@ -544,7 +544,7 @@ router.post('/forgot-password', [
     user.resetPasswordExpires = Date.now() + 3600000;
     await user.save();
 
-    await sendPasswordResetEmail(email, user.name, resetToken).catch(() => {});
+    eventBus.emit('user:password-reset-requested', { email, name: user.name, token: resetToken });
 
     logger.logAuth('forgot_password', user._id, req.ip, true);
 
@@ -592,6 +592,8 @@ router.post('/reset-password', [
     user.password = newPassword;
     user.clearPasswordResetFields();
     await user.save();
+
+    eventBus.emit('user:password-changed', { email: user.email, name: user.name });
 
     logger.logAuth('reset_password', user._id, req.ip, true);
 
@@ -649,6 +651,8 @@ router.put('/change-password', authenticateToken, [
     // Update password
     user.password = newPassword;
     await user.save();
+
+    eventBus.emit('user:password-changed', { email: user.email, name: user.name });
 
     logger.logAuth('change_password', user._id, req.ip, true);
 
@@ -829,6 +833,8 @@ router.get('/verify-email/:token', async (req, res) => {
     user.verificationToken = null;
     await user.save();
 
+    eventBus.emit('user:verified', { email: user.email, name: user.name });
+
     logger.logAuth('email_verified', user._id, req.ip, true);
 
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
@@ -840,46 +846,6 @@ router.get('/verify-email/:token', async (req, res) => {
       error: 'Error de verificacion',
       message: 'No se pudo verificar el correo electronico'
     });
-  }
-});
-
-// Forgot Password
-router.post('/reset-password', async (req, res) => {
-  try {
-    const { token, password } = req.body;
-    if (!token || !password) {
-      return res.status(400).json({ success: false, error: 'Token y contrasena requeridos' });
-    }
-    if (password.length < 6) {
-      return res.status(400).json({ success: false, error: 'La contrasena debe tener al menos 6 caracteres' });
-    }
-
-    const users = await User.find({
-      resetPasswordExpires: { $gt: Date.now() }
-    });
-
-    let user = null;
-    for (const u of users) {
-      if (u.resetPasswordToken) {
-        const valid = await bcrypt.compare(token, u.resetPasswordToken);
-        if (valid) { user = u; break; }
-      }
-    }
-
-    if (!user) {
-      return res.status(400).json({ success: false, error: 'Token invalido o expirado' });
-    }
-
-    user.password = password;
-    user.resetPasswordToken = undefined;
-    user.resetPasswordExpires = undefined;
-    await user.save();
-
-    logger.logAuth('password_reset_completed', user._id, req.ip, true);
-    res.json({ success: true, message: 'Contrasena restablecida exitosamente' });
-  } catch (error) {
-    logger.error('Reset password error', { error: error.message });
-    res.status(500).json({ success: false, error: 'Error al restablecer la contrasena' });
   }
 });
 

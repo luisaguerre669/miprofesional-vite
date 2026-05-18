@@ -39,6 +39,9 @@ require("./models/Conversation");
 require("./models/Review");
 require("./models/Booking");
 
+// Register event bus listeners
+require("./services/emailService");
+
 const REQUIRED_ENV_VARS = ["JWT_SECRET", "JWT_REFRESH_SECRET", "NODE_ENV"];
 
 function validateEnvironment() {

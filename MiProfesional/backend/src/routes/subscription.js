@@ -5,6 +5,7 @@ const Professional = require("../models/Professional");
 const Payment = require("../models/Payment");
 const { authenticate } = require("../middleware/auth");
 const logger = require("../utils/logger");
+const eventBus = require("../services/eventBus");
 const { MercadoPagoConfig, Preference, Payment: MpPayment } = require("mercadopago");
 
 const FRONTEND_URL = process.env.FRONTEND_URL || "https://www.miprofesional.online";
@@ -244,6 +245,7 @@ router.post("/webhook", async (req, res) => {
           }
 
           logger.info("Subscription payment approved:", { userId, plan, paymentId, externalReference, expiresAt, months });
+          eventBus.emit('payment:approved', { email: user.email, name: user.name || user.email, plan, amount: payment?.amount || 0, expiryDate: expiresAt.toLocaleDateString('es-AR') });
         }
       }
     }

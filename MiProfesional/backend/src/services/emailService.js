@@ -1,102 +1,81 @@
-const logger = require("../utils/logger");
+const logger = require('../utils/logger');
+const eventBus = require('./eventBus');
+const templates = require('./emailTemplates');
 
-const FRONTEND_URL = process.env.FRONTEND_URL || "https://www.miprofesional.online";
+const QUEUE_DELAY = 500;
+const queue = [];
+let processing = false;
 
 function getTransporter() {
-  const nodemailer = require("nodemailer");
+  const nodemailer = require('nodemailer');
   const host = process.env.SMTP_HOST;
-  const port = parseInt(process.env.SMTP_PORT || "587");
+  const port = parseInt(process.env.SMTP_PORT || '587');
   const user = process.env.SMTP_USER;
   const pass = process.env.SMTP_PASS;
-
   if (!host || !user || !pass) return null;
-
-  return nodemailer.createTransport({
-    host,
-    port,
-    secure: port === 465,
-    auth: { user, pass },
-  });
+  return nodemailer.createTransport({ host, port, secure: port === 465, auth: { user, pass } });
 }
 
-async function sendVerificationEmail(email, name, token) {
-  const verifyUrl = `${FRONTEND_URL}/verify-email?token=${token}`;
-
+async function sendMail({ to, subject, html }) {
+  const transporter = getTransporter();
+  if (!transporter) {
+    logger.info('Email not configured, link available in logs', { subject, to });
+    return { sent: false };
+  }
   try {
-    const transporter = getTransporter();
-
-    if (!transporter) {
-      logger.info("Email service not configured. Verification link:", verifyUrl);
-      return { sent: false, verifyUrl };
-    }
-
-    await transporter.sendMail({
-      from: `"MiProfesional" <${process.env.SMTP_USER}>`,
-      to: email,
-      subject: "Verifica tu cuenta en MiProfesional",
-      html: `
-        <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:20px">
-          <div style="text-align:center;margin-bottom:24px">
-            <div style="width:48px;height:48px;background:#0f7a5a;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:20px">MP</div>
-          </div>
-          <h1 style="font-size:20px;color:#111;text-align:center">Verifica tu correo electronico</h1>
-          <p style="color:#555;font-size:14px;text-align:center">Gracias por registrarte en MiProfesional. Hace clic en el boton de abajo para verificar tu direccion de correo electronico.</p>
-          <div style="text-align:center;margin:24px 0">
-            <a href="${verifyUrl}" style="display:inline-block;padding:12px 32px;background:#0f7a5a;color:white;text-decoration:none;border-radius:8px;font-weight:bold;font-size:14px">Verificar cuenta</a>
-          </div>
-          <p style="color:#888;font-size:12px;text-align:center">Si no creaste una cuenta en MiProfesional, ignora este mensaje.</p>
-          <hr style="border:none;border-top:1px solid #eee;margin:20px 0" />
-          <p style="color:#aaa;font-size:11px;text-align:center">MiProfesional - Plataforma de conexion entre clientes y profesionales</p>
-        </div>
-      `,
-    });
-
-    logger.info("Verification email sent:", { email });
-    return { sent: true, verifyUrl };
+    await transporter.sendMail({ from: `"MiProfesional" <${process.env.SMTP_USER}>`, to, subject, html });
+    logger.info('Email sent', { subject, to });
+    return { sent: true };
   } catch (error) {
-    logger.error("Error sending verification email:", error);
-    return { sent: false, verifyUrl };
+    logger.error('Email send error', { subject, to, error: error.message });
+    return { sent: false };
   }
 }
 
-async function sendPasswordResetEmail(email, name, token) {
-  const resetUrl = `${FRONTEND_URL}/reset-password?token=${token}`;
-
-  try {
-    const transporter = getTransporter();
-
-    if (!transporter) {
-      logger.info("Email service not configured. Reset link:", resetUrl);
-      return { sent: false, resetUrl };
-    }
-
-    await transporter.sendMail({
-      from: `"MiProfesional" <${process.env.SMTP_USER}>`,
-      to: email,
-      subject: "Restablece tu contrasena en MiProfesional",
-      html: `
-        <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:20px">
-          <div style="text-align:center;margin-bottom:24px">
-            <div style="width:48px;height:48px;background:#0f7a5a;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:20px">MP</div>
-          </div>
-          <h1 style="font-size:20px;color:#111;text-align:center">Restablece tu contrasena</h1>
-          <p style="color:#555;font-size:14px;text-align:center">Recibimos una solicitud para restablecer la contrasena de tu cuenta en MiProfesional. Hace clic en el boton de abajo para crear una nueva contrasena.</p>
-          <div style="text-align:center;margin:24px 0">
-            <a href="${resetUrl}" style="display:inline-block;padding:12px 32px;background:#0f7a5a;color:white;text-decoration:none;border-radius:8px;font-weight:bold;font-size:14px">Restablecer contrasena</a>
-          </div>
-          <p style="color:#888;font-size:12px;text-align:center">Si no solicitaste este cambio, ignora este mensaje.</p>
-          <hr style="border:none;border-top:1px solid #eee;margin:20px 0" />
-          <p style="color:#aaa;font-size:11px;text-align:center">MiProfesional - Plataforma de conexion entre clientes y profesionales</p>
-        </div>
-      `,
-    });
-
-    logger.info("Password reset email sent:", { email });
-    return { sent: true, resetUrl };
-  } catch (error) {
-    logger.error("Error sending password reset email:", error);
-    return { sent: false, resetUrl };
-  }
+function enqueue(job) {
+  queue.push(job);
+  processQueue();
 }
 
-module.exports = { sendVerificationEmail, sendPasswordResetEmail };
+async function processQueue() {
+  if (processing || queue.length === 0) return;
+  processing = true;
+  while (queue.length > 0) {
+    const job = queue.shift();
+    await sendMail(job);
+    await new Promise(r => setTimeout(r, QUEUE_DELAY));
+  }
+  processing = false;
+}
+
+// ── Event Handlers ──────────────────────────────────────────
+
+eventBus.on('user:registered', ({ email, name, token }) => {
+  enqueue({ to: email, subject: 'Verifica tu cuenta en MiProfesional', html: templates.verifyEmail(name, token) });
+});
+
+eventBus.on('user:verified', ({ email, name }) => {
+  enqueue({ to: email, subject: 'Email verificado - Bienvenido a MiProfesional', html: templates.welcome(name) });
+});
+
+eventBus.on('user:password-reset-requested', ({ email, name, token }) => {
+  enqueue({ to: email, subject: 'Restablece tu contrasena en MiProfesional', html: templates.passwordReset(name, token) });
+});
+
+eventBus.on('user:password-changed', ({ email, name }) => {
+  enqueue({ to: email, subject: 'Tu contrasena fue actualizada', html: templates.passwordChanged(name) });
+});
+
+eventBus.on('payment:approved', ({ email, name, plan, amount, expiryDate }) => {
+  enqueue({ to: email, subject: 'Pago confirmado - Suscripcion activa', html: templates.paymentConfirmed(name, plan, amount, expiryDate) });
+});
+
+eventBus.on('subscription:expired', ({ email, name }) => {
+  enqueue({ to: email, subject: 'Tu suscripcion ha vencido', html: templates.subscriptionExpired(name) });
+});
+
+eventBus.on('professional:new-contact', ({ email, name, clientName, clientPhone, clientEmail, message }) => {
+  enqueue({ to: email, subject: `Nuevo contacto de ${clientName}`, html: templates.newContact(name, clientName, clientPhone, clientEmail, message) });
+});
+
+module.exports = { sendMail, enqueue };
