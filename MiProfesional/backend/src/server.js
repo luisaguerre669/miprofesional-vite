@@ -164,6 +164,7 @@ class Server {
         ok: true,
         message: "API MiProfesional funcionando correctamente",
         version: "2.0.0",
+        developer: "LUIS AGUERRE",
         environment: process.env.NODE_ENV || "development",
         endpoints: {
           health: "/health",
