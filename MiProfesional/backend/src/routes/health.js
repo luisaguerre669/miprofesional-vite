@@ -11,7 +11,7 @@ router.get('/', async (req, res) => {
   const checks = {
     server: { status: 'ok', uptime: process.uptime(), nodeVersion: process.version, memory: `${Math.round(process.memoryUsage().rss / 1024 / 1024)} MB` },
     database: { status: dbState === 1 ? 'ok' : 'error', state: dbStates[dbState] || 'unknown' },
-    logs: logger.getLogStats() || { totalLines: 0 }
+    logs: { status: 'ok', ...(logger.getLogStats() || { totalLines: 0 }) }
   };
 
   const allOk = Object.values(checks).every(c => c.status === 'ok');
