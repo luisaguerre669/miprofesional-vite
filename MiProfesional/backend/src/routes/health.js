@@ -21,6 +21,7 @@ router.get('/', async (req, res) => {
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV || 'development',
     version: '2.0.0',
+    developer: 'LUIS AGUERRE',
     checks,
     recentErrors: logger.getRecentErrors(5)
   });
