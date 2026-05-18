@@ -91,6 +91,19 @@ export default function SubscriptionPage() {
         <h1 className="text-3xl font-bold text-center text-gray-900 mb-2">Planes de Suscripción</h1>
         <p className="text-center text-gray-500 mb-8">Elige el plan que mejor se adapte a tus necesidades</p>
 
+        {currentStatus === 'pending_payment' && (
+          <div className="max-w-xl mx-auto mb-6 flex items-start gap-3 px-4 py-4 rounded-lg bg-amber-50 border border-amber-200">
+            <Zap size={20} className="text-amber-600 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-semibold text-amber-800">Suscripcion pendiente</p>
+              <p className="text-xs text-amber-700 mt-1">
+                Elegi un plan y completa el pago para activar tu perfil profesional en el marketplace.
+                Sin una suscripcion activa no apareceras en los resultados de busqueda.
+              </p>
+            </div>
+          </div>
+        )}
+
         {message && (
           <div
             className={`max-w-xl mx-auto mb-6 flex items-center gap-2 px-4 py-3 rounded-lg text-sm font-medium ${
