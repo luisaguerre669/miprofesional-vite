@@ -8,7 +8,7 @@ import {
   ChevronDown, Search, CheckCircle, XCircle, AlertTriangle, Clock,
   Shield, Star, Mail, Phone, MapPin, Trash2, ExternalLink, Edit3,
   UserPlus, DollarSign, Calendar, Filter, ArrowUpRight, TrendingUp,
-  Activity, Loader2, ChevronLeft, ChevronRight, MoreHorizontal
+  Activity, Loader2, ChevronLeft, ChevronRight, MoreHorizontal, RefreshCw, Wifi, Database, Server, Terminal
 } from 'lucide-react';
 
 const sidebar = [
@@ -141,6 +141,31 @@ const AdminPanel = () => {
       await api.delete(`/admin/professionals/${id}`);
       fetchProfessionals(prosPage, prosFilter, prosSearch);
     } catch (e) { console.error(e); }
+  };
+
+  const deleteUser = async (id, name) => {
+    if (!window.confirm(`Eliminar a ${name} y todos sus datos asociados?`)) return;
+    try {
+      const { data } = await api.delete(`/admin/users/${id}`);
+      fetchUsers(usersPage, usersSearch);
+    } catch (e) { alert(e.response?.data?.message || 'Error al eliminar usuario'); }
+  };
+
+  const reprocessPayment = async (userId) => {
+    try {
+      const { data } = await api.post(`/admin/reprocess-webhook/${userId}`);
+      alert(data.message || 'Suscripcion reactivada');
+      fetchPayments(paymentsPage);
+    } catch (e) { alert(e.response?.data?.message || 'Error al reprocesar'); }
+  };
+
+  const cleanTestData = async () => {
+    if (!window.confirm('Eliminar todos los datos de prueba (usuarios test/fix/demo)? Esta accion no se puede deshacer.')) return;
+    try {
+      const { data } = await api.post('/admin/clean-test-data');
+      alert(data.message);
+      fetchDashboard(); fetchUsers(); fetchProfessionals(); fetchPayments(); fetchStats();
+    } catch (e) { alert('Error al limpiar datos'); }
   };
 
   const handleUserSearch = (e) => {
@@ -347,7 +372,7 @@ const AdminPanel = () => {
                           </span>
                         </td>
                         <td className="py-3 px-4 text-gray-400 text-xs">{new Date(u.createdAt).toLocaleDateString()}</td>
-                        <td className="py-3 px-4 text-right">
+                        <td className="py-3 px-4 text-right flex items-center justify-end gap-1">
                           <button onClick={() => toggleUserStatus(u._id, u.isActive)}
                             className={`px-3 py-1.5 rounded-lg text-[10px] font-medium transition-all ${
                               u.isActive ? 'bg-red-50 text-red-600 hover:bg-red-100' : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'
@@ -355,6 +380,12 @@ const AdminPanel = () => {
                           >
                             {u.isActive ? 'Bloquear' : 'Activar'}
                           </button>
+                          {u.role !== 'admin' && (
+                            <button onClick={() => deleteUser(u._id, u.name)}
+                              className="px-2 py-1.5 rounded-lg text-[10px] font-medium bg-gray-50 text-gray-400 hover:bg-red-50 hover:text-red-500 transition-all"
+                              title="Eliminar usuario"
+                            ><Trash2 size={12} /></button>
+                          )}
                         </td>
                       </tr>
                     ))}
@@ -504,6 +535,7 @@ const AdminPanel = () => {
                       <th className="text-left py-3 px-4 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Monto</th>
                       <th className="text-left py-3 px-4 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Estado</th>
                       <th className="text-left py-3 px-4 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Fecha</th>
+                      <th className="text-right py-3 px-4 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -533,6 +565,13 @@ const AdminPanel = () => {
                           </span>
                         </td>
                         <td className="py-3 px-4 text-gray-400 text-xs">{new Date(p.createdAt || p.dateCreated).toLocaleDateString()}</td>
+                        <td className="py-3 px-4 text-right">
+                          {p.status === 'approved' && p.userId?._id && (
+                            <button onClick={() => reprocessPayment(p.userId._id)}
+                              className="px-2 py-1 rounded-lg text-[10px] font-medium bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-all"
+                              title="Reactivar suscripcion"><RefreshCw size={12} /></button>
+                          )}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -635,10 +674,60 @@ const AdminPanel = () => {
 
           {/* ===== SETTINGS ===== */}
           {activeSection === 'settings' && (
-            <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
-              <Settings size={40} className="mx-auto text-gray-300 mb-3" />
-              <h3 className="text-lg font-bold text-gray-900 mb-1">Configuracion</h3>
-              <p className="text-sm text-gray-500">Seccion de configuracion del panel administrativo.</p>
+            <div className="space-y-6">
+              <div className="bg-white rounded-xl border border-gray-200 p-6">
+                <h2 className="font-bold text-gray-900 text-lg mb-1">Configuracion del Sistema</h2>
+                <p className="text-sm text-gray-500 mb-6">Administra el estado del servidor, caracteristicas y datos</p>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="border border-gray-200 rounded-xl p-5">
+                    <h3 className="font-semibold text-sm text-gray-900 flex items-center gap-2 mb-4"><Server size={16} /> Modo Mantenimiento</h3>
+                    <p className="text-xs text-gray-500 mb-3">Cuando esta activo, los usuarios no pueden realizar cambios en el sistema</p>
+                    <div className="flex items-center gap-3">
+                      <button onClick={async () => {
+                        try { await api.post('/admin/maintenance', { active: true, message: 'Sistema en mantenimiento' }); alert('Modo mantenimiento activado'); } catch (e) { alert('Error'); }
+                      }} className="px-4 py-2 bg-amber-500 text-white text-sm font-medium rounded-lg hover:bg-amber-600">Activar</button>
+                      <button onClick={async () => {
+                        try { await api.post('/admin/maintenance', { active: false }); alert('Modo mantenimiento desactivado'); } catch (e) { alert('Error'); }
+                      }} className="px-4 py-2 border border-gray-200 text-sm font-medium rounded-lg hover:bg-gray-50">Desactivar</button>
+                    </div>
+                  </div>
+
+                  <div className="border border-gray-200 rounded-xl p-5">
+                    <h3 className="font-semibold text-sm text-gray-900 flex items-center gap-2 mb-4"><Terminal size={16} /> Registros de Errores</h3>
+                    <p className="text-xs text-gray-500 mb-3">Los errores recientes se almacenan en memoria para diagnostico rapido</p>
+                    <button onClick={async () => {
+                      try { await api.post('/admin/clear-errors'); alert('Errores limpiados'); } catch (e) { alert('Error'); }
+                    }} className="px-4 py-2 bg-red-500 text-white text-sm font-medium rounded-lg hover:bg-red-600">Limpiar Errores</button>
+                  </div>
+
+                  <div className="border border-gray-200 rounded-xl p-5">
+                    <h3 className="font-semibold text-sm text-gray-900 flex items-center gap-2 mb-4"><Wifi size={16} /> Feature Flags</h3>
+                    <p className="text-xs text-gray-500 mb-3">Activa o desactiva funcionalidades del sistema en tiempo real</p>
+                    <div className="flex items-center gap-2">
+                      <input id="ffKey" placeholder="Nombre (ej: new_search)"
+                        className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-primary-500" />
+                      <button onClick={() => {
+                        const input = document.getElementById('ffKey');
+                        const key = input?.value?.trim();
+                        if (key) { api.post('/admin/features', { key, value: true }); alert(`Feature "${key}" activado`); input.value = ''; }
+                      }} className="px-3 py-2 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-gray-800">Activar</button>
+                    </div>
+                  </div>
+
+                  <div className="border border-gray-200 rounded-xl p-5">
+                    <h3 className="font-semibold text-sm text-gray-900 flex items-center gap-2 mb-4"><Database size={16} /> Limpiar Datos de Prueba</h3>
+                    <p className="text-xs text-gray-500 mb-3">Elimina usuarios de prueba (test, demo, fix, etc.) y sus datos asociados</p>
+                    <button onClick={cleanTestData}
+                      className="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700">Limpiar Datos de Prueba</button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-xl border border-gray-200 p-6">
+                <h3 className="font-bold text-gray-900 text-sm mb-4 flex items-center gap-2"><Activity size={16} /> Estado del Servidor</h3>
+                <SystemStatus />
+              </div>
             </div>
           )}
         </div>
@@ -648,3 +737,71 @@ const AdminPanel = () => {
 };
 
 export default AdminPanel;
+
+const SystemStatus = () => {
+  const [status, setStatus] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    api.get('/admin/system-status').then(r => setStatus(r.data.data)).catch(() => {}).finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return <div className="flex items-center gap-2 text-sm text-gray-400"><Loader2 size={14} className="animate-spin" /> Cargando...</div>;
+  if (!status) return <p className="text-sm text-red-500">Error al obtener estado</p>;
+
+  const { server, database, maintenance, features, recentErrors } = status;
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="bg-gray-50 rounded-lg p-3">
+          <p className="text-[10px] text-gray-500 uppercase font-semibold">Solicitudes</p>
+          <p className="text-lg font-bold text-gray-900">{server?.requestCount || 0}</p>
+        </div>
+        <div className="bg-gray-50 rounded-lg p-3">
+          <p className="text-[10px] text-gray-500 uppercase font-semibold">Memoria</p>
+          <p className="text-lg font-bold text-gray-900">{server?.memory?.rss || '-'}</p>
+        </div>
+        <div className="bg-gray-50 rounded-lg p-3">
+          <p className="text-[10px] text-gray-500 uppercase font-semibold">Node</p>
+          <p className="text-lg font-bold text-gray-900">{server?.nodeVersion || '-'}</p>
+        </div>
+        <div className="bg-gray-50 rounded-lg p-3">
+          <p className="text-[10px] text-gray-500 uppercase font-semibold">Uptime</p>
+          <p className="text-lg font-bold text-gray-900">{server?.uptime ? `${Math.round(server.uptime / 60)}min` : '-'}</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="bg-gray-50 rounded-lg p-3">
+          <p className="text-[10px] text-gray-500 uppercase font-semibold">DB</p>
+          <p className="text-sm font-bold text-gray-900">{database?.state || '-'}</p>
+        </div>
+        <div className="bg-gray-50 rounded-lg p-3">
+          <p className="text-[10px] text-gray-500 uppercase font-semibold">Usuarios</p>
+          <p className="text-lg font-bold text-gray-900">{database?.collections?.users || 0}</p>
+        </div>
+        <div className="bg-gray-50 rounded-lg p-3">
+          <p className="text-[10px] text-gray-500 uppercase font-semibold">Profesionales</p>
+          <p className="text-lg font-bold text-gray-900">{database?.collections?.professionals || 0}</p>
+        </div>
+        <div className="bg-gray-50 rounded-lg p-3">
+          <p className="text-[10px] text-gray-500 uppercase font-semibold">Mantenimiento</p>
+          <p className={`text-sm font-bold ${maintenance?.active ? 'text-red-600' : 'text-emerald-600'}`}>{maintenance?.active ? 'ACTIVO' : 'Inactivo'}</p>
+        </div>
+      </div>
+
+      {recentErrors?.length > 0 && (
+        <div>
+          <p className="text-xs font-semibold text-gray-500 uppercase mb-2">Errores Recientes ({recentErrors.length})</p>
+          <div className="space-y-1 max-h-40 overflow-y-auto">
+            {recentErrors.slice(0, 10).map((e, i) => (
+              <div key={i} className="text-[10px] font-mono text-red-600 bg-red-50 rounded px-2 py-1">
+                {e.timestamp?.slice(11, 19)} — {e.message}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
