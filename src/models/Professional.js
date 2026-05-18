@@ -315,9 +315,11 @@ const professionalSchema = new mongoose.Schema({
   subscription: {
     status: {
       type: String,
-      enum: ['inactive', 'trial', 'active', 'expired', 'cancelled'],
-      default: 'inactive'
+      enum: ['inactive', 'pending_payment', 'trial', 'active', 'expired', 'cancelled'],
+      default: 'pending_payment'
     },
+    plan: { type: String, default: null },
+    paymentId: { type: String, default: null },
     trialStart: { type: Date, default: null },
     trialEnd: { type: Date, default: null },
     lastPayment: { type: Date, default: null },
@@ -499,6 +501,7 @@ professionalSchema.methods.getNextAvailableSlot = function() {
 professionalSchema.statics.findByLocation = function(longitude, latitude, maxDistance = 50) {
   return this.find({
     isActive: true,
+    'subscription.status': 'active',
     'location.coordinates': {
       $near: {
         $geometry: {
@@ -527,7 +530,8 @@ professionalSchema.statics.search = function(query, options = {}) {
   } = options;
   
   const searchQuery = {
-    isActive: true
+    isActive: true,
+    'subscription.status': 'active'
   };
   
   // Text search
@@ -582,6 +586,7 @@ professionalSchema.statics.search = function(query, options = {}) {
 professionalSchema.statics.getTopRated = function(limit = 10, categoryId = null) {
   const query = {
     isActive: true,
+    'subscription.status': 'active',
     'stats.rating': { $gte: 4.0 },
     'stats.reviewCount': { $gte: 5 }
   };
@@ -599,6 +604,7 @@ professionalSchema.statics.getTopRated = function(limit = 10, categoryId = null)
 professionalSchema.statics.getFeatured = function(limit = 6) {
   return this.find({
     isActive: true,
+    'subscription.status': 'active',
     isFeatured: true,
     $or: [
       { featuredUntil: null },
@@ -613,6 +619,7 @@ professionalSchema.statics.getFeatured = function(limit = 6) {
 professionalSchema.statics.getVerified = function(limit = 20) {
   return this.find({
     isActive: true,
+    'subscription.status': 'active',
     'verification.isVerified': true
   })
   .sort({ 'stats.rating': -1 })
@@ -622,11 +629,12 @@ professionalSchema.statics.getVerified = function(limit = 20) {
 
 professionalSchema.statics.getStats = async function() {
   const stats = await this.aggregate([
+    { $match: { isActive: true, 'subscription.status': 'active' } },
     {
       $group: {
         _id: null,
         totalProfessionals: { $sum: 1 },
-        activeProfessionals: { $sum: { $cond: [{ $eq: ['$isActive', true] }, 1, 0] } },
+        activeProfessionals: { $sum: 1 },
         verifiedProfessionals: { $sum: { $cond: [{ $eq: ['$verification.isVerified', true] }, 1, 0] } },
         featuredProfessionals: { $sum: { $cond: [{ $eq: ['$isFeatured', true] }, 1, 0] } },
         avgRating: { $avg: '$stats.rating' },

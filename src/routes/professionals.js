@@ -79,7 +79,7 @@ router.get('/', [
     if (sortBy === 'ranking') {
       const skip = (parseInt(page) - 1) * parseInt(limit);
       const pipe = [
-        { $match: { isActive: true } },
+        { $match: { isActive: true, 'subscription.status': 'active' } },
         {
           $addFields: {
             score: {
@@ -100,7 +100,7 @@ router.get('/', [
       ];
       if (featured === 'true') pipe[0].$match.isFeatured = true;
       const result = await Professional.aggregate(pipe);
-      const totalRank = await Professional.countDocuments({ isActive: true });
+      const totalRank = await Professional.countDocuments({ isActive: true, 'subscription.status': 'active' });
       logger.info('Ranking result', { count: result.length, sampleScore: result[0]?.score });
       return res.json({
         success: true, data: result,
@@ -111,7 +111,7 @@ router.get('/', [
     if (search || location || minRating > 0 || maxPrice || isVerified === 'true') {
       professionals = await Professional.search(search, options);
     } else {
-      let query = { isActive: true };
+      let query = { isActive: true, 'subscription.status': 'active' };
 
       if (categoryId) query.categoryId = categoryId;
       if (featured === 'true') query.isFeatured = true;
@@ -129,7 +129,7 @@ router.get('/', [
         .populate('userId', 'name email phone');
     }
 
-    const total = await Professional.countDocuments({ isActive: true });
+    const total = await Professional.countDocuments({ isActive: true, 'subscription.status': 'active' });
     const totalPages = Math.ceil(total / parseInt(limit));
 
     logger.info('Professionals retrieved', {
@@ -387,7 +387,7 @@ router.get('/ranking', async (req, res) => {
     const skip = (page - 1) * limit;
 
     const pipeline = [
-      { $match: { isActive: true } },
+      { $match: { isActive: true, 'subscription.status': 'active' } },
       {
         $addFields: {
           score: {
@@ -436,7 +436,7 @@ router.get('/ranking', async (req, res) => {
 
     const [professionals, totalResult] = await Promise.all([
       Professional.aggregate(pipeline),
-      Professional.countDocuments({ isActive: true })
+      Professional.countDocuments({ isActive: true, 'subscription.status': 'active' })
     ]);
 
     const totalPages = Math.ceil(totalResult / limit);
@@ -694,7 +694,8 @@ router.post('/', authenticate, async (req, res) => {
       pricing: {
         hourlyRate: req.body.pricing?.hourlyRate || req.body.hourlyRate || 0,
         currency: 'ARS'
-      }
+      },
+      subscription: { status: 'pending_payment' }
     });
 
     await professional.save();
