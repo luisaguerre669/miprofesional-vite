@@ -27,6 +27,19 @@ const connectDB = async () => {
     } catch (idxErr) {
       console.log("Index cleanup note:", idxErr.message);
     }
+
+    try {
+      const db = mongoose.connection.db;
+      const proIndexes = await db.collection("professionals").indexes();
+      for (const idx of proIndexes) {
+        if (idx.unique && idx.name !== "_id_") {
+          await db.collection("professionals").dropIndex(idx.name);
+          console.log("Dropped stale unique index on professionals:", idx.name);
+        }
+      }
+    } catch (idxErr) {
+      console.log("Professionals index cleanup note:", idxErr.message);
+    }
   } catch (error) {
     console.error("Error conectando a la base de datos:");
     console.error(error.message);
