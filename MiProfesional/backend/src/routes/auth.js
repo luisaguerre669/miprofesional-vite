@@ -150,7 +150,7 @@ router.post('/register', registerLimiter, [
   body('role').optional().isIn(['client', 'professional']).withMessage('Role must be client or professional')
 ], handleValidationErrors, async (req, res) => {
   try {
-    const { name, email, password, phone, location, role = 'client', acceptMarketing } = req.body;
+    const { name, email, password, phone, location, role = 'client', profession, acceptMarketing } = req.body;
 
     // Check if user already exists
     const existingUser = await User.findOne({ email });
@@ -182,6 +182,25 @@ router.post('/register', registerLimiter, [
 
     user.generateVerificationToken();
     await user.save();
+
+    // Create professional record if role is professional
+    if (role === 'professional') {
+      try {
+        const professional = new Professional({
+          userId: user._id,
+          profession: profession || '',
+          isActive: false,
+          subscription: {
+            status: 'pending_payment',
+          },
+          contact: { email: user.email },
+          location: { country: 'Argentina', coordinates: { type: 'Point', coordinates: [0, 0] } },
+        });
+        await professional.save();
+      } catch (proErr) {
+        logger.error('Failed to create professional record on register', { error: proErr.message, userId: user._id });
+      }
+    }
 
     sendVerificationEmail(user.email, user.name, user.verificationToken).catch(() => {});
 

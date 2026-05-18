@@ -61,6 +61,11 @@ router.get("/status", authenticate, async (req, res) => {
       } else {
         status = "expired";
       }
+    } else {
+      const professional = await Professional.findOne({ userId: req.userId });
+      if (professional && professional.subscription?.status === "pending_payment") {
+        status = "pending_payment";
+      }
     }
 
     res.json({
@@ -230,13 +235,15 @@ router.post("/webhook", async (req, res) => {
               ...(professional.subscription || {}),
               status: "active",
               plan,
+              paymentId: String(paymentId),
               lastPayment: new Date(),
               nextBilling: expiresAt,
+              activatedAt: new Date(),
             };
             await professional.save();
           }
 
-          logger.info("Subscription payment approved:", { userId, plan, externalReference, expiresAt, months });
+          logger.info("Subscription payment approved:", { userId, plan, paymentId, externalReference, expiresAt, months });
         }
       }
     }
