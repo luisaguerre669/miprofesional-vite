@@ -808,7 +808,7 @@ router.get('/geocode', async (req, res) => {
     const { geocodeAddress } = require('../utils/geocode');
     const result = await geocodeAddress({ address, city, state, country });
     if (!result) {
-      return res.status(404).json({ success: false, message: 'No se pudo encontrar la ubicacion. Verifica la direccion e intenta de nuevo.' });
+      return res.json({ success: false, message: 'No se pudo encontrar la ubicacion. Verifica la direccion e intenta de nuevo.' });
     }
     res.json({ success: true, data: result });
   } catch (error) {
