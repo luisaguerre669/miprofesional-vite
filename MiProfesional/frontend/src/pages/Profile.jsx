@@ -77,6 +77,20 @@ const Profile = () => {
     e.preventDefault();
     setSaving(true);
     try {
+      let coordinates;
+      if (proForm.address || proForm.city) {
+        try {
+          const geoRes = await api.get('/professionals/geocode', {
+            params: { address: proForm.address, city: proForm.city, state: proForm.state, country: 'Argentina' }
+          });
+          if (geoRes.data?.success && geoRes.data?.data) {
+            coordinates = [geoRes.data.data.longitude, geoRes.data.data.latitude];
+          }
+        } catch {
+          // geocoding non-critical; backend will re-try on save
+        }
+      }
+
       const payload = {
         businessName: proForm.businessName,
         profession: proForm.profession,
@@ -84,7 +98,10 @@ const Profile = () => {
         specialties: proForm.specialties.split(',').map(s => s.trim()).filter(Boolean),
         pricing: { hourlyRate: Number(proForm.hourlyRate) },
         contact: { phone: proForm.phone },
-        location: { address: proForm.address, city: proForm.city, state: proForm.state, country: 'Argentina' }
+        location: {
+          address: proForm.address, city: proForm.city, state: proForm.state, country: 'Argentina',
+          ...(coordinates ? { coordinates } : {})
+        }
       };
 
       if (professional) {
