@@ -136,10 +136,11 @@ const Home = () => {
         setLocationMode('city');
         setShowCityInput(false);
       } else {
-        setGeoError('No se pudo encontrar la direccion. Verifica los datos.');
+        setGeoError(res.data?.message || 'No se pudo encontrar la direccion. Verifica los datos.');
       }
-    } catch {
-      setGeoError('Error al buscar la ubicacion. Intenta de nuevo.');
+    } catch (err) {
+      const msg = err?.response?.data?.message || err?.message || 'Error al buscar la ubicacion. Intenta de nuevo.';
+      setGeoError(msg);
     }
     setGeoLoading(false);
   }, []);
