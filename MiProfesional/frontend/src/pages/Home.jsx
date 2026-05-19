@@ -61,6 +61,14 @@ const StarRating = ({ rating = 0, size = 14 }) => (
   </div>
 );
 
+const PROVINCES = [
+  'CABA', 'Buenos Aires', 'Catamarca', 'Chaco', 'Chubut', 'Cordoba',
+  'Corrientes', 'Entre Rios', 'Formosa', 'Jujuy', 'La Pampa', 'La Rioja',
+  'Mendoza', 'Misiones', 'Neuquen', 'Rio Negro', 'Salta', 'San Juan',
+  'San Luis', 'Santa Cruz', 'Santa Fe', 'Santiago del Estero',
+  'Tierra del Fuego', 'Tucuman'
+];
+
 const Home = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
@@ -80,10 +88,12 @@ const Home = () => {
   }, []);
 
   const [manualCity, setManualCity] = useState('');
+  const [selectedProvince, setSelectedProvince] = useState('');
   const [showCityInput, setShowCityInput] = useState(false);
   const [geoError, setGeoError] = useState('');
   const [geoLoading, setGeoLoading] = useState(false);
   const [userAddress, setUserAddress] = useState('');
+  const [locationMode, setLocationMode] = useState(''); // 'gps' | 'city' | 'manual'
 
   const reverseGeocode = useCallback(async (lat, lng) => {
     try {
@@ -103,9 +113,31 @@ const Home = () => {
     }
   }, []);
 
+  const geocodeCity = useCallback(async (city, province) => {
+    setGeoLoading(true);
+    try {
+      const res = await api.get('/professionals/geocode', {
+        params: { address: '', city, state: province, country: 'Argentina' }
+      });
+      if (res.data?.success && res.data?.data) {
+        const loc = { lat: res.data.data.latitude, lng: res.data.data.longitude };
+        setUserLocation(loc);
+        setUserAddress(res.data.data.displayName || `${city}, ${province}`);
+        setGeoError('');
+        setLocationMode('city');
+      } else {
+        setGeoError('No se pudo encontrar la ciudad. Intenta con otra.');
+      }
+    } catch {
+      setGeoError('Error al buscar la ubicacion. Verifica los datos.');
+    }
+    setGeoLoading(false);
+  }, []);
+
   const getLocation = useCallback(() => {
     if (!('geolocation' in navigator)) {
       setGeoError('Tu navegador no soporta geolocalizacion');
+      setShowCityInput(true);
       return;
     }
     setGeoLoading(true);
@@ -114,6 +146,7 @@ const Home = () => {
       (pos) => {
         const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
         setUserLocation(loc);
+        setLocationMode('gps');
         setGeoLoading(false);
         setGeoError('');
         reverseGeocode(loc.lat, loc.lng);
@@ -121,16 +154,17 @@ const Home = () => {
       (err) => {
         setGeoLoading(false);
         if (err.code === 1) {
-          setGeoError('Permiso de ubicacion denegado. Activalo desde la configuracion del navegador.');
+          setGeoError('Permiso de ubicacion denegado.');
         } else if (err.code === 2) {
           setGeoError('No se pudo obtener la ubicacion. Senal GPS no disponible.');
         } else {
           setGeoError('No se pudo obtener la ubicacion. Intenta de nuevo.');
         }
+        setShowCityInput(true);
         fetch('https://ipapi.co/json/')
           .then(r => r.json())
           .then(d => d && d.latitude && d.longitude ? { lat: d.latitude, lng: d.longitude } : null)
-          .then(loc => { if (loc) { setUserLocation(loc); setGeoError(''); reverseGeocode(loc.lat, loc.lng); } })
+          .then(loc => { if (loc) { setUserLocation(loc); setGeoError(''); setShowCityInput(false); reverseGeocode(loc.lat, loc.lng); } })
           .catch(() => {});
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
@@ -189,18 +223,28 @@ const Home = () => {
     if (showCityInput) {
       return (
         <div className="h-full rounded-2xl overflow-hidden border border-gray-200 bg-gray-50 flex items-center justify-center">
-          <div className="text-center px-4">
+          <div className="text-center px-4 w-full max-w-xs">
             <MapPin size={28} className="mx-auto text-gray-300 mb-2" />
-            <p className="text-gray-500 font-medium text-sm mb-3">Ingresa tu ciudad</p>
-            <form onSubmit={(e) => { e.preventDefault(); if (manualCity.trim()) navigate(`/search?q=${encodeURIComponent(manualCity.trim())}`); }}
-              className="flex items-center gap-2 bg-white rounded-xl px-3 py-2 shadow-sm max-w-xs mx-auto">
-              <MapPin size={14} className="text-gray-400" />
+            <p className="text-gray-500 font-medium text-sm mb-3">Selecciona tu ubicacion</p>
+            <div className="space-y-2">
+              <select value={selectedProvince} onChange={e => setSelectedProvince(e.target.value)}
+                className="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500">
+                <option value="">Provincia</option>
+                {PROVINCES.map(p => <option key={p} value={p}>{p}</option>)}
+              </select>
               <input type="text" value={manualCity} onChange={e => setManualCity(e.target.value)}
-                placeholder="Buenos Aires..." className="bg-transparent text-sm flex-1 focus:outline-none text-gray-700 placeholder-gray-400" />
-              <button type="submit" className="px-3 py-1 bg-primary-600 text-white text-xs font-medium rounded-lg hover:bg-primary-700">Ir</button>
-            </form>
+                placeholder="Ciudad (ej: La Plata)"
+                className="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500" />
+              <button onClick={() => { if (manualCity.trim() && selectedProvince) geocodeCity(manualCity.trim(), selectedProvince); }}
+                disabled={!manualCity.trim() || !selectedProvince || geoLoading}
+                className="w-full px-4 py-2.5 bg-primary-600 text-white text-sm font-semibold rounded-xl hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm flex items-center justify-center gap-2">
+                {geoLoading ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <MapPin size={14} />}
+                {geoLoading ? 'Buscando...' : 'Usar esta ubicacion'}
+              </button>
+            </div>
+            {geoError && <p className="text-red-500 text-xs mt-2">{geoError}</p>}
             <button onClick={() => { setShowCityInput(false); getLocation(); }}
-              className="text-xs text-gray-400 hover:text-gray-600 underline mt-2">usar GPS</button>
+              className="text-xs text-gray-400 hover:text-gray-600 underline mt-3">Intentar con GPS</button>
           </div>
         </div>
       );
@@ -246,7 +290,9 @@ const Home = () => {
         <div className="absolute bottom-3 left-3 right-3 z-[1000] flex justify-center">
           <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-lg px-4 py-2.5 flex items-center gap-3 text-sm">
             <MapPin size={14} className="text-primary-500 shrink-0" />
-            <span className="text-gray-600 text-xs truncate max-w-[180px]">{userAddress || 'Profesionales cerca de tu ubicacion'}</span>
+            <span className="text-gray-600 text-xs truncate max-w-[160px]">{userAddress || 'Profesionales cerca de tu ubicacion'}</span>
+            {locationMode === 'gps' && <span className="text-[10px] text-primary-500 bg-primary-50 px-1.5 py-0.5 rounded font-medium">GPS</span>}
+            {locationMode === 'city' && <span className="text-[10px] text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded font-medium">Ciudad</span>}
             <button onClick={() => setShowCityInput(true)} className="text-xs text-gray-400 hover:text-gray-600 underline ml-auto">cambiar</button>
           </div>
         </div>
