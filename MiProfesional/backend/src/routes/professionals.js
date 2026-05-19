@@ -727,18 +727,71 @@ router.get('/by-city/:city', [
   }
 });
 
-// GET /api/v1/professionals/map - All professionals with coordinates for map
+// GET /api/v1/professionals/map - Map discovery with categories
 router.get('/map', async (req, res) => {
   try {
-    const professionals = await Professional.find({
+    const { latitude, longitude, maxDistance = 50 } = req.query;
+
+    const baseFilter = {
       isActive: true,
       'subscription.status': 'active',
       'location.coordinates.coordinates.0': { $ne: 0 },
       'location.coordinates.coordinates.1': { $ne: 0 }
-    }).select('businessName profession location avatar stats.rating categoryId userId')
+    };
+
+    const all = await Professional.find(baseFilter)
+      .select('businessName profession location avatar stats.rating stats.reviewCount verification.isVerified description lastActiveAt categoryId')
       .populate('categoryId', 'title')
-      .populate('userId', 'name');
-    res.json({ success: true, count: professionals.length, data: professionals });
+      .lean();
+
+    const now = Date.now();
+    const grouped = { recommended: [], active: [], nearby: [] };
+
+    for (const pro of all) {
+      if (pro.verification?.isVerified && (pro.stats?.rating || 0) >= 4.0 &&
+          (pro.stats?.reviewCount || 0) >= 3 && pro.description?.length > 50 && pro.avatar) {
+        grouped.recommended.push(pro);
+      } else if (pro.lastActiveAt && (now - new Date(pro.lastActiveAt).getTime()) < 48 * 60 * 60 * 1000) {
+        grouped.active.push(pro);
+      } else {
+        grouped.nearby.push(pro);
+      }
+    }
+
+    if (latitude && longitude) {
+      const lat = parseFloat(latitude);
+      const lng = parseFloat(longitude);
+      const nearbyIds = grouped.nearby.map(p => p._id);
+      const nearbyWithDist = await Professional.aggregate([
+        { $geoNear: {
+            near: { type: 'Point', coordinates: [lng, lat] },
+            distanceField: 'computedDistance',
+            maxDistance: (parseFloat(maxDistance) || 50) * 1000,
+            spherical: true,
+            query: { _id: { $in: nearbyIds } }
+          }
+        },
+        { $sort: { computedDistance: 1 } },
+        { $limit: 30 },
+        { $addFields: {
+            computedDistance: { $round: [{ $divide: ['$computedDistance', 1000] }, 1] }
+          }
+        }
+      ]);
+      grouped.nearby = nearbyWithDist;
+    }
+
+    res.json({
+      success: true,
+      data: grouped,
+      meta: {
+        counts: {
+          recommended: grouped.recommended.length,
+          active: grouped.active.length,
+          nearby: grouped.nearby.length
+        }
+      }
+    });
   } catch (error) {
     logger.error('Get map professionals error:', error);
     res.status(500).json({ success: false, message: 'Error al obtener profesionales para mapa' });
