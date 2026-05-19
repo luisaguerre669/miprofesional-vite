@@ -313,6 +313,10 @@ const professionalSchema = new mongoose.Schema({
     type: Date,
     default: null
   },
+  lastActiveAt: {
+    type: Date,
+    default: null
+  },
   subscription: {
     status: {
       type: String,
@@ -363,6 +367,23 @@ professionalSchema.virtual('cancellationRate').get(function() {
   const total = this.stats.totalBookings;
   if (total === 0) return 0;
   return Math.round((this.stats.cancelledBookings / total) * 100);
+});
+
+professionalSchema.virtual('discoveryCategory').get(function() {
+  if (!this.subscription || this.subscription.status !== 'active') return 'inactive';
+
+  const isRecommended = this.verification?.isVerified &&
+    (this.stats?.rating || 0) >= 4.0 &&
+    (this.stats?.reviewCount || 0) >= 3 &&
+    this.description && this.description.length > 50 &&
+    this.avatar;
+
+  const recentlyActive = this.lastActiveAt &&
+    (Date.now() - new Date(this.lastActiveAt).getTime()) < 48 * 60 * 60 * 1000;
+
+  if (isRecommended) return 'recommended';
+  if (recentlyActive) return 'active';
+  return 'nearby';
 });
 
 // Indexes
