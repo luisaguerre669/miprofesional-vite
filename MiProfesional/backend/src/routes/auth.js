@@ -29,6 +29,12 @@ const registerLimiter = rateLimit({
   message: { success: false, error: 'Demasiados registros desde esta IP. Intente mas tarde.' }
 });
 
+const sensitiveLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: { success: false, error: 'Demasiados intentos. Intente nuevamente en 15 minutos.' }
+});
+
 // === PASSPORT GOOGLE OAUTH STRATEGY ===
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 
@@ -426,7 +432,7 @@ router.post('/logout', authenticateToken, async (req, res) => {
 });
 
 // POST /api/v1/auth/refresh
-router.post('/refresh', [
+router.post('/refresh', sensitiveLimiter, [
   body('refreshToken').notEmpty().withMessage('Refresh token is required')
 ], handleValidationErrors, async (req, res) => {
   try {
@@ -521,7 +527,7 @@ router.get('/me', authenticateToken, async (req, res) => {
 });
 
 // POST /api/v1/auth/forgot-password
-router.post('/forgot-password', [
+router.post('/forgot-password', sensitiveLimiter, [
   body('email').isEmail().normalizeEmail().withMessage('Please provide a valid email')
 ], handleValidationErrors, async (req, res) => {
   try {
@@ -564,7 +570,7 @@ router.post('/forgot-password', [
 });
 
 // POST /api/v1/auth/reset-password
-router.post('/reset-password', [
+router.post('/reset-password', sensitiveLimiter, [
   body('token').notEmpty().withMessage('Reset token is required'),
   body('newPassword').isLength({ min: 6 }).withMessage('Password must be at least 6 characters long'),
   body('confirmPassword').custom((value, { req }) => {
@@ -710,7 +716,7 @@ router.get('/google/callback', (req, res, next) => {
 // === SMS / PHONE VERIFICATION ROUTES ===
 
 // POST /auth/send-verification — Send SMS code
-router.post('/send-verification', [
+router.post('/send-verification', sensitiveLimiter, [
   body('phone').matches(/^\+?[\d\s-()]+$/).withMessage('Telefono invalido')
 ], handleValidationErrors, async (req, res) => {
   try {
@@ -753,7 +759,7 @@ router.post('/send-verification', [
 });
 
 // POST /auth/verify-phone — Verify SMS code
-router.post('/verify-phone', [
+router.post('/verify-phone', sensitiveLimiter, [
   body('code').isLength({ min: 6, max: 6 }).withMessage('Codigo de 6 digitos requerido'),
   body('phone').optional().matches(/^\+?[\d\s-()]+$/)
 ], handleValidationErrors, async (req, res) => {

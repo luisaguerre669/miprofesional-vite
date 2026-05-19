@@ -10,6 +10,7 @@ import {
   Sparkles, ExternalLink, RefreshCw, FileText
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
+import DashboardStats from '../components/dashboard/StatsCards';
 
 const ProfessionalDashboard = () => {
   const { user } = useAuth();
@@ -515,7 +516,7 @@ const ProfessionalDashboard = () => {
 
           {/* Stats Tab */}
           {activeTab === 'stats' && (
-            <div className="space-y-4">
+            <div className="space-y-6">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {[
                   { label: 'Completadas', value: stats.completed, color: 'text-green-600', bg: 'bg-green-50' },
@@ -549,6 +550,7 @@ const ProfessionalDashboard = () => {
                 <p className="text-3xl font-black text-gray-900">${(stats.totalRevenue || 0).toLocaleString()}</p>
                 <p className="text-[10px] text-gray-400 mt-1">Historial de ingresos por servicios prestados</p>
               </div>
+              <DashboardStats />
             </div>
           )}
         </div>
