@@ -15,5 +15,20 @@ export default defineConfig({
         ws: true
       }
     }
+  },
+  build: {
+    sourcemap: true,
+    minify: 'esbuild',
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          react: ['react', 'react-dom'],
+          recharts: ['recharts'],
+          router: ['react-router-dom'],
+          vendor: ['axios'],
+          icons: ['lucide-react']
+        }
+      }
+    }
   }
 })
