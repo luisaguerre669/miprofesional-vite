@@ -708,6 +708,62 @@ router.post('/', authenticate, async (req, res) => {
   }
 });
 
+// GET /api/v1/professionals/by-city/:city - Professionals by city name
+router.get('/by-city/:city', [
+  param('city').isString().isLength({ min: 2, max: 100 })
+], handleValidationErrors, async (req, res) => {
+  try {
+    const { city } = req.params;
+    const regex = new RegExp(city, 'i');
+    const professionals = await Professional.find({
+      isActive: true,
+      'subscription.status': 'active',
+      'location.city': regex
+    }).populate('categoryId', 'title').populate('userId', 'name email phone').limit(50);
+    res.json({ success: true, count: professionals.length, data: professionals });
+  } catch (error) {
+    logger.error('Get by city error:', error);
+    res.status(500).json({ success: false, message: 'Error al buscar por ciudad' });
+  }
+});
+
+// GET /api/v1/professionals/map - All professionals with coordinates for map
+router.get('/map', async (req, res) => {
+  try {
+    const professionals = await Professional.find({
+      isActive: true,
+      'subscription.status': 'active',
+      'location.coordinates.coordinates.0': { $ne: 0 },
+      'location.coordinates.coordinates.1': { $ne: 0 }
+    }).select('businessName profession location avatar stats.rating categoryId userId')
+      .populate('categoryId', 'title')
+      .populate('userId', 'name');
+    res.json({ success: true, count: professionals.length, data: professionals });
+  } catch (error) {
+    logger.error('Get map professionals error:', error);
+    res.status(500).json({ success: false, message: 'Error al obtener profesionales para mapa' });
+  }
+});
+
+// GET /api/v1/geocode - Geocode an address
+router.get('/geocode', async (req, res) => {
+  try {
+    const { address, city, state, country } = req.query;
+    if (!address && !city) {
+      return res.status(400).json({ success: false, message: 'Direccion o ciudad requerida' });
+    }
+    const { geocodeAddress } = require('../utils/geocode');
+    const result = await geocodeAddress({ address, city, state, country });
+    if (!result) {
+      return res.status(404).json({ success: false, message: 'No se pudo encontrar la ubicacion. Verifica la direccion e intenta de nuevo.' });
+    }
+    res.json({ success: true, data: result });
+  } catch (error) {
+    logger.error('Geocode error:', error);
+    res.status(500).json({ success: false, message: 'Error al geocodificar direccion' });
+  }
+});
+
 // PUT /api/v1/professionals/:id - Update professional profile
 router.put('/:id', authenticate, [
   param('id').isMongoId()
