@@ -11,7 +11,7 @@ import {
   SprayCan, Truck, Stethoscope, Users, Heart, Briefcase,
   AlertTriangle, ChevronLeft, ChevronRight, Shield, Clock,
   UserPlus, LayoutGrid, X, Phone, CheckCircle, Award,
-  TrendingUp, MessageCircle, Quote
+  TrendingUp, MessageCircle
 } from 'lucide-react';
 import AdBanner from '../components/ads/AdBanner';
 
@@ -42,12 +42,6 @@ const categories = [
   { name: 'Automotor', icon: Truck, slug: 'automotor', color: 'from-slate-600 to-slate-800', count: '5 servicios', image: 'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?w=400&q=80' },
   { name: 'Mascotas', icon: PawPrint, slug: 'mascotas', color: 'from-teal-600 to-teal-800', count: '4 servicios', image: 'https://images.unsplash.com/photo-1450778869180-41d0601e046e?w=400&q=80' },
   { name: 'Empresas', icon: Briefcase, slug: 'empresas', color: 'from-blue-600 to-blue-800', count: '5 servicios', image: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=400&q=80' },
-];
-
-const testimonials = [
-  { name: 'Martin G.', role: 'Cliente', text: 'Encontre al electricista perfecto en minutos. Muy facil de usar y los profesionales son verificados.', rating: 5, avatar: 'MG' },
-  { name: 'Laura D.', role: 'Profesional', text: 'Desde que me registre recibo consultas semanalmente. La mejor decision para mi negocio.', rating: 5, avatar: 'LD' },
-  { name: 'Carlos R.', role: 'Cliente', text: 'Servicio rapido y confiable. Ya contrate 2 profesionales por la plataforma y todo perfecto.', rating: 5, avatar: 'CR' },
 ];
 
 const benefits = [
@@ -89,6 +83,25 @@ const Home = () => {
   const [showCityInput, setShowCityInput] = useState(false);
   const [geoError, setGeoError] = useState('');
   const [geoLoading, setGeoLoading] = useState(false);
+  const [userAddress, setUserAddress] = useState('');
+
+  const reverseGeocode = useCallback(async (lat, lng) => {
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1&accept-language=es`, {
+        headers: { 'User-Agent': 'MiProfesional/1.0' }
+      });
+      const data = await res.json();
+      if (data?.display_name) {
+        const parts = data.display_name.split(',');
+        const short = parts.slice(0, 3).join(',').trim();
+        setUserAddress(short);
+      } else {
+        setUserAddress(`${lat.toFixed(4)}, ${lng.toFixed(4)}`);
+      }
+    } catch {
+      setUserAddress(`${lat.toFixed(4)}, ${lng.toFixed(4)}`);
+    }
+  }, []);
 
   const getLocation = useCallback(() => {
     if (!('geolocation' in navigator)) {
@@ -103,6 +116,7 @@ const Home = () => {
         setUserLocation(loc);
         setGeoLoading(false);
         setGeoError('');
+        reverseGeocode(loc.lat, loc.lng);
       },
       (err) => {
         setGeoLoading(false);
@@ -116,12 +130,12 @@ const Home = () => {
         fetch('https://ipapi.co/json/')
           .then(r => r.json())
           .then(d => d && d.latitude && d.longitude ? { lat: d.latitude, lng: d.longitude } : null)
-          .then(loc => { if (loc) { setUserLocation(loc); setGeoError(''); } })
+          .then(loc => { if (loc) { setUserLocation(loc); setGeoError(''); reverseGeocode(loc.lat, loc.lng); } })
           .catch(() => {});
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
-  }, []);
+  }, [reverseGeocode]);
 
   useEffect(() => { getLocation(); }, [getLocation]);
 
@@ -210,7 +224,7 @@ const Home = () => {
         <MapContainer key={`${userLocation.lat}-${userLocation.lng}`} center={[userLocation.lat, userLocation.lng]} zoom={13} className="h-full w-full" zoomControl={false}>
           <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
           <Marker position={[userLocation.lat, userLocation.lng]} icon={userIcon}>
-            <Popup><div className="text-center"><p className="font-semibold text-sm">Tu ubicacion</p><p className="text-xs text-gray-500">Estas aqui</p></div></Popup>
+            <Popup><div className="text-center"><p className="font-semibold text-sm">Tu ubicacion</p><p className="text-xs text-gray-500">{userAddress || 'Estas aqui'}</p></div></Popup>
           </Marker>
           {featuredPros.slice(0, 5).map((pro) => (
             pro.location?.coordinates?.length === 2 && (
@@ -232,7 +246,7 @@ const Home = () => {
         <div className="absolute bottom-3 left-3 right-3 z-[1000] flex justify-center">
           <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-lg px-4 py-2.5 flex items-center gap-3 text-sm">
             <MapPin size={14} className="text-primary-500 shrink-0" />
-            <span className="text-gray-600 text-xs">Profesionales cerca de tu ubicacion</span>
+            <span className="text-gray-600 text-xs truncate max-w-[180px]">{userAddress || 'Profesionales cerca de tu ubicacion'}</span>
             <button onClick={() => setShowCityInput(true)} className="text-xs text-gray-400 hover:text-gray-600 underline ml-auto">cambiar</button>
           </div>
         </div>
@@ -444,32 +458,6 @@ const Home = () => {
               );
             })}
           </div>
-        </div>
-      </section>
-
-      {/* TESTIMONIALS */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-24">
-        <div className="text-center mb-12">
-          <span className="text-primary-500 text-xs font-semibold uppercase tracking-widest">Testimonios</span>
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mt-1">Lo que dicen nuestros usuarios</h2>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {testimonials.map((t, i) => (
-            <div key={i} className="bg-white rounded-2xl border border-gray-200 p-6 md:p-8 hover:shadow-md transition-all">
-              <Quote size={24} className="text-primary-200 mb-3" />
-              <p className="text-sm text-gray-600 leading-relaxed mb-4">"{t.text}"</p>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 font-bold text-sm">{t.avatar}</div>
-                <div>
-                  <p className="font-semibold text-gray-900 text-sm">{t.name}</p>
-                  <p className="text-xs text-gray-500">{t.role}</p>
-                </div>
-                <div className="ml-auto">
-                  <StarRating rating={t.rating} size={12} />
-                </div>
-              </div>
-            </div>
-          ))}
         </div>
       </section>
 
