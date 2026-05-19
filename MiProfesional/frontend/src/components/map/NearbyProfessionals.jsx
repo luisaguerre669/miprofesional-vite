@@ -7,6 +7,7 @@ import { Slider } from '@/components/ui/slider';
 import { MapPin, Star, Navigation, Search, BadgeCheck, Phone, Crosshair } from 'lucide-react';
 import ProfessionalsMap from './ProfessionalsMap';
 import api from '@/lib/axios';
+import { getAccurateLocation } from '@/utils/geolocation';
 
 const PROVINCES = [
   'CABA', 'Buenos Aires', 'Catamarca', 'Chaco', 'Chubut', 'Cordoba',
@@ -30,30 +31,31 @@ export default function NearbyProfessionals() {
   const [geoLoading, setGeoLoading] = useState(false);
   const [locationMode, setLocationMode] = useState(''); // 'gps' | 'city' | 'manual'
 
-  const getLocation = () => {
-    if (!navigator.geolocation) {
-      setGeoError('GPS no disponible. Usa la busqueda por ciudad.');
-      return;
-    }
+  const getLocation = async () => {
     setGeoLoading(true);
     setGeoError('');
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+    try {
+      const result = await getAccurateLocation();
+      if (result.error) {
+        setGeoError(result.error);
+        if (result.source === 'unsupported' || result.source === 'permission_denied') {
+          // do nothing, user can search by city
+        } else {
+          fetch('https://ipapi.co/json/')
+            .then(r => r.json())
+            .then(d => d && d.latitude && d.longitude ? { lat: d.latitude, lng: d.longitude } : null)
+            .then(loc => { if (loc) { setUserLocation(loc); setGeoError(''); setLocationMode('city'); } })
+            .catch(() => {});
+        }
+      } else {
+        setUserLocation({ lat: result.lat, lng: result.lng });
         setLocationMode('gps');
-        setGeoLoading(false);
-      },
-      () => {
-        setGeoLoading(false);
-        setGeoError('No se pudo obtener ubicacion GPS. Busca por ciudad.');
-        fetch('https://ipapi.co/json/')
-          .then(r => r.json())
-          .then(d => d && d.latitude && d.longitude ? { lat: d.latitude, lng: d.longitude } : null)
-          .then(loc => { if (loc) { setUserLocation(loc); setGeoError(''); } })
-          .catch(() => {});
-      },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-    );
+        setGeoError('');
+      }
+    } catch {
+      setGeoError('Error inesperado al obtener ubicacion.');
+    }
+    setGeoLoading(false);
   };
 
   useEffect(() => { getLocation(); }, []);

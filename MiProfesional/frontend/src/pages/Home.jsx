@@ -5,6 +5,7 @@ import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import api from '../lib/axios';
+import { getAccurateLocation } from '../utils/geolocation';
 import {
   Search, ArrowRight, Star, MapPin, Building2, Wrench,
   Hammer, Zap, Droplets, Paintbrush, Lock, TreePine,
@@ -143,50 +144,47 @@ const Home = () => {
     setGeoLoading(false);
   }, []);
 
-  const getLocation = useCallback(() => {
-    if (!('geolocation' in navigator)) {
-      setShowFullAddress(true);
-      setShowCityInput(true);
-      return;
-    }
+  const getLocation = useCallback(async () => {
     setGeoLoading(true);
     setGeoError('');
-    // First attempt: high accuracy
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-        setUserLocation(loc);
+    try {
+      const result = await getAccurateLocation();
+      if (result.error) {
+        setGeoError(result.error);
+        if (result.source === 'unsupported') {
+          setShowFullAddress(true);
+          setShowCityInput(true);
+        } else if (result.source === 'permission_denied') {
+          setShowCityInput(true);
+        } else {
+          fetch('https://ipapi.co/json/')
+            .then(r => r.json())
+            .then(d => d && d.latitude && d.longitude ? { lat: d.latitude, lng: d.longitude } : null)
+            .then(loc => {
+              if (loc) {
+                setUserLocation(loc);
+                setGeoError('');
+                setLocationMode('city');
+                setShowCityInput(false);
+                reverseGeocode(loc.lat, loc.lng);
+              } else {
+                setShowCityInput(true);
+              }
+            })
+            .catch(() => setShowCityInput(true));
+        }
+      } else {
+        setUserLocation({ lat: result.lat, lng: result.lng });
         setLocationMode('gps');
-        setGeoLoading(false);
         setGeoError('');
-        reverseGeocode(loc.lat, loc.lng);
-      },
-      (err) => {
-        // Second attempt: lower accuracy, longer timeout
-        navigator.geolocation.getCurrentPosition(
-          (pos) => {
-            const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-            setUserLocation(loc);
-            setLocationMode('gps');
-            setGeoLoading(false);
-            setGeoError('');
-            reverseGeocode(loc.lat, loc.lng);
-          },
-          () => {
-            setGeoLoading(false);
-            setGeoError('No se pudo obtener ubicacion GPS.');
-            setShowCityInput(true);
-            fetch('https://ipapi.co/json/')
-              .then(r => r.json())
-              .then(d => d && d.latitude && d.longitude ? { lat: d.latitude, lng: d.longitude } : null)
-              .then(loc => { if (loc) { setUserLocation(loc); setGeoError(''); setShowCityInput(false); reverseGeocode(loc.lat, loc.lng); } })
-              .catch(() => {});
-          },
-          { enableHighAccuracy: false, timeout: 15000, maximumAge: 60000 }
-        );
-      },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-    );
+        setShowCityInput(false);
+        reverseGeocode(result.lat, result.lng);
+      }
+    } catch (err) {
+      setGeoError('Error inesperado al obtener ubicacion.');
+      setShowCityInput(true);
+    }
+    setGeoLoading(false);
   }, [reverseGeocode]);
 
   useEffect(() => { getLocation(); }, [getLocation]);
