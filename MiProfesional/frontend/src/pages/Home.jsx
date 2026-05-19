@@ -94,6 +94,8 @@ const Home = () => {
   const [geoLoading, setGeoLoading] = useState(false);
   const [userAddress, setUserAddress] = useState('');
   const [locationMode, setLocationMode] = useState(''); // 'gps' | 'city' | 'manual'
+  const [showFullAddress, setShowFullAddress] = useState(false);
+  const [addressForm, setAddressForm] = useState({ street: '', number: '', neighborhood: '', city: '', province: '' });
 
   const reverseGeocode = useCallback(async (lat, lng) => {
     try {
@@ -113,35 +115,43 @@ const Home = () => {
     }
   }, []);
 
-  const geocodeCity = useCallback(async (city, province) => {
+  const geocodeFullAddress = useCallback(async (fields) => {
     setGeoLoading(true);
+    setGeoError('');
     try {
+      const streetAddr = [fields.street, fields.number].filter(Boolean).join(' ');
       const res = await api.get('/professionals/geocode', {
-        params: { address: '', city, state: province, country: 'Argentina' }
+        params: {
+          address: streetAddr || `${fields.neighborhood}`,
+          city: fields.city,
+          state: fields.province,
+          country: 'Argentina'
+        }
       });
       if (res.data?.success && res.data?.data) {
         const loc = { lat: res.data.data.latitude, lng: res.data.data.longitude };
         setUserLocation(loc);
-        setUserAddress(res.data.data.displayName || `${city}, ${province}`);
-        setGeoError('');
+        setUserAddress(res.data.data.displayName || `${streetAddr}, ${fields.city}`);
         setLocationMode('city');
+        setShowCityInput(false);
       } else {
-        setGeoError('No se pudo encontrar la ciudad. Intenta con otra.');
+        setGeoError('No se pudo encontrar la direccion. Verifica los datos.');
       }
     } catch {
-      setGeoError('Error al buscar la ubicacion. Verifica los datos.');
+      setGeoError('Error al buscar la ubicacion. Intenta de nuevo.');
     }
     setGeoLoading(false);
   }, []);
 
   const getLocation = useCallback(() => {
     if (!('geolocation' in navigator)) {
-      setGeoError('Tu navegador no soporta geolocalizacion');
+      setShowFullAddress(true);
       setShowCityInput(true);
       return;
     }
     setGeoLoading(true);
     setGeoError('');
+    // First attempt: high accuracy
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
@@ -152,20 +162,28 @@ const Home = () => {
         reverseGeocode(loc.lat, loc.lng);
       },
       (err) => {
-        setGeoLoading(false);
-        if (err.code === 1) {
-          setGeoError('Permiso de ubicacion denegado.');
-        } else if (err.code === 2) {
-          setGeoError('No se pudo obtener la ubicacion. Senal GPS no disponible.');
-        } else {
-          setGeoError('No se pudo obtener la ubicacion. Intenta de nuevo.');
-        }
-        setShowCityInput(true);
-        fetch('https://ipapi.co/json/')
-          .then(r => r.json())
-          .then(d => d && d.latitude && d.longitude ? { lat: d.latitude, lng: d.longitude } : null)
-          .then(loc => { if (loc) { setUserLocation(loc); setGeoError(''); setShowCityInput(false); reverseGeocode(loc.lat, loc.lng); } })
-          .catch(() => {});
+        // Second attempt: lower accuracy, longer timeout
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+            setUserLocation(loc);
+            setLocationMode('gps');
+            setGeoLoading(false);
+            setGeoError('');
+            reverseGeocode(loc.lat, loc.lng);
+          },
+          () => {
+            setGeoLoading(false);
+            setGeoError('No se pudo obtener ubicacion GPS.');
+            setShowCityInput(true);
+            fetch('https://ipapi.co/json/')
+              .then(r => r.json())
+              .then(d => d && d.latitude && d.longitude ? { lat: d.latitude, lng: d.longitude } : null)
+              .then(loc => { if (loc) { setUserLocation(loc); setGeoError(''); setShowCityInput(false); reverseGeocode(loc.lat, loc.lng); } })
+              .catch(() => {});
+          },
+          { enableHighAccuracy: false, timeout: 15000, maximumAge: 60000 }
+        );
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
@@ -225,23 +243,57 @@ const Home = () => {
         <div className="h-full rounded-2xl overflow-hidden border border-gray-200 bg-gray-50 flex items-center justify-center">
           <div className="text-center px-4 w-full max-w-xs">
             <MapPin size={28} className="mx-auto text-gray-300 mb-2" />
-            <p className="text-gray-500 font-medium text-sm mb-3">Selecciona tu ubicacion</p>
-            <div className="space-y-2">
-              <select value={selectedProvince} onChange={e => setSelectedProvince(e.target.value)}
-                className="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500">
-                <option value="">Provincia</option>
-                {PROVINCES.map(p => <option key={p} value={p}>{p}</option>)}
-              </select>
-              <input type="text" value={manualCity} onChange={e => setManualCity(e.target.value)}
-                placeholder="Ciudad (ej: La Plata)"
-                className="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500" />
-              <button onClick={() => { if (manualCity.trim() && selectedProvince) geocodeCity(manualCity.trim(), selectedProvince); }}
-                disabled={!manualCity.trim() || !selectedProvince || geoLoading}
-                className="w-full px-4 py-2.5 bg-primary-600 text-white text-sm font-semibold rounded-xl hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm flex items-center justify-center gap-2">
-                {geoLoading ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <MapPin size={14} />}
-                {geoLoading ? 'Buscando...' : 'Usar esta ubicacion'}
-              </button>
-            </div>
+            <p className="text-gray-500 font-medium text-sm mb-3">
+              {showFullAddress ? 'Ingresa tu direccion exacta' : 'Selecciona tu ubicacion'}
+            </p>
+            {showFullAddress ? (
+              <div className="space-y-2 text-left">
+                <div className="flex gap-2">
+                  <input type="text" value={addressForm.street} onChange={e => setAddressForm(f => ({ ...f, street: e.target.value }))}
+                    placeholder="Calle" className="flex-1 px-3 py-2 bg-white border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20" />
+                  <input type="text" value={addressForm.number} onChange={e => setAddressForm(f => ({ ...f, number: e.target.value }))}
+                    placeholder="Numero" className="w-24 px-3 py-2 bg-white border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20" />
+                </div>
+                <input type="text" value={addressForm.neighborhood} onChange={e => setAddressForm(f => ({ ...f, neighborhood: e.target.value }))}
+                  placeholder="Barrio (opcional)" className="w-full px-3 py-2 bg-white border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20" />
+                <div className="flex gap-2">
+                  <input type="text" value={addressForm.city} onChange={e => setAddressForm(f => ({ ...f, city: e.target.value }))}
+                    placeholder="Ciudad" className="flex-1 px-3 py-2 bg-white border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20" />
+                  <select value={addressForm.province} onChange={e => setAddressForm(f => ({ ...f, province: e.target.value }))}
+                    className="flex-1 px-3 py-2 bg-white border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20">
+                    <option value="">Provincia</option>
+                    {PROVINCES.map(p => <option key={p} value={p}>{p}</option>)}
+                  </select>
+                </div>
+                <button onClick={() => geocodeFullAddress(addressForm)}
+                  disabled={!addressForm.city || !addressForm.province || geoLoading}
+                  className="w-full px-4 py-2.5 bg-primary-600 text-white text-sm font-semibold rounded-xl hover:bg-primary-700 disabled:opacity-50 transition-all shadow-sm flex items-center justify-center gap-2">
+                  {geoLoading ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <MapPin size={14} />}
+                  {geoLoading ? 'Buscando...' : 'Ubicar direccion'}
+                </button>
+                <button onClick={() => setShowFullAddress(false)}
+                  className="text-xs text-gray-400 hover:text-gray-600 underline w-full text-center">Usar solo ciudad</button>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <select value={selectedProvince} onChange={e => setSelectedProvince(e.target.value)}
+                  className="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500/20">
+                  <option value="">Provincia</option>
+                  {PROVINCES.map(p => <option key={p} value={p}>{p}</option>)}
+                </select>
+                <input type="text" value={manualCity} onChange={e => setManualCity(e.target.value)}
+                  placeholder="Ciudad (ej: La Plata)"
+                  className="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20" />
+                <button onClick={() => { if (manualCity.trim() && selectedProvince) { setAddressForm(f => ({ ...f, city: manualCity, province: selectedProvince })); setShowFullAddress(true); } }}
+                  disabled={!manualCity.trim() || !selectedProvince || geoLoading}
+                  className="w-full px-4 py-2.5 bg-primary-600 text-white text-sm font-semibold rounded-xl hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm flex items-center justify-center gap-2">
+                  {geoLoading ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <MapPin size={14} />}
+                  {geoLoading ? 'Buscando...' : 'Siguiente: direccion exacta'}
+                </button>
+                <button onClick={() => setShowFullAddress(true)}
+                  className="text-xs text-gray-400 hover:text-gray-600 underline w-full text-center">Ingresar direccion completa</button>
+              </div>
+            )}
             {geoError && <p className="text-red-500 text-xs mt-2">{geoError}</p>}
             <button onClick={() => { setShowCityInput(false); getLocation(); }}
               className="text-xs text-gray-400 hover:text-gray-600 underline mt-3">Intentar con GPS</button>
