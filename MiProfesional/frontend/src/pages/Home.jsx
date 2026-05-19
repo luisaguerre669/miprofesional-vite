@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
@@ -87,30 +87,43 @@ const Home = () => {
 
   const [manualCity, setManualCity] = useState('');
   const [showCityInput, setShowCityInput] = useState(false);
+  const [geoError, setGeoError] = useState('');
+  const [geoLoading, setGeoLoading] = useState(false);
 
-  useEffect(() => {
-    const cached = localStorage.getItem('miprofesional_location');
-    if (cached) {
-      try { const p = JSON.parse(cached); if (p.lat && p.lng) { setUserLocation(p); return; } } catch {}
+  const getLocation = useCallback(() => {
+    if (!('geolocation' in navigator)) {
+      setGeoError('Tu navegador no soporta geolocalizacion');
+      return;
     }
-    if ('geolocation' in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-          setUserLocation(loc);
-          localStorage.setItem('miprofesional_location', JSON.stringify(loc));
-        },
-        () => {
-          fetch('https://ipapi.co/json/')
-            .then(r => r.json())
-            .then(d => d && d.latitude && d.longitude ? { lat: d.latitude, lng: d.longitude } : null)
-            .then(loc => { if (loc) { setUserLocation(loc); localStorage.setItem('miprofesional_location', JSON.stringify(loc)); } })
-            .catch(() => {});
-        },
-        { enableHighAccuracy: true, timeout: 15000, maximumAge: 300000 }
-      );
-    }
+    setGeoLoading(true);
+    setGeoError('');
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        setUserLocation(loc);
+        setGeoLoading(false);
+        setGeoError('');
+      },
+      (err) => {
+        setGeoLoading(false);
+        if (err.code === 1) {
+          setGeoError('Permiso de ubicacion denegado. Activalo desde la configuracion del navegador.');
+        } else if (err.code === 2) {
+          setGeoError('No se pudo obtener la ubicacion. Senal GPS no disponible.');
+        } else {
+          setGeoError('No se pudo obtener la ubicacion. Intenta de nuevo.');
+        }
+        fetch('https://ipapi.co/json/')
+          .then(r => r.json())
+          .then(d => d && d.latitude && d.longitude ? { lat: d.latitude, lng: d.longitude } : null)
+          .then(loc => { if (loc) { setUserLocation(loc); setGeoError(''); } })
+          .catch(() => {});
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
   }, []);
+
+  useEffect(() => { getLocation(); }, [getLocation]);
 
   useEffect(() => {
     if (featuredPros.length === 0) return;
@@ -130,14 +143,41 @@ const Home = () => {
   }
 
   const renderMap = () => {
-    if (!userLocation || showCityInput) {
+    if (geoLoading) {
+      return (
+        <div className="h-full rounded-2xl overflow-hidden border border-gray-200 bg-gray-50 flex items-center justify-center">
+          <div className="text-center px-4">
+            <div className="w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+            <p className="text-gray-500 font-medium text-sm">Obteniendo ubicacion...</p>
+          </div>
+        </div>
+      );
+    }
+    if (geoError && !userLocation) {
+      return (
+        <div className="h-full rounded-2xl overflow-hidden border border-gray-200 bg-gray-50 flex items-center justify-center">
+          <div className="text-center px-4">
+            <MapPin size={28} className="mx-auto text-red-300 mb-2" />
+            <p className="text-red-500 font-medium text-sm mb-1">Error de ubicacion</p>
+            <p className="text-gray-400 text-xs mb-4 max-w-[200px] mx-auto">{geoError}</p>
+            <button onClick={getLocation}
+              className="px-4 py-2 bg-primary-600 text-white text-xs font-semibold rounded-lg hover:bg-primary-700 transition-all shadow-sm">
+              Reintentar ubicacion
+            </button>
+            <button onClick={() => setShowCityInput(true)}
+              className="block mx-auto mt-2 text-xs text-gray-400 hover:text-gray-600 underline">
+              Ingresar ciudad manualmente
+            </button>
+          </div>
+        </div>
+      );
+    }
+    if (showCityInput) {
       return (
         <div className="h-full rounded-2xl overflow-hidden border border-gray-200 bg-gray-50 flex items-center justify-center">
           <div className="text-center px-4">
             <MapPin size={28} className="mx-auto text-gray-300 mb-2" />
-            <p className="text-gray-500 font-medium text-sm mb-3">
-              {showCityInput ? 'Ingresa tu ciudad' : 'Activa tu ubicacion'}
-            </p>
+            <p className="text-gray-500 font-medium text-sm mb-3">Ingresa tu ciudad</p>
             <form onSubmit={(e) => { e.preventDefault(); if (manualCity.trim()) navigate(`/search?q=${encodeURIComponent(manualCity.trim())}`); }}
               className="flex items-center gap-2 bg-white rounded-xl px-3 py-2 shadow-sm max-w-xs mx-auto">
               <MapPin size={14} className="text-gray-400" />
@@ -145,17 +185,29 @@ const Home = () => {
                 placeholder="Buenos Aires..." className="bg-transparent text-sm flex-1 focus:outline-none text-gray-700 placeholder-gray-400" />
               <button type="submit" className="px-3 py-1 bg-primary-600 text-white text-xs font-medium rounded-lg hover:bg-primary-700">Ir</button>
             </form>
-            {showCityInput && (
-              <button onClick={() => { setShowCityInput(false); localStorage.removeItem('miprofesional_location'); window.location.reload(); }}
-                className="text-xs text-gray-400 hover:text-gray-600 underline mt-2">usar GPS</button>
-            )}
+            <button onClick={() => { setShowCityInput(false); getLocation(); }}
+              className="text-xs text-gray-400 hover:text-gray-600 underline mt-2">usar GPS</button>
+          </div>
+        </div>
+      );
+    }
+    if (!userLocation) {
+      return (
+        <div className="h-full rounded-2xl overflow-hidden border border-gray-200 bg-gray-50 flex items-center justify-center">
+          <div className="text-center px-4">
+            <MapPin size={28} className="mx-auto text-gray-300 mb-2" />
+            <p className="text-gray-500 font-medium text-sm mb-3">Activa tu ubicacion</p>
+            <button onClick={getLocation}
+              className="px-4 py-2 bg-primary-600 text-white text-xs font-semibold rounded-lg hover:bg-primary-700 transition-all shadow-sm">
+              Activar ubicacion
+            </button>
           </div>
         </div>
       );
     }
     return (
       <div className="h-full rounded-2xl overflow-hidden border border-gray-200 shadow-sm relative">
-        <MapContainer center={[userLocation.lat, userLocation.lng]} zoom={13} className="h-full w-full" zoomControl={false}>
+        <MapContainer key={`${userLocation.lat}-${userLocation.lng}`} center={[userLocation.lat, userLocation.lng]} zoom={13} className="h-full w-full" zoomControl={false}>
           <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
           <Marker position={[userLocation.lat, userLocation.lng]} icon={userIcon}>
             <Popup><div className="text-center"><p className="font-semibold text-sm">Tu ubicacion</p><p className="text-xs text-gray-500">Estas aqui</p></div></Popup>
