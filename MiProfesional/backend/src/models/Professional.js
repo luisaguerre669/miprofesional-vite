@@ -1,6 +1,7 @@
 // Professional Model for MiProfesional Backend
 
 const mongoose = require('mongoose');
+const { geocodeAddress } = require('../utils/geocode');
 
 const professionalSchema = new mongoose.Schema({
   userId: {
@@ -387,13 +388,31 @@ professionalSchema.index({
 });
 
 // Pre-save middleware
-professionalSchema.pre('save', function(next) {
-  // Update featured status if featuredUntil date has passed
+professionalSchema.pre('save', async function(next) {
   if (this.isFeatured && this.featuredUntil && new Date() > this.featuredUntil) {
     this.isFeatured = false;
     this.featuredUntil = null;
   }
-  
+
+  if (this.isModified('location.address') || this.isModified('location.city') || this.isModified('location.state')) {
+    const addr = this.location.address;
+    const city = this.location.city;
+    if (addr && addr !== 'pendiente' && city && city !== 'pendiente') {
+      try {
+        const result = await geocodeAddress({
+          address: addr, city, state: this.location.state,
+          country: this.location.country
+        });
+        if (result) {
+          this.location.coordinates = {
+            type: 'Point',
+            coordinates: [result.longitude, result.latitude]
+          };
+        }
+      } catch (err) { /* non-critical */ }
+    }
+  }
+
   next();
 });
 
