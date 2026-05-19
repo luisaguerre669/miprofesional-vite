@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Star, MapPin, Navigation, Layers, Award, Zap, Crosshair } from 'lucide-react';
 import api from '@/lib/axios';
+import { getAccurateLocation } from '@/utils/geolocation';
 
 function makeIcon(color) {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="44" viewBox="0 0 36 44"><path d="M18 0C9.716 0 3 6.716 3 15c0 11.25 15 29 15 29s15-17.75 15-29C33 6.716 26.284 0 18 0z" fill="${color}" stroke="white" stroke-width="2"/><circle cx="18" cy="15" r="7" fill="white"/></svg>`;
@@ -165,12 +166,9 @@ export default function ProfessionalsMap({
       {/* My location button */}
       <div className="absolute top-4 right-4 z-[1000]">
         <Button
-          onClick={() => {
-            if (navigator.geolocation) {
-              navigator.geolocation.getCurrentPosition(
-                (pos) => setMapCenter([pos.coords.latitude, pos.coords.longitude])
-              );
-            }
+          onClick={async () => {
+            const loc = await getAccurateLocation();
+            if (loc && !loc.error) setMapCenter([loc.lat, loc.lng]);
           }}
           variant="outline"
           className="bg-white shadow-lg"
