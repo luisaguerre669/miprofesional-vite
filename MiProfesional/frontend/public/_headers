@@ -1,0 +1,4 @@
+/downloads/*
+  Content-Type: application/vnd.android.package-archive
+  Content-Disposition: attachment
+  Cache-Control: no-store, must-revalidate

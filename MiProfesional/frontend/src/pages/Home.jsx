@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import AdBanner from '../components/ads/AdBanner';
 import { resolveIcon, getInlineGradient } from '../utils/categoryIcons';
+import DownloadSection from '../components/DownloadSection';
 
 const customIcon = new L.DivIcon({
   className: 'custom-marker',
@@ -607,6 +608,9 @@ const Home = () => {
           </div>
         </div>
       </section>
+
+      {/* DOWNLOAD APP */}
+      <DownloadSection />
 
       {/* FOOTER */}
       <footer className="bg-white border-t border-gray-200 py-12 md:py-16 px-4">
