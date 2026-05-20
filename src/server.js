@@ -236,20 +236,12 @@ class Server {
     try {
       await connectDB();
 
-      // Auto-seed categories if empty
-      try {
-        const Category = require('./models/Category');
-        const count = await Category.countDocuments({ isActive: true, parentCategory: null });
-        if (count === 0) {
-          logger.info('No categories found, running auto-seed...');
+        // Sync categories (creates missing, updates existing - idempotent)
+        try {
           await require('./scripts/runAutoSeed')();
-          logger.info('Auto-seed completed');
-        } else {
-          logger.info(`Categories already seeded: ${count} parent categories`);
+        } catch (seedErr) {
+          logger.error('Category sync error (non-fatal)', { error: seedErr.message });
         }
-      } catch (seedErr) {
-        logger.error('Auto-seed error (non-fatal)', { error: seedErr.message });
-      }
 
       this.server.listen(this.port, () => {
         logger.info("MiProfesional backend listening", {
