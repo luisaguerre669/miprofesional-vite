@@ -18,7 +18,7 @@ export async function requestLocationPermissions() {
   try {
     const permResult = await Geolocation.requestPermissions();
     const fine = permResult.location === 'granted' || permResult.coarseLocation === 'granted';
-    log('Permisos Android:', permResult.location, permResult.coarseLocation, '-> granted:', fine);
+    log('Permisos nativos:', permResult.location, permResult.coarseLocation, '-> granted:', fine);
     return fine;
   } catch (err) {
     logError('Error solicitando permisos GPS:', err);
@@ -79,7 +79,7 @@ export async function getAccurateLocation() {
   log('Iniciando geolocalizacion precisa...');
 
   if (Capacitor.isNativePlatform()) {
-    log('Plataforma nativa detectada (Android)');
+    log('Plataforma nativa detectada (' + Capacitor.getPlatform() + ')');
     const hasPerms = await requestLocationPermissions();
     if (!hasPerms) {
       logError('Permisos GPS denegados por el usuario');
