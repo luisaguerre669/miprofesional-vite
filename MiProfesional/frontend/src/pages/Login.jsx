@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import api from '../lib/axios';
 import { LogIn, Mail, Lock, AlertCircle, Chrome, Smartphone, ArrowLeft, CheckCircle } from 'lucide-react';
 
 const Login = () => {
@@ -52,9 +53,8 @@ const Login = () => {
     setLoading(true);
     try {
       const res = await api.post('/auth/send-verification', { phone: formData.phone });
-      const data = await res.json();
-      if (data.success) setCodeSent(true);
-      else setError(data.error || 'Error al enviar codigo');
+      if (res.data.success) setCodeSent(true);
+      else setError(res.data.error || 'Error al enviar codigo');
     } catch { setError('Error de conexion'); }
     setLoading(false);
   };
