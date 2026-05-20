@@ -235,6 +235,22 @@ class Server {
     this.setupProcessHandlers();
     try {
       await connectDB();
+
+      // Auto-seed categories if empty
+      try {
+        const Category = require('./models/Category');
+        const count = await Category.countDocuments({ isActive: true, parentCategory: null });
+        if (count === 0) {
+          logger.info('No categories found, running auto-seed...');
+          await require('./scripts/runAutoSeed')();
+          logger.info('Auto-seed completed');
+        } else {
+          logger.info(`Categories already seeded: ${count} parent categories`);
+        }
+      } catch (seedErr) {
+        logger.error('Auto-seed error (non-fatal)', { error: seedErr.message });
+      }
+
       this.server.listen(this.port, () => {
         logger.info("MiProfesional backend listening", {
           port: this.port,
