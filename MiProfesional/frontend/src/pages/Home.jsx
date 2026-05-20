@@ -58,16 +58,16 @@ function isStandalone() {
 
 function PhoneMockup() {
   return (
-    <div className="relative mx-auto w-[140px] sm:w-[160px] lg:w-[200px]">
-      <div className="relative bg-gray-900 rounded-[24px] p-1.5 shadow-2xl shadow-black/40 border border-gray-800">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[70px] h-3.5 bg-gray-900 rounded-b-xl z-10" />
-        <div className="bg-white rounded-[18px] overflow-hidden aspect-[9/19] flex flex-col items-center justify-center relative">
-          <div className="absolute inset-0 bg-gradient-to-b from-primary-600 to-primary-800 flex flex-col items-center justify-center p-4">
-            <div className="w-8 h-8 rounded-xl bg-white flex items-center justify-center mb-2 shadow-lg">
-              <span className="text-primary-600 font-black text-xs">MP</span>
+    <div className="relative mx-auto w-[110px] sm:w-[140px] lg:w-[200px]">
+      <div className="relative bg-gray-900 rounded-[20px] sm:rounded-[24px] p-1.5 shadow-2xl shadow-black/40 border border-gray-800">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[50px] sm:w-[70px] h-3 bg-gray-900 rounded-b-xl z-10" />
+        <div className="bg-white rounded-[16px] sm:rounded-[18px] overflow-hidden aspect-[9/19] flex flex-col items-center justify-center relative">
+          <div className="absolute inset-0 bg-gradient-to-b from-primary-600 to-primary-800 flex flex-col items-center justify-center p-3 sm:p-4">
+            <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-xl bg-white flex items-center justify-center mb-1.5 sm:mb-2 shadow-lg">
+              <span className="text-primary-600 font-black text-[10px] sm:text-xs">MP</span>
             </div>
-            <p className="text-white text-[10px] font-bold text-center leading-tight">MiProfesional</p>
-            <p className="text-white/60 text-[8px] mt-0.5 text-center">Encuentra profesionales</p>
+            <p className="text-white text-[8px] sm:text-[10px] font-bold text-center leading-tight">MiProfesional</p>
+            <p className="text-white/60 text-[7px] sm:text-[8px] mt-0.5 text-center">Encuentra profesionales</p>
           </div>
         </div>
       </div>
@@ -446,53 +446,19 @@ const Home = () => {
       </header>
 
       {/* HERO PREMIUM */}
-      <section className="relative min-h-[90vh] lg:min-h-screen flex items-center overflow-hidden bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950">
+      <section className="relative lg:min-h-screen flex items-center overflow-hidden bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950">
         <div className="absolute inset-0">
           <img src="https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=1600&q=80" alt="" className="w-full h-full object-cover opacity-20" style={{ filter: 'brightness(0.3)' }} />
           <div className="absolute inset-0 bg-gradient-to-r from-gray-950/90 via-gray-900/70 to-transparent" />
           <div className="absolute inset-0 bg-gradient-to-t from-gray-950/60 via-transparent to-gray-950/20" />
         </div>
-        <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16 lg:py-20">
-          <div className="flex flex-col lg:flex-row items-center gap-8 lg:gap-14">
-            {/* LEFT: text + search + tags */}
-            <div className="flex-1 text-center lg:text-left">
-              <div className="inline-flex items-center gap-2 bg-white/5 backdrop-blur-sm border border-white/10 rounded-full px-4 py-1.5 text-sm text-gray-300 mb-6">
-                <Shield size={14} className="text-primary-400" />
-                <span>Marketplace de confianza en Argentina</span>
-              </div>
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-black text-white leading-[1.05] mb-4">
-                El profesional que necesitas<br />
-                <span className="bg-gradient-to-r from-primary-400 via-primary-300 to-emerald-300 bg-clip-text text-transparent">esta mas cerca de lo que crees</span>
-              </h1>
-              <p className="text-sm sm:text-base md:text-lg text-gray-400 mb-6 max-w-xl mx-auto lg:mx-0 leading-relaxed">
-                Conectamos clientes con profesionales verificados en toda Argentina. Desde albaniles hasta medicos, el experto ideal para cada proyecto.
-              </p>
-              <form onSubmit={handleSearch} className="max-w-xl mx-auto lg:mx-0">
-                <div className="relative flex bg-white/5 backdrop-blur-sm border border-gray-700/50 rounded-2xl overflow-hidden focus-within:border-primary-500/50 focus-within:ring-1 focus-within:ring-primary-500/20 transition-all shadow-xl shadow-black/20">
-                  <Search size={20} className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-500" />
-                  <input type="text" value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
-                    placeholder="Busca un servicio: Plomero, Electricista, Medico..."
-                    className="w-full pl-12 pr-4 py-4 md:py-5 bg-transparent text-white placeholder-gray-600 focus:outline-none text-base"
-                  />
-                  <button type="submit" className="px-6 md:px-8 py-4 md:py-5 bg-primary-500 text-white font-bold hover:bg-primary-600 transition-all flex items-center gap-2">
-                    <span className="hidden sm:inline">Buscar</span> <Search size={18} />
-                  </button>
-                </div>
-              </form>
-              <div className="flex flex-wrap gap-2 mt-6 justify-center lg:justify-start">
-                {['Albanil', 'Plomero', 'Electricista', 'Medico', 'Cerrajero', 'Gasista'].map(cat => (
-                  <Link key={cat} to={`/search?q=${encodeURIComponent(cat)}`}
-                    className="px-3.5 py-1.5 bg-white/5 hover:bg-white/10 backdrop-blur-sm border border-white/10 hover:border-primary-500/30 rounded-xl text-xs text-gray-300 hover:text-white transition-all"
-                  >{cat}</Link>
-                ))}
-              </div>
-            </div>
-
-            {/* RIGHT: phone mockup + QR + download button */}
+        <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 lg:py-20">
+          <div className="flex flex-col lg:flex-row items-center gap-6 lg:gap-14">
+            {/* RIGHT: phone mockup + QR + download button — first on mobile via order */}
             {!alreadyInstalled && (
-              <div className="shrink-0 flex flex-col items-center gap-5 lg:gap-6">
+              <div className="order-1 lg:order-2 shrink-0 flex flex-col items-center gap-4 lg:gap-6">
                 <PhoneMockup />
-                <div className="flex items-stretch gap-3 w-full max-w-[320px]">
+                <div className="flex items-stretch gap-3 w-full max-w-[300px] sm:max-w-[320px]">
                   {(device === 'android' || device === 'desktop') && (
                     <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-2 shrink-0 flex items-center">
                       <QRCodeCanvas value={SITE_URL} size={56} bgColor="#ffffff" fgColor="#0f7a5a" level="M" />
@@ -519,6 +485,40 @@ const Home = () => {
                 </div>
               </div>
             )}
+
+            {/* LEFT: text + search + tags — second on mobile via order */}
+            <div className="order-2 lg:order-1 flex-1 text-center lg:text-left">
+              <div className="inline-flex items-center gap-2 bg-white/5 backdrop-blur-sm border border-white/10 rounded-full px-3.5 py-1 text-xs sm:text-sm text-gray-300 mb-4 lg:mb-6">
+                <Shield size={13} className="text-primary-400" />
+                <span>Marketplace de confianza en Argentina</span>
+              </div>
+              <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-black text-white leading-[1.05] mb-3 lg:mb-4">
+                El profesional que necesitas<br />
+                <span className="bg-gradient-to-r from-primary-400 via-primary-300 to-emerald-300 bg-clip-text text-transparent">esta mas cerca de lo que crees</span>
+              </h1>
+              <p className="text-xs sm:text-sm md:text-base lg:text-lg text-gray-400 mb-4 lg:mb-6 max-w-xl mx-auto lg:mx-0 leading-relaxed">
+                Conectamos clientes con profesionales verificados en toda Argentina.
+              </p>
+              <form onSubmit={handleSearch} className="max-w-xl mx-auto lg:mx-0">
+                <div className="relative flex bg-white/5 backdrop-blur-sm border border-gray-700/50 rounded-2xl overflow-hidden focus-within:border-primary-500/50 focus-within:ring-1 focus-within:ring-primary-500/20 transition-all shadow-xl shadow-black/20">
+                  <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" />
+                  <input type="text" value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+                    placeholder="Busca un servicio: Plomero, Electricista, Medico..."
+                    className="w-full pl-10 pr-3 py-3 md:py-5 bg-transparent text-white placeholder-gray-600 focus:outline-none text-sm md:text-base"
+                  />
+                  <button type="submit" className="px-4 md:px-8 py-3 md:py-5 bg-primary-500 text-white font-bold hover:bg-primary-600 transition-all flex items-center gap-2 text-sm md:text-base">
+                    <span className="hidden sm:inline">Buscar</span> <Search size={16} />
+                  </button>
+                </div>
+              </form>
+              <div className="flex flex-wrap gap-2 mt-4 lg:mt-6 justify-center lg:justify-start">
+                {['Albanil', 'Plomero', 'Electricista', 'Medico', 'Cerrajero', 'Gasista'].map(cat => (
+                  <Link key={cat} to={`/search?q=${encodeURIComponent(cat)}`}
+                    className="px-3 py-1 lg:px-3.5 lg:py-1.5 bg-white/5 hover:bg-white/10 backdrop-blur-sm border border-white/10 hover:border-primary-500/30 rounded-xl text-[11px] lg:text-xs text-gray-300 hover:text-white transition-all"
+                  >{cat}</Link>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
         <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-gray-50 to-transparent" />
