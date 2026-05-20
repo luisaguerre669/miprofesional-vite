@@ -11,11 +11,11 @@ import {
   Search, ArrowRight, Star, MapPin, Heart,
   AlertTriangle, ChevronLeft, ChevronRight, Shield, Clock,
   UserPlus, TrendingUp, MessageCircle, LogOut, User, Settings,
-  LayoutDashboard
+  LayoutDashboard, Download, Plus
 } from 'lucide-react';
+import { QRCodeCanvas } from 'qrcode.react';
 import AdBanner from '../components/ads/AdBanner';
 import { resolveIcon, getInlineGradient } from '../utils/categoryIcons';
-import DownloadSection from '../components/DownloadSection';
 
 const customIcon = new L.DivIcon({
   className: 'custom-marker',
@@ -39,6 +39,41 @@ const benefits = [
   { icon: Clock, title: 'Respuesta Rapida', desc: 'La mayoria de los profesionales responden en menos de 2 horas.' },
   { icon: MapPin, title: 'Cerca de tu Zona', desc: 'Filtra por ubicacion y encuentra profesionales cerca de tu domicilio.' },
 ];
+
+const APK_VERSION = 'v1.0.0';
+const APK_URL = `/downloads/miprofesional-${APK_VERSION}.apk`;
+const SITE_URL = 'https://www.miprofesional.online';
+
+function detectDevice() {
+  if (typeof navigator === 'undefined') return 'desktop';
+  const ua = navigator.userAgent;
+  if (/android/i.test(ua)) return 'android';
+  if (/iphone|ipad|ipod/i.test(ua)) return 'ios';
+  return 'desktop';
+}
+
+function isStandalone() {
+  return typeof window !== 'undefined' && 'standalone' in window.navigator && window.navigator.standalone;
+}
+
+function PhoneMockup() {
+  return (
+    <div className="relative mx-auto w-[140px] sm:w-[160px] lg:w-[200px]">
+      <div className="relative bg-gray-900 rounded-[24px] p-1.5 shadow-2xl shadow-black/40 border border-gray-800">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[70px] h-3.5 bg-gray-900 rounded-b-xl z-10" />
+        <div className="bg-white rounded-[18px] overflow-hidden aspect-[9/19] flex flex-col items-center justify-center relative">
+          <div className="absolute inset-0 bg-gradient-to-b from-primary-600 to-primary-800 flex flex-col items-center justify-center p-4">
+            <div className="w-8 h-8 rounded-xl bg-white flex items-center justify-center mb-2 shadow-lg">
+              <span className="text-primary-600 font-black text-xs">MP</span>
+            </div>
+            <p className="text-white text-[10px] font-bold text-center leading-tight">MiProfesional</p>
+            <p className="text-white/60 text-[8px] mt-0.5 text-center">Encuentra profesionales</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 const StarRating = ({ rating = 0, size = 14 }) => (
   <div className="flex items-center gap-0.5">
@@ -70,6 +105,10 @@ const Home = () => {
   const [bannerSide2] = useState(true);
 
   const [categories, setCategories] = useState([]);
+  const [device, setDevice] = useState('desktop');
+  const [alreadyInstalled, setAlreadyInstalled] = useState(false);
+
+  useEffect(() => { setDevice(detectDevice()); setAlreadyInstalled(isStandalone()); }, []);
 
   useEffect(() => {
     api.get('/professionals?featured=true&limit=8')
@@ -407,44 +446,79 @@ const Home = () => {
       </header>
 
       {/* HERO PREMIUM */}
-      <section className="relative min-h-[90vh] flex items-center overflow-hidden bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950">
+      <section className="relative min-h-[90vh] lg:min-h-screen flex items-center overflow-hidden bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950">
         <div className="absolute inset-0">
           <img src="https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=1600&q=80" alt="" className="w-full h-full object-cover opacity-20" style={{ filter: 'brightness(0.3)' }} />
           <div className="absolute inset-0 bg-gradient-to-r from-gray-950/90 via-gray-900/70 to-transparent" />
           <div className="absolute inset-0 bg-gradient-to-t from-gray-950/60 via-transparent to-gray-950/20" />
         </div>
-        <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 md:py-40">
-          <div className="max-w-3xl">
-            <div className="inline-flex items-center gap-2 bg-white/5 backdrop-blur-sm border border-white/10 rounded-full px-4 py-1.5 text-sm text-gray-300 mb-6">
-              <Shield size={14} className="text-primary-400" />
-              <span>Marketplace de confianza en Argentina</span>
-            </div>
-            <h1 className="text-5xl md:text-7xl font-black text-white leading-[1.05] mb-6">
-              El profesional que necesitas<br />
-              <span className="bg-gradient-to-r from-primary-400 via-primary-300 to-emerald-300 bg-clip-text text-transparent">esta mas cerca de lo que crees</span>
-            </h1>
-            <p className="text-lg text-gray-400 mb-10 max-w-xl leading-relaxed">
-              Conectamos clientes con profesionales verificados en toda Argentina. Desde albaniles hasta medicos, el experto ideal para cada proyecto.
-            </p>
-            <form onSubmit={handleSearch} className="max-w-xl">
-              <div className="relative flex bg-white/5 backdrop-blur-sm border border-gray-700/50 rounded-2xl overflow-hidden focus-within:border-primary-500/50 focus-within:ring-1 focus-within:ring-primary-500/20 transition-all shadow-xl shadow-black/20">
-                <Search size={20} className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-500" />
-                <input type="text" value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
-                  placeholder="Busca un servicio: Plomero, Electricista, Medico..."
-                  className="w-full pl-12 pr-4 py-4 md:py-5 bg-transparent text-white placeholder-gray-600 focus:outline-none text-base"
-                />
-                <button type="submit" className="px-6 md:px-8 py-4 md:py-5 bg-primary-500 text-white font-bold hover:bg-primary-600 transition-all flex items-center gap-2">
-                  <span className="hidden sm:inline">Buscar</span> <Search size={18} />
-                </button>
+        <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16 lg:py-20">
+          <div className="flex flex-col lg:flex-row items-center gap-8 lg:gap-14">
+            {/* LEFT: text + search + tags */}
+            <div className="flex-1 text-center lg:text-left">
+              <div className="inline-flex items-center gap-2 bg-white/5 backdrop-blur-sm border border-white/10 rounded-full px-4 py-1.5 text-sm text-gray-300 mb-6">
+                <Shield size={14} className="text-primary-400" />
+                <span>Marketplace de confianza en Argentina</span>
               </div>
-            </form>
-            <div className="flex flex-wrap gap-2 mt-8">
-              {['Albanil', 'Plomero', 'Electricista', 'Medico', 'Cerrajero', 'Gasista'].map(cat => (
-                <Link key={cat} to={`/search?q=${encodeURIComponent(cat)}`}
-                  className="px-3.5 py-1.5 bg-white/5 hover:bg-white/10 backdrop-blur-sm border border-white/10 hover:border-primary-500/30 rounded-xl text-xs text-gray-300 hover:text-white transition-all"
-                >{cat}</Link>
-              ))}
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-black text-white leading-[1.05] mb-4">
+                El profesional que necesitas<br />
+                <span className="bg-gradient-to-r from-primary-400 via-primary-300 to-emerald-300 bg-clip-text text-transparent">esta mas cerca de lo que crees</span>
+              </h1>
+              <p className="text-sm sm:text-base md:text-lg text-gray-400 mb-6 max-w-xl mx-auto lg:mx-0 leading-relaxed">
+                Conectamos clientes con profesionales verificados en toda Argentina. Desde albaniles hasta medicos, el experto ideal para cada proyecto.
+              </p>
+              <form onSubmit={handleSearch} className="max-w-xl mx-auto lg:mx-0">
+                <div className="relative flex bg-white/5 backdrop-blur-sm border border-gray-700/50 rounded-2xl overflow-hidden focus-within:border-primary-500/50 focus-within:ring-1 focus-within:ring-primary-500/20 transition-all shadow-xl shadow-black/20">
+                  <Search size={20} className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-500" />
+                  <input type="text" value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+                    placeholder="Busca un servicio: Plomero, Electricista, Medico..."
+                    className="w-full pl-12 pr-4 py-4 md:py-5 bg-transparent text-white placeholder-gray-600 focus:outline-none text-base"
+                  />
+                  <button type="submit" className="px-6 md:px-8 py-4 md:py-5 bg-primary-500 text-white font-bold hover:bg-primary-600 transition-all flex items-center gap-2">
+                    <span className="hidden sm:inline">Buscar</span> <Search size={18} />
+                  </button>
+                </div>
+              </form>
+              <div className="flex flex-wrap gap-2 mt-6 justify-center lg:justify-start">
+                {['Albanil', 'Plomero', 'Electricista', 'Medico', 'Cerrajero', 'Gasista'].map(cat => (
+                  <Link key={cat} to={`/search?q=${encodeURIComponent(cat)}`}
+                    className="px-3.5 py-1.5 bg-white/5 hover:bg-white/10 backdrop-blur-sm border border-white/10 hover:border-primary-500/30 rounded-xl text-xs text-gray-300 hover:text-white transition-all"
+                  >{cat}</Link>
+                ))}
+              </div>
             </div>
+
+            {/* RIGHT: phone mockup + QR + download button */}
+            {!alreadyInstalled && (
+              <div className="shrink-0 flex flex-col items-center gap-5 lg:gap-6">
+                <PhoneMockup />
+                <div className="flex items-stretch gap-3 w-full max-w-[320px]">
+                  {(device === 'android' || device === 'desktop') && (
+                    <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-2 shrink-0 flex items-center">
+                      <QRCodeCanvas value={SITE_URL} size={56} bgColor="#ffffff" fgColor="#0f7a5a" level="M" />
+                    </div>
+                  )}
+                  <div className="flex-1 flex flex-col gap-1.5">
+                    {device === 'android' && (
+                      <a href={APK_URL} download
+                        className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3 bg-primary-500 text-white font-bold text-sm rounded-xl hover:bg-primary-600 transition-all shadow-xl shadow-primary-500/30"
+                      ><Download size={18} /> Descargar APK</a>
+                    )}
+                    {device === 'ios' && (
+                      <a href={SITE_URL} target="_blank" rel="noopener noreferrer"
+                        className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3 bg-primary-500 text-white font-bold text-sm rounded-xl hover:bg-primary-600 transition-all shadow-xl shadow-primary-500/30"
+                      ><Plus size={18} /> Instalar en iPhone</a>
+                    )}
+                    {device === 'desktop' && (
+                      <a href={SITE_URL} target="_blank" rel="noopener noreferrer"
+                        className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3 bg-primary-500 text-white font-bold text-sm rounded-xl hover:bg-primary-600 transition-all shadow-xl shadow-primary-500/30"
+                      ><Download size={18} /> Ir a la App</a>
+                    )}
+                    <p className="text-[11px] text-gray-500 text-center">{device === 'android' ? `Version ${APK_VERSION} · Gratis` : 'Gratis · Sin registro'}</p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
         <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-gray-50 to-transparent" />
@@ -608,9 +682,6 @@ const Home = () => {
           </div>
         </div>
       </section>
-
-      {/* DOWNLOAD APP */}
-      <DownloadSection />
 
       {/* FOOTER */}
       <footer className="bg-white border-t border-gray-200 py-12 md:py-16 px-4">
