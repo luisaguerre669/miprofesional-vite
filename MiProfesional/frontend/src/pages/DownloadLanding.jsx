@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import { Download, Smartphone, Plus, QrCode, MapPin, MessageCircle, ShieldCheck, Search, Phone, ArrowRight } from 'lucide-react';
+import { Download, Plus, MapPin, MessageCircle, ShieldCheck, Search, Phone, ArrowRight } from 'lucide-react';
 import { QRCodeCanvas } from 'qrcode.react';
 
 const APK_VERSION = 'v1.0.0';
@@ -28,6 +28,47 @@ const steps = [
   { number: '3', icon: Phone, title: 'Contactalo directo', desc: 'Chatea o llama al profesional. Acuerden precio, fecha y forma de pago.' },
 ];
 
+function PhoneMockup() {
+  return (
+    <div className="relative mx-auto w-[220px] md:w-[260px]">
+      <div className="relative bg-gray-900 rounded-[32px] p-2 shadow-2xl shadow-black/40 border border-gray-800">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[100px] h-5 bg-gray-900 rounded-b-xl z-10" />
+        <div className="bg-white rounded-[24px] overflow-hidden aspect-[9/19] flex flex-col items-center justify-center relative">
+          <div className="absolute inset-0 bg-gradient-to-b from-primary-600 to-primary-800 flex flex-col items-center justify-center p-6">
+            <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center mb-3 shadow-lg">
+              <span className="text-primary-600 font-black text-lg">MP</span>
+            </div>
+            <p className="text-white text-xs font-bold text-center leading-tight">MiProfesional</p>
+            <p className="text-white/60 text-[10px] mt-1 text-center">Encuentra profesionales</p>
+            <div className="mt-4 w-full space-y-1.5">
+              <div className="h-2 bg-white/15 rounded-full w-3/4 mx-auto" />
+              <div className="h-2 bg-white/15 rounded-full w-1/2 mx-auto" />
+              <div className="h-2 bg-white/15 rounded-full w-2/3 mx-auto" />
+            </div>
+            <div className="mt-4 w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function QrCard() {
+  return (
+    <div className="inline-flex items-center gap-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl px-4 py-3">
+      <div className="bg-white rounded-lg p-1 shrink-0">
+        <QRCodeCanvas value={SITE_URL} size={56} bgColor="#ffffff" fgColor="#0f7a5a" level="M" />
+      </div>
+      <div className="text-left">
+        <p className="text-xs font-semibold text-white">Escanea desde tu celular</p>
+        <p className="text-[10px] text-gray-400 mt-0.5">Descarga la app al instante</p>
+      </div>
+    </div>
+  );
+}
+
 export default function DownloadLanding() {
   const [device, setDevice] = useState('desktop');
   const [copied, setCopied] = useState(false);
@@ -43,76 +84,48 @@ export default function DownloadLanding() {
     });
   };
 
-  const renderDownloadButton = () => {
+  const renderHeroCta = () => {
     if (device === 'android') {
       return (
-        <a href={APK_URL} download
-          className="inline-flex items-center gap-3 px-8 py-4 bg-primary-500 text-white font-bold text-lg rounded-xl hover:bg-primary-600 transition-all shadow-xl shadow-primary-500/30"
-        >
-          <Download size={22} />
-          Descargar para Android
-        </a>
-      );
-    }
-    if (device === 'ios') {
-      return (
-        <span
-          className="inline-flex items-center gap-3 px-8 py-4 bg-primary-500 text-white font-bold text-lg rounded-xl shadow-xl shadow-primary-500/30 cursor-default"
-        >
-          <Plus size={22} />
-          Instalar en iPhone
-        </span>
-      );
-    }
-    return (
-      <span
-        className="inline-flex items-center gap-3 px-8 py-4 bg-primary-500 text-white font-bold text-lg rounded-xl shadow-xl shadow-primary-500/30 cursor-default"
-      >
-        <QrCode size={22} />
-        Abri desde tu celular
-      </span>
-    );
-  };
-
-  const renderDeviceHint = () => {
-    if (device === 'android') {
-      return (
-        <div className="bg-amber-50/90 backdrop-blur-sm border border-amber-200 rounded-xl p-4 max-w-md mx-auto text-left">
-          <p className="text-xs text-amber-800 font-medium">Instrucciones:</p>
-          <ol className="text-xs text-amber-700 mt-2 space-y-1.5 list-decimal list-inside">
-            <li>Toca <span className="font-semibold">Descargar para Android</span></li>
-            <li>Si el sistema lo solicita, habilita <span className="font-semibold">fuentes desconocidas</span></li>
-            <li>Abre el archivo y toca <span className="font-semibold">Instalar</span></li>
-          </ol>
+        <div className="space-y-4">
+          <a href={APK_URL} download
+            className="inline-flex items-center gap-3 px-8 py-4 bg-primary-500 text-white font-bold text-lg rounded-xl hover:bg-primary-600 transition-all shadow-xl shadow-primary-500/30"
+          >
+            <Download size={22} />
+            Descargar para Android
+          </a>
+          <div className="bg-amber-50/90 backdrop-blur-sm border border-amber-200 rounded-xl p-3 max-w-sm">
+            <p className="text-xs text-amber-800 font-medium">Instrucciones:</p>
+            <ol className="text-xs text-amber-700 mt-1.5 space-y-1 list-decimal list-inside">
+              <li>Toca <span className="font-semibold">Descargar para Android</span></li>
+              <li>Si el sistema lo solicita, habilita <span className="font-semibold">fuentes desconocidas</span></li>
+              <li>Abre el archivo y toca <span className="font-semibold">Instalar</span></li>
+            </ol>
+          </div>
         </div>
       );
     }
     if (device === 'ios') {
       return (
-        <div className="bg-blue-50/90 backdrop-blur-sm border border-blue-200 rounded-xl p-4 max-w-md mx-auto text-left">
-          <p className="text-xs text-blue-800 font-medium">Pasos para instalar en iPhone:</p>
-          <ol className="text-xs text-blue-700 mt-2 space-y-1.5 list-decimal list-inside">
-            <li>Abre Safari y entra a <span className="font-semibold">miprofesional.online</span></li>
-            <li>Toca el icono <span className="font-semibold">Compartir</span> en la barra inferior</li>
-            <li>Selecciona <span className="font-semibold">Agregar a pantalla de inicio</span></li>
-          </ol>
+        <div className="space-y-4">
+          <span
+            className="inline-flex items-center gap-3 px-8 py-4 bg-primary-500 text-white font-bold text-lg rounded-xl shadow-xl shadow-primary-500/30 cursor-default"
+          >
+            <Plus size={22} />
+            Instalar en iPhone
+          </span>
+          <div className="bg-blue-50/90 backdrop-blur-sm border border-blue-200 rounded-xl p-3 max-w-sm">
+            <p className="text-xs text-blue-800 font-medium">Pasos para instalar:</p>
+            <ol className="text-xs text-blue-700 mt-1.5 space-y-1 list-decimal list-inside">
+              <li>Abre Safari y entra a <span className="font-semibold">miprofesional.online</span></li>
+              <li>Toca <span className="font-semibold">Compartir</span> en la barra inferior</li>
+              <li>Selecciona <span className="font-semibold">Agregar a pantalla de inicio</span></li>
+            </ol>
+          </div>
         </div>
       );
     }
-    return (
-      <div className="text-center max-w-md mx-auto">
-        <div className="inline-block p-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl mb-4">
-          <QRCodeCanvas value={SITE_URL} size={140} bgColor="#ffffff" fgColor="#0f7a5a" level="M" />
-        </div>
-        <div className="flex items-center justify-center gap-2">
-          <code className="text-sm bg-white/10 px-3 py-1.5 rounded-lg text-gray-300 font-mono">{SITE_URL}</code>
-          <button onClick={copyLink}
-            className="px-3 py-1.5 text-xs font-medium bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors"
-          >{copied ? 'Copiado' : 'Copiar'}</button>
-        </div>
-        <p className="text-xs text-gray-400 mt-3">Escanea el codigo con la camara de tu celular</p>
-      </div>
-    );
+    return <QrCard />;
   };
 
   return (
@@ -148,24 +161,39 @@ export default function DownloadLanding() {
           <div className="absolute inset-0 bg-gradient-to-r from-gray-950/90 via-gray-900/70 to-transparent" />
           <div className="absolute inset-0 bg-gradient-to-t from-gray-950/60 via-transparent to-gray-950/20" />
         </div>
-        <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-28 md:py-40">
-          <div className="max-w-3xl mx-auto text-center md:text-left md:mx-0">
-            <div className="inline-flex items-center gap-2 bg-white/5 backdrop-blur-sm border border-white/10 rounded-full px-4 py-1.5 text-sm text-gray-300 mb-6">
-              <Smartphone size={14} className="text-primary-400" />
-              <span>App oficial de MiProfesional</span>
+        <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-28">
+          <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-16">
+            {/* Left: text + CTA */}
+            <div className="flex-1 text-center lg:text-left">
+              <div className="inline-flex items-center gap-2 bg-white/5 backdrop-blur-sm border border-white/10 rounded-full px-4 py-1.5 text-sm text-gray-300 mb-6">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-primary-400"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+                <span>App oficial de MiProfesional</span>
+              </div>
+              <h1 className="text-5xl md:text-7xl font-black text-white leading-[1.05] mb-5">
+                Encontra profesionales<br />
+                <span className="bg-gradient-to-r from-primary-400 via-primary-300 to-emerald-300 bg-clip-text text-transparent">cerca tuyo en minutos</span>
+              </h1>
+              <p className="text-lg text-gray-400 mb-8 max-w-lg mx-auto lg:mx-0 leading-relaxed">
+                Electricistas, plomeros, tecnicos, salud, legales y mas profesionales verificados en toda Argentina.
+              </p>
+
+              {/* CTA block: changes by device */}
+              <div className="flex flex-col items-center lg:items-start">
+                {renderHeroCta()}
+                <p className="text-sm text-gray-500 mt-4">Gratis &middot; Sin registro</p>
+              </div>
             </div>
-            <h1 className="text-5xl md:text-7xl font-black text-white leading-[1.05] mb-5">
-              Encontra profesionales<br />
-              <span className="bg-gradient-to-r from-primary-400 via-primary-300 to-emerald-300 bg-clip-text text-transparent">cerca tuyo en minutos</span>
-            </h1>
-            <p className="text-lg text-gray-400 mb-8 max-w-xl mx-auto md:mx-0 leading-relaxed">
-              Electricistas, plomeros, tecnicos, salud, legales y mas profesionales verificados en toda Argentina.
-            </p>
-            <div className="flex flex-col sm:flex-row items-center gap-4 mb-8">
-              {renderDownloadButton()}
-              <p className="text-sm text-gray-500">Gratis &middot; Sin registro</p>
+
+            {/* Right: phone mockup + QR for desktop */}
+            <div className="shrink-0 flex flex-col items-center gap-5">
+              <PhoneMockup />
+              {device === 'desktop' && (
+                <div className="hidden lg:flex items-center gap-2 text-xs text-gray-500">
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary-500 animate-pulse" />
+                  Escanea el QR de arriba desde tu celular
+                </div>
+              )}
             </div>
-            {renderDeviceHint()}
           </div>
         </div>
         <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-gray-50 to-transparent" />
