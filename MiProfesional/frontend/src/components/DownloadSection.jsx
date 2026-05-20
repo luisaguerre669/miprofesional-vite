@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Smartphone, Download, Apple, Monitor, QrCode, Shield } from 'lucide-react';
+import { Smartphone, Download, Apple, Monitor, QrCode, Shield, Share2, Plus } from 'lucide-react';
 import { QRCodeCanvas } from 'qrcode.react';
 import { Link } from 'react-router-dom';
 
@@ -15,12 +15,18 @@ function detectDevice() {
   return 'desktop';
 }
 
+function isStandalone() {
+  return typeof window !== 'undefined' && 'standalone' in window.navigator && window.navigator.standalone;
+}
+
 export default function DownloadSection() {
   const [device, setDevice] = useState('desktop');
   const [copied, setCopied] = useState(false);
+  const [alreadyInstalled, setAlreadyInstalled] = useState(false);
 
   useEffect(() => {
     setDevice(detectDevice());
+    setAlreadyInstalled(isStandalone());
   }, []);
 
   const copyLink = () => {
@@ -29,6 +35,8 @@ export default function DownloadSection() {
       setTimeout(() => setCopied(false), 2000);
     });
   };
+
+  if (alreadyInstalled) return null;
 
   return (
     <section className="relative overflow-hidden bg-gradient-to-b from-gray-50 to-white py-20 md:py-24 px-4">
@@ -52,9 +60,9 @@ export default function DownloadSection() {
                   <Smartphone size={32} className="text-primary-600" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-gray-900">Disponible para Android</h3>
+                  <h3 className="text-xl font-bold text-gray-900">Descarga la app para Android</h3>
                   <p className="text-sm text-gray-500 mt-1">
-                    Descarga el archivo APK e instalalo en tu dispositivo
+                    Instala MiProfesional en tu dispositivo y accede a todos los servicios
                   </p>
                 </div>
                 <a
@@ -63,42 +71,62 @@ export default function DownloadSection() {
                   className="inline-flex items-center gap-2.5 px-8 py-3.5 bg-primary-600 text-white font-bold rounded-xl hover:bg-primary-700 transition-all shadow-sm shadow-primary-500/20 text-base"
                 >
                   <Download size={18} />
-                  Descargar para Android
+                  Descargar APK
                 </a>
                 <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-left">
-                  <p className="text-xs text-amber-800 font-medium">Instrucciones de instalacion:</p>
+                  <p className="text-xs text-amber-800 font-medium">Instrucciones:</p>
                   <ol className="text-xs text-amber-700 mt-2 space-y-1.5 list-decimal list-inside">
-                    <li>Toca el boton de descarga de arriba</li>
-                    <li>Si tu celular lo solicita, habilita <span className="font-semibold">Instalar apps de fuentes desconocidas</span></li>
+                    <li>Toca el boton <span className="font-semibold">Descargar APK</span></li>
+                    <li>Si el sistema lo solicita, habilita <span className="font-semibold">Instalar apps de fuentes desconocidas</span></li>
                     <li>Abre el archivo descargado y toca <span className="font-semibold">Instalar</span></li>
-                    <li>Una vez instalada, abri la app y registrate</li>
+                    <li>Una vez instalada, abre la app y registrate</li>
                   </ol>
                 </div>
                 <p className="text-xs text-gray-400">
-                  Version {APK_VERSION} &middot; {Math.round(12036489 / 1024 / 1024)} MB
+                  Version {APK_VERSION} &middot; {Math.round(12036489 / 1024 / 1024)} MB &middot; Descarga directa
                 </p>
               </div>
             )}
 
             {device === 'ios' && (
               <div className="space-y-6">
-                <div className="w-16 h-16 rounded-2xl bg-gray-50 flex items-center justify-center mx-auto">
-                  <Apple size={32} className="text-gray-400" />
+                <div className="w-16 h-16 rounded-2xl bg-primary-50 flex items-center justify-center mx-auto">
+                  <Plus size={32} className="text-primary-600" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-gray-900">Proximamente en App Store</h3>
+                  <h3 className="text-xl font-bold text-gray-900">Instala MiProfesional en tu iPhone</h3>
                   <p className="text-sm text-gray-500 mt-1">
-                    La version para iOS esta en desarrollo. Te avisaremos cuando este disponible.
+                    Agrega MiProfesional a tu pantalla de inicio como una app
                   </p>
                 </div>
-                <div className="inline-flex items-center gap-2 px-6 py-3 bg-gray-100 text-gray-500 rounded-xl text-sm font-medium">
-                  <Apple size={16} />
-                  App Store
-                  <span className="text-[10px] bg-gray-200 text-gray-500 px-1.5 py-0.5 rounded font-semibold">PROXIMAMENTE</span>
+                <div className="bg-blue-50 border border-blue-200 rounded-xl p-5 text-left space-y-3">
+                  <p className="text-xs text-blue-800 font-medium">Pasos para instalar:</p>
+                  <div className="flex items-start gap-3">
+                    <div className="w-6 h-6 rounded-full bg-blue-600 text-white text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">1</div>
+                    <div>
+                      <p className="text-sm font-medium text-blue-800">Abre Safari</p>
+                      <p className="text-xs text-blue-600">Ingresa a <span className="font-semibold">miprofesional.online</span> desde el navegador Safari</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="w-6 h-6 rounded-full bg-blue-600 text-white text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">2</div>
+                    <div>
+                      <p className="text-sm font-medium text-blue-800">Toca compartir</p>
+                      <p className="text-xs text-blue-600">Presiona el icono <span className="font-semibold">Compartir</span> en la barra inferior de Safari</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="w-6 h-6 rounded-full bg-blue-600 text-white text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">3</div>
+                    <div>
+                      <p className="text-sm font-medium text-blue-800">Agregar a pantalla de inicio</p>
+                      <p className="text-xs text-blue-600">Desplazate hacia abajo y selecciona <span className="font-semibold">Agregar a pantalla de inicio</span></p>
+                    </div>
+                  </div>
                 </div>
-                <p className="text-xs text-gray-400">
-                  Mientras tanto, podes usar la version web desde tu navegador
-                </p>
+                <div className="inline-flex items-center gap-2 text-xs text-gray-400">
+                  <Shield size={12} />
+                  <span>No requiere App Store. Funciona como app nativa.</span>
+                </div>
               </div>
             )}
 
@@ -110,14 +138,14 @@ export default function DownloadSection() {
                 <div>
                   <h3 className="text-xl font-bold text-gray-900">Escanea desde tu celular</h3>
                   <p className="text-sm text-gray-500 mt-1">
-                    Abri la camara de tu telefono y escanea el codigo QR para descargar
+                    Abre la camara de tu telefono y escanea el codigo para instalar
                   </p>
                 </div>
                 <div className="inline-block p-4 bg-white border border-gray-200 rounded-2xl shadow-sm">
                   <QRCodeCanvas value={SITE_URL} size={160} bgColor="#ffffff" fgColor="#0f7a5a" level="M" />
                 </div>
                 <div className="text-center">
-                  <p className="text-xs text-gray-400 mb-2">O accede desde:</p>
+                  <p className="text-xs text-gray-400 mb-2">O accede desde tu celular a:</p>
                   <div className="flex items-center justify-center gap-2">
                     <code className="text-sm bg-gray-100 px-3 py-1.5 rounded-lg text-gray-700 font-mono">{SITE_URL}</code>
                     <button onClick={copyLink}
