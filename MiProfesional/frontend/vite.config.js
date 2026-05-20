@@ -15,6 +15,12 @@ export default defineConfig({
         target: 'http://localhost:10000',
         ws: true
       }
+    },
+    headers: {
+      '/downloads/*': {
+        'Content-Type': 'application/vnd.android.package-archive',
+        'Content-Disposition': 'attachment'
+      }
     }
   },
   build: {
