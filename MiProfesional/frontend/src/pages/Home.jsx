@@ -147,14 +147,8 @@ const Home = () => {
       const result = await getAccurateLocation();
       if (result.error) {
         setGeoError(result.error);
-        if (result.source === 'unsupported') {
-          setShowFullAddress(true);
-          setShowCityInput(true);
-        } else if (result.source === 'permission_denied') {
-          setShowCityInput(true);
-        } else {
-          setShowCityInput(true);
-        }
+        setShowFullAddress(true);
+        setShowCityInput(true);
       } else {
         setUserLocation({ lat: result.lat, lng: result.lng });
         setLocationMode('gps');
@@ -210,9 +204,9 @@ const Home = () => {
               className="px-4 py-2 bg-primary-600 text-white text-xs font-semibold rounded-lg hover:bg-primary-700 transition-all shadow-sm">
               Reintentar ubicacion
             </button>
-            <button onClick={() => setShowCityInput(true)}
+            <button onClick={() => { setShowCityInput(true); setShowFullAddress(true); }}
               className="block mx-auto mt-2 text-xs text-gray-400 hover:text-gray-600 underline">
-              Ingresar ciudad manualmente
+              Ingresar direccion manualmente
             </button>
           </div>
         </div>
@@ -291,6 +285,10 @@ const Home = () => {
               className="px-4 py-2 bg-primary-600 text-white text-xs font-semibold rounded-lg hover:bg-primary-700 transition-all shadow-sm">
               Activar ubicacion
             </button>
+            <button onClick={() => { setShowCityInput(true); setShowFullAddress(true); }}
+              className="block mx-auto mt-2 text-xs text-gray-400 hover:text-gray-600 underline">
+              Ingresar direccion manualmente
+            </button>
           </div>
         </div>
       );
@@ -325,7 +323,7 @@ const Home = () => {
             <span className="text-gray-600 text-xs truncate max-w-[160px]">{userAddress || 'Profesionales cerca de tu ubicacion'}</span>
             {locationMode === 'gps' && <span className="text-[10px] text-primary-500 bg-primary-50 px-1.5 py-0.5 rounded font-medium">GPS</span>}
             {locationMode === 'city' && <span className="text-[10px] text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded font-medium">Ciudad</span>}
-            <button onClick={() => setShowCityInput(true)} className="text-xs text-gray-400 hover:text-gray-600 underline ml-auto">cambiar</button>
+            <button onClick={() => { setShowCityInput(true); setShowFullAddress(true); }} className="text-xs text-gray-400 hover:text-gray-600 underline ml-auto">cambiar</button>
           </div>
         </div>
       </div>
