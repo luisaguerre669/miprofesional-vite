@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Menu, X, User, LogOut, Home, Search, MessageSquare, LayoutDashboard, Bell, CreditCard, Settings, Shield, Plus, LogIn, Building2, Wrench, AlertTriangle, Briefcase } from 'lucide-react';
+import { Menu, X, User, LogOut, Home, Search, MessageSquare, LayoutDashboard, Bell, CreditCard, Settings, Shield, Plus, LogIn, Building2, Wrench } from 'lucide-react';
 import Logo from './Logo';
 
 const Layout = ({ children }) => {
@@ -44,7 +44,7 @@ const Layout = ({ children }) => {
               {[
                 { name: 'Inicio', path: '/', icon: Home },
                 { name: 'Buscar', path: '/search', icon: Search },
-                { name: 'Construcción', path: '/categoria/construccion', icon: Building2 },
+                { name: 'Construcción', path: '/categoria/construccion-y-hogar', icon: Building2 },
                 { name: 'Servicios', path: '/categoria/servicios-generales', icon: Wrench },
                 ...(user?.role === 'admin' ? [{ name: 'Admin', path: '/admin', icon: Shield }] : []),
               ].map((link) => {
@@ -263,10 +263,10 @@ const Layout = ({ children }) => {
             <div>
               <h3 className="text-white font-semibold text-sm mb-4">Categorías</h3>
               <ul className="space-y-2.5">
-                <li><Link to="/categoria/construccion" className="text-gray-400 text-sm hover:text-white transition-colors">Construcción</Link></li>
+                <li><Link to="/categoria/construccion-y-hogar" className="text-gray-400 text-sm hover:text-white transition-colors">Construcción y Hogar</Link></li>
                 <li><Link to="/categoria/servicios-generales" className="text-gray-400 text-sm hover:text-white transition-colors">Servicios Generales</Link></li>
-                <li><Link to="/search?q=emergencia" className="text-gray-400 text-sm hover:text-white transition-colors">Emergencias 24/7</Link></li>
-                <li><Link to="/search?q=empresa" className="text-gray-400 text-sm hover:text-white transition-colors">Empresas</Link></li>
+                <li><Link to="/categoria/salud" className="text-gray-400 text-sm hover:text-white transition-colors">Salud</Link></li>
+                <li><Link to="/categoria/profesionales" className="text-gray-400 text-sm hover:text-white transition-colors">Profesionales</Link></li>
               </ul>
             </div>
 

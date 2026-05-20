@@ -8,18 +8,13 @@ import api from '../lib/axios';
 import { getAccurateLocation } from '../utils/geolocation';
 import { useAuth } from '../context/AuthContext';
 import {
-  Search, ArrowRight, Star, MapPin, Building2, Wrench,
-  Hammer, Zap, Droplets, Paintbrush, Lock, TreePine,
-  SprayCan, Truck, Stethoscope, Users, Heart, Briefcase,
+  Search, ArrowRight, Star, MapPin, Heart,
   AlertTriangle, ChevronLeft, ChevronRight, Shield, Clock,
-  UserPlus, LayoutGrid, X, Phone, CheckCircle, Award,
-  TrendingUp, MessageCircle, LogOut, Menu, User, Settings
+  UserPlus, TrendingUp, MessageCircle, LogOut, User, Settings,
+  LayoutDashboard
 } from 'lucide-react';
 import AdBanner from '../components/ads/AdBanner';
-
-const ChefHat = ({ size, className }) => <svg xmlns="http://www.w3.org/2000/svg" width={size || 24} height={size || 24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M6 13.87A4 4 0 0 1 7.41 6a5.11 5.11 0 0 1 1.05-1.54 5 5 0 0 1 7.08 0A5.11 5.11 0 0 1 16.59 6 4 4 0 0 1 18 13.87V21H6Z"/><line x1="6" x2="18" y1="17" y2="17"/></svg>;
-const Monitor = ({ size, className }) => <svg xmlns="http://www.w3.org/2000/svg" width={size || 24} height={size || 24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></svg>;
-const PawPrint = ({ size, className }) => <svg xmlns="http://www.w3.org/2000/svg" width={size || 24} height={size || 24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="11" cy="4" r="2"/><circle cx="18" cy="8" r="2"/><circle cx="20" cy="16" r="2"/><path d="M9 10a5 5 0 0 1 5 5v3.5a3.5 3.5 0 0 1-6.84 1.045Q6.52 17.48 4.46 16.84A3.5 3.5 0 0 1 5.5 10Z"/></svg>;
+import { resolveIcon, getInlineGradient } from '../utils/categoryIcons';
 
 const customIcon = new L.DivIcon({
   className: 'custom-marker',
@@ -33,18 +28,7 @@ const userIcon = new L.DivIcon({
   iconSize: [32, 32], iconAnchor: [16, 32], popupAnchor: [0, -32],
 });
 
-const categories = [
-  { name: 'Construccion', icon: Building2, slug: 'construccion', color: 'from-amber-600 to-amber-800', count: '11 servicios', image: 'https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?w=400&q=80' },
-  { name: 'Servicios Generales', icon: Wrench, slug: 'servicios-generales', color: 'from-emerald-600 to-emerald-800', count: '8 servicios', image: 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=400&q=80' },
-  { name: 'Emergencias 24/7', icon: AlertTriangle, slug: 'emergencias', color: 'from-red-600 to-red-800', count: '7 servicios', image: 'https://images.unsplash.com/photo-1587745416684-47953f16fdd1?w=400&q=80', badge: '24/7' },
-  { name: 'Hogar y Confort', icon: Paintbrush, slug: 'hogar', color: 'from-violet-600 to-violet-800', count: '5 servicios', image: 'https://images.unsplash.com/photo-1618220179428-22790b461013?w=400&q=80' },
-  { name: 'Belleza y Cuidado', icon: Heart, slug: 'belleza', color: 'from-pink-600 to-pink-800', count: '8 servicios', image: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?w=400&q=80' },
-  { name: 'Gastronomia', icon: ChefHat, slug: 'gastronomia', color: 'from-orange-600 to-orange-800', count: '4 servicios', image: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=400&q=80' },
-  { name: 'Tecnologia', icon: Monitor, slug: 'tecnologia', color: 'from-cyan-600 to-cyan-800', count: '6 servicios', image: 'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=400&q=80' },
-  { name: 'Automotor', icon: Truck, slug: 'automotor', color: 'from-slate-600 to-slate-800', count: '5 servicios', image: 'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?w=400&q=80' },
-  { name: 'Mascotas', icon: PawPrint, slug: 'mascotas', color: 'from-teal-600 to-teal-800', count: '4 servicios', image: 'https://images.unsplash.com/photo-1450778869180-41d0601e046e?w=400&q=80' },
-  { name: 'Empresas', icon: Briefcase, slug: 'empresas', color: 'from-blue-600 to-blue-800', count: '5 servicios', image: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=400&q=80' },
-];
+
 
 const benefits = [
   { icon: Shield, title: 'Profesionales Verificados', desc: 'Todos los profesionales pasan por un proceso de verificacion de identidad y antecedentes.' },
@@ -84,11 +68,19 @@ const Home = () => {
   const [bannerSide1, setBannerSide1] = useState(true);
   const [bannerSide2] = useState(true);
 
+  const [categories, setCategories] = useState([]);
+
   useEffect(() => {
     api.get('/professionals?featured=true&limit=8')
       .then(r => setFeaturedPros(r.data.data || []))
       .catch(() => {})
       .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    api.get('/categories/tree')
+      .then(r => setCategories(r.data.data || []))
+      .catch(() => setCategories([]));
   }, []);
 
   const [manualCity, setManualCity] = useState('');
@@ -161,21 +153,7 @@ const Home = () => {
         } else if (result.source === 'permission_denied') {
           setShowCityInput(true);
         } else {
-          fetch('https://ipapi.co/json/')
-            .then(r => r.json())
-            .then(d => d && d.latitude && d.longitude ? { lat: d.latitude, lng: d.longitude } : null)
-            .then(loc => {
-              if (loc) {
-                setUserLocation(loc);
-                setGeoError('');
-                setLocationMode('city');
-                setShowCityInput(false);
-                reverseGeocode(loc.lat, loc.lng);
-              } else {
-                setShowCityInput(true);
-              }
-            })
-            .catch(() => setShowCityInput(true));
+          setShowCityInput(true);
         }
       } else {
         setUserLocation({ lat: result.lat, lng: result.lng });
@@ -532,24 +510,26 @@ const Home = () => {
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4">
           {categories.map((cat) => {
-            const Icon = cat.icon;
+            const Icon = resolveIcon(cat.icon);
+            const gradient = getInlineGradient(cat.metadata?.color);
+            const subCount = cat.subcategories?.length || 0;
             return (
               <Link key={cat.slug} to={`/categoria/${cat.slug}`}
                 className="group relative overflow-hidden rounded-xl border border-gray-200 bg-white hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200"
               >
                 <div className="aspect-[4/3] overflow-hidden">
-                  <img src={cat.image} alt={cat.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" />
-                  <div className={`absolute inset-0 bg-gradient-to-t ${cat.color} opacity-60 group-hover:opacity-70 transition-opacity`} />
+                  <img src={cat.image} alt={cat.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" />
+                  <div className="absolute inset-0 opacity-60 group-hover:opacity-70 transition-opacity" style={{ background: gradient }} />
                 </div>
                 <div className="absolute bottom-0 left-0 right-0 p-3">
                   <div className="flex items-center gap-1.5">
                     <Icon size={14} className="text-white shrink-0" />
-                    <h3 className="text-sm font-bold text-white truncate">{cat.name}</h3>
+                    <h3 className="text-sm font-bold text-white truncate">{cat.title}</h3>
                   </div>
-                  <p className="text-[11px] text-white/70 mt-0.5">{cat.count}</p>
+                  <p className="text-[11px] text-white/70 mt-0.5">{subCount} servicios</p>
                 </div>
-                {cat.badge && (
-                  <span className="absolute top-2 right-2 px-2 py-0.5 bg-red-500 text-white text-[10px] font-bold rounded-md animate-pulse">{cat.badge}</span>
+                {cat.metadata?.emergency && (
+                  <span className="absolute top-2 right-2 px-2 py-0.5 bg-red-500 text-white text-[10px] font-bold rounded-md animate-pulse">24/7</span>
                 )}
               </Link>
             );

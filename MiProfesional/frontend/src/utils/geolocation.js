@@ -30,33 +30,52 @@ async function attemptGetCurrentPosition(options, attemptNum) {
   log(`Intento ${attemptNum}: enableHighAccuracy=${options.enableHighAccuracy}, timeout=${options.timeout}ms`);
   if (Capacitor.isNativePlatform()) {
     const pos = await Geolocation.getCurrentPosition(options);
+    const lat = Number(pos.coords.latitude);
+    const lng = Number(pos.coords.longitude);
+    const accuracy = Number(pos.coords.accuracy);
+
+    if (isNaN(lat) || isNaN(lng)) {
+      logError(`Intento ${attemptNum} fallo: Capacitor devolvio coordenadas invalidas (NaN)`);
+      throw new Error('Coordenadas invalidas');
+    }
+
     log(`Intento ${attemptNum} exitoso (Capacitor):`, {
-      lat: pos.coords.latitude,
-      lng: pos.coords.longitude,
-      accuracy: pos.coords.accuracy,
+      lat,
+      lng,
+      accuracy,
       altitude: pos.coords.altitude,
       source: 'GPS/Native',
     });
     return {
-      lat: pos.coords.latitude,
-      lng: pos.coords.longitude,
-      accuracy: pos.coords.accuracy,
+      lat,
+      lng,
+      accuracy,
       source: 'gps',
     };
   }
   return new Promise((resolve, reject) => {
     navigator.geolocation.getCurrentPosition(
       (pos) => {
+        const lat = Number(pos.coords.latitude);
+        const lng = Number(pos.coords.longitude);
+        const accuracy = Number(pos.coords.accuracy);
+
+        if (isNaN(lat) || isNaN(lng)) {
+          logError(`Intento ${attemptNum} fallo: Navigator devolvio coordenadas invalidas (NaN)`);
+          reject(new Error('Coordenadas invalidas'));
+          return;
+        }
+
         log(`Intento ${attemptNum} exitoso (Web):`, {
-          lat: pos.coords.latitude,
-          lng: pos.coords.longitude,
-          accuracy: pos.coords.accuracy,
+          lat,
+          lng,
+          accuracy,
           source: 'navigator.geolocation',
         });
         resolve({
-          lat: pos.coords.latitude,
-          lng: pos.coords.longitude,
-          accuracy: pos.coords.accuracy,
+          lat,
+          lng,
+          accuracy,
           source: 'gps',
         });
       },

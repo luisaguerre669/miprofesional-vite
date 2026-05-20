@@ -1,80 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
+import { Search, Star, MapPin, ArrowRight, BadgeCheck } from 'lucide-react';
 import api from '../lib/axios';
-import {
-  Building2, Wrench, Hammer, Zap, Droplets, Paintbrush, Lock, TreePine,
-  SprayCan, Truck, Stethoscope, Users, Heart, Briefcase, AlertTriangle,
-  Search, Star, MapPin, ChevronRight, ArrowRight, BadgeCheck
-} from 'lucide-react';
-
-const iconMap = {
-  Building2, Wrench, Hammer, Zap, Droplets, Paintbrush, Lock, TreePine,
-  SprayCan, Truck, Stethoscope, Users, Heart, Briefcase, AlertTriangle,
-};
-
-const clusterConfig = {
-  construccion: {
-    title: 'Construccion',
-    color: 'from-amber-700 to-amber-900',
-    badge: null,
-  },
-  'servicios-generales': {
-    title: 'Servicios Generales',
-    color: 'from-primary-700 to-primary-900',
-    badge: null,
-  },
-  emergencias: {
-    title: 'Emergencias 24/7',
-    color: 'from-red-700 to-red-900',
-    badge: '24/7',
-  },
-  empresas: {
-    title: 'Empresas y Equipos',
-    color: 'from-blue-700 to-blue-900',
-    badge: null,
-  },
-  tecnologia: {
-    title: 'Tecnologia',
-    color: 'from-purple-700 to-purple-900',
-    badge: null,
-  },
-  automotor: {
-    title: 'Automotor',
-    color: 'from-cyan-700 to-cyan-900',
-    badge: null,
-  },
-  hogar: {
-    title: 'Hogar y Confort',
-    color: 'from-amber-600 to-amber-800',
-    badge: null,
-  },
-  mascotas: {
-    title: 'Mascotas',
-    color: 'from-cyan-700 to-cyan-900',
-    badge: null,
-  },
-  belleza: {
-    title: 'Belleza y Cuidado',
-    color: 'from-pink-700 to-pink-900',
-    badge: null,
-  },
-  gastronomia: {
-    title: 'Gastronomia',
-    color: 'from-red-700 to-red-900',
-    badge: null,
-  },
-  transporte: {
-    title: 'Transporte y Turismo',
-    color: 'from-blue-700 to-blue-900',
-    badge: null,
-  },
-  cerrajeria: {
-    title: 'Cerrajeria',
-    color: 'from-lime-700 to-lime-900',
-    badge: null,
-  },
-};
+import { resolveIcon } from '../utils/categoryIcons';
 
 function StarRating({ rating, size = 14 }) {
   return (
@@ -122,11 +51,7 @@ const CategoryPage = () => {
     </div>
   );
 
-  const config = clusterConfig[category.slug];
-  const getIcon = (name) => {
-    const Icon = iconMap[name] || Briefcase;
-    return <Icon size={22} />;
-  };
+
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-6 space-y-10">
@@ -143,14 +68,14 @@ const CategoryPage = () => {
         <div className="relative z-10 p-8 md:p-12 max-w-2xl">
           <div className="flex items-center gap-3 mb-3">
             <div className="w-14 h-14 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center text-white border border-white/10">
-              {getIcon(category.icon)}
+              {React.createElement(resolveIcon(category.icon), { size: 22 })}
             </div>
             <div>
               <span className="text-white/50 text-xs uppercase tracking-wider">Categoría</span>
               <div className="flex items-center gap-2">
                 <h1 className="text-3xl md:text-4xl font-black text-white">{category.title}</h1>
-                {config?.badge && (
-                  <span className="px-2.5 py-0.5 bg-red-500 text-white text-xs font-bold rounded-md">{config.badge}</span>
+                {category.metadata?.emergency && (
+                  <span className="px-2.5 py-0.5 bg-red-500 text-white text-xs font-bold rounded-md">24/7</span>
                 )}
               </div>
             </div>

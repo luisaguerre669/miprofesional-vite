@@ -15,10 +15,14 @@ const router = express.Router();
 const handleValidationErrors = (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
+    logger.warn('Error de validacion:', { 
+      path: req.originalUrl, 
+      errors: errors.array() 
+    });
     return res.status(400).json({
       success: false,
       error: 'Validation failed',
-      message: 'Please check your input',
+      message: 'Por favor, revisa los datos ingresados.',
       errors: errors.array()
     });
   }
@@ -29,7 +33,15 @@ const handleValidationErrors = (req, res, next) => {
 router.get('/', [
   query('categoryId').optional().isMongoId().withMessage('Invalid category ID'),
   query('search').optional().isLength({ min: 1, max: 100 }).withMessage('Search query must be between 1 and 100 characters'),
-  query('location').optional().isObject().withMessage('Location must be an object with longitude and latitude'),
+  query('location').optional().custom((value) => {
+    try {
+      const parsed = typeof value === 'string' ? JSON.parse(value) : value;
+      if (typeof parsed.longitude !== 'number' || typeof parsed.latitude !== 'number' || isNaN(parsed.longitude) || isNaN(parsed.latitude)) {
+        throw new Error('invalid');
+      }
+      return true;
+    } catch(e) { throw new Error('Location debe ser un JSON valido con longitude y latitude numericos'); }
+  }),
   query('maxDistance').optional().isFloat({ min: 1, max: 500 }).withMessage('Max distance must be between 1 and 500 km'),
   query('minRating').optional().isFloat({ min: 0, max: 5 }).withMessage('Min rating must be between 0 and 5'),
   query('maxPrice').optional().isFloat({ min: 0 }).withMessage('Max price must be a positive number'),
@@ -297,7 +309,15 @@ router.get('/nearby', [
 router.get('/search', [
   query('q').notEmpty().isLength({ min: 1, max: 100 }).withMessage('Search query is required and must be between 1 and 100 characters'),
   query('categoryId').optional().isMongoId().withMessage('Invalid category ID'),
-  query('location').optional().isObject().withMessage('Location must be an object'),
+  query('location').optional().custom((value) => {
+    try {
+      const parsed = typeof value === 'string' ? JSON.parse(value) : value;
+      if (typeof parsed.longitude !== 'number' || typeof parsed.latitude !== 'number' || isNaN(parsed.longitude) || isNaN(parsed.latitude)) {
+        throw new Error('invalid');
+      }
+      return true;
+    } catch(e) { throw new Error('Location debe ser un JSON valido con longitude y latitude numericos'); }
+  }),
   query('maxDistance').optional().isFloat({ min: 1, max: 500 }).withMessage('Max distance must be between 1 and 500 km'),
   query('minRating').optional().isFloat({ min: 0, max: 5 }).withMessage('Min rating must be between 0 and 5'),
   query('maxPrice').optional().isFloat({ min: 0 }).withMessage('Max price must be a positive number'),
