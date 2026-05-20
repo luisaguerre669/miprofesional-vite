@@ -8,7 +8,8 @@ import {
   Scale, Palette, GraduationCap, Bus, Calendar, BookOpen, Music4, Megaphone,
   BadgeCheck, ChevronDown, ChevronUp, Eye, EyeOff, Mail, LockKeyhole, Globe,
   ShoppingBag, Tag, Percent, CreditCard, Landmark, FileText, SlidersHorizontal,
-  Filter, XCircle, Check, MenuSquare, List, Grid, RefreshCw, Loader2
+  Filter, XCircle, Check, MenuSquare, List, Grid, RefreshCw, Loader2,
+  Dumbbell, Ruler
 } from 'lucide-react';
 
 export const iconMap = {
@@ -20,6 +21,7 @@ export const iconMap = {
   BadgeCheck, Mail, LockKeyhole, Globe, ShoppingBag, Tag, Percent, CreditCard,
   Landmark, FileText, SlidersHorizontal, Filter, XCircle, Check,
   MenuSquare, List, Grid, RefreshCw, Loader2,
+  Dumbbell, Ruler,
 };
 
 export function resolveIcon(name, fallback = Briefcase) {
