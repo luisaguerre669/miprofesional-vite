@@ -11,8 +11,35 @@ function logError(...args) {
   console.error(GEO_LOG_PREFIX, ...args);
 }
 
+function isHttps() {
+  return typeof window !== 'undefined' && window.location && window.location.protocol === 'https:';
+}
+
+function isLocalhost() {
+  return typeof window !== 'undefined' && window.location && (
+    window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  );
+}
+
+async function checkWebLocationPermission() {
+  if (!('permissions' in navigator)) return 'prompt';
+  try {
+    const result = await navigator.permissions.query({ name: 'geolocation' });
+    log('Web permission state:', result.state);
+    result.addEventListener('change', () => log('Permission changed to:', result.state));
+    return result.state;
+  } catch {
+    return 'prompt';
+  }
+}
+
 export async function requestLocationPermissions() {
   if (!Capacitor.isNativePlatform()) {
+    const state = await checkWebLocationPermission();
+    if (state === 'denied') {
+      logError('Web location permission permanently denied');
+      return false;
+    }
     return true;
   }
   try {
@@ -39,19 +66,8 @@ async function attemptGetCurrentPosition(options, attemptNum) {
       throw new Error('Coordenadas invalidas');
     }
 
-    log(`Intento ${attemptNum} exitoso (Capacitor):`, {
-      lat,
-      lng,
-      accuracy,
-      altitude: pos.coords.altitude,
-      source: 'GPS/Native',
-    });
-    return {
-      lat,
-      lng,
-      accuracy,
-      source: 'gps',
-    };
+    log(`Intento ${attemptNum} exitoso (Capacitor):`, { lat, lng, accuracy, source: 'GPS/Native' });
+    return { lat, lng, accuracy, source: 'gps' };
   }
   return new Promise((resolve, reject) => {
     navigator.geolocation.getCurrentPosition(
@@ -59,28 +75,16 @@ async function attemptGetCurrentPosition(options, attemptNum) {
         const lat = Number(pos.coords.latitude);
         const lng = Number(pos.coords.longitude);
         const accuracy = Number(pos.coords.accuracy);
-
         if (isNaN(lat) || isNaN(lng)) {
           logError(`Intento ${attemptNum} fallo: Navigator devolvio coordenadas invalidas (NaN)`);
           reject(new Error('Coordenadas invalidas'));
           return;
         }
-
-        log(`Intento ${attemptNum} exitoso (Web):`, {
-          lat,
-          lng,
-          accuracy,
-          source: 'navigator.geolocation',
-        });
-        resolve({
-          lat,
-          lng,
-          accuracy,
-          source: 'gps',
-        });
+        log(`Intento ${attemptNum} exitoso (Web):`, { lat, lng, accuracy, source: 'navigator.geolocation' });
+        resolve({ lat, lng, accuracy, source: 'gps' });
       },
       (err) => {
-        logError(`Intento ${attemptNum} fallo:`, err.code, err.message);
+        logError(`Intento ${attemptNum} fallo: codigo=${err.code}, mensaje=${err.message}`);
         reject(err);
       },
       options
@@ -102,13 +106,26 @@ export async function getAccurateLocation() {
     const hasPerms = await requestLocationPermissions();
     if (!hasPerms) {
       logError('Permisos GPS denegados por el usuario');
-      return { error: 'Permiso de ubicacion denegado.', source: 'permission_denied' };
+      return { error: 'Permiso de ubicacion denegado. Activa la ubicacion en los ajustes del dispositivo.', source: 'permission_denied' };
     }
   } else {
     log('Plataforma web detectada');
     if (!('geolocation' in navigator)) {
       logError('navigator.geolocation no disponible');
       return { error: 'Tu navegador no soporta geolocalizacion.', source: 'unsupported' };
+    }
+
+    if (!isLocalhost() && !isHttps()) {
+      logError('GPS requiere HTTPS en produccion');
+    }
+
+    const permState = await checkWebLocationPermission();
+    if (permState === 'denied') {
+      logError('Permiso de ubicacion denegado permanentemente en el navegador');
+      return {
+        error: 'Bloqueaste la ubicacion para este sitio. Para activarla: haz clic en el icono de candado en la barra de direcciones y permite la ubicacion.',
+        source: 'permission_denied'
+      };
     }
   }
 
@@ -128,5 +145,5 @@ export async function getAccurateLocation() {
   }
 
   logError('Todos los intentos de GPS fallaron');
-  return { error: 'No se pudo obtener ubicacion GPS.', source: 'gps_failed' };
+  return { error: 'No se pudo obtener ubicacion GPS. Verifica que el GPS este activado.', source: 'gps_failed' };
 }

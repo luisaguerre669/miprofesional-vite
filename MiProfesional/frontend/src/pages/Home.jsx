@@ -508,23 +508,23 @@ const Home = () => {
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mt-1">Categorias</h2>
           <p className="text-gray-500 mt-2 max-w-xl mx-auto">Explora nuestros rubros y encuentra al profesional que necesitas</p>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4">
+        <div className="flex md:grid md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-hide md:overflow-visible pb-2 md:pb-0">
           {categories.map((cat) => {
             const Icon = resolveIcon(cat.icon);
             const gradient = getInlineGradient(cat.metadata?.color);
             const subCount = cat.subcategories?.length || 0;
             return (
               <Link key={cat.slug} to={`/categoria/${cat.slug}`}
-                className="group relative overflow-hidden rounded-xl border border-gray-200 bg-white hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200"
+                className="snap-start shrink-0 w-[160px] md:w-auto md:flex-1 group relative overflow-hidden rounded-xl border border-gray-200 bg-white hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200"
               >
                 <div className="aspect-[4/3] overflow-hidden">
-                  <img src={cat.image} alt={cat.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" />
-                  <div className="absolute inset-0 opacity-60 group-hover:opacity-70 transition-opacity" style={{ background: gradient }} />
+                  <img src={cat.image} alt={cat.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" loading="lazy" />
+                  <div className="absolute inset-0 opacity-60 group-hover:opacity-75 transition-all duration-300" style={{ background: gradient }} />
                 </div>
                 <div className="absolute bottom-0 left-0 right-0 p-3">
                   <div className="flex items-center gap-1.5">
                     <Icon size={14} className="text-white shrink-0" />
-                    <h3 className="text-sm font-bold text-white truncate">{cat.title}</h3>
+                    <h3 className="text-sm font-bold text-white truncate group-hover:drop-shadow-md transition-all">{cat.title}</h3>
                   </div>
                   <p className="text-[11px] text-white/70 mt-0.5">{subCount} servicios</p>
                 </div>
