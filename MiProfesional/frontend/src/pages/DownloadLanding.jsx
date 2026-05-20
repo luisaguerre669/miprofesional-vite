@@ -55,16 +55,13 @@ function PhoneMockup() {
   );
 }
 
-function QrCard() {
+function QrSmall() {
   return (
-    <div className="inline-flex items-center gap-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl px-4 py-3">
-      <div className="bg-white rounded-lg p-1 shrink-0">
-        <QRCodeCanvas value={SITE_URL} size={56} bgColor="#ffffff" fgColor="#0f7a5a" level="M" />
+    <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg px-3 py-2">
+      <div className="bg-white rounded-md p-0.5 shrink-0">
+        <QRCodeCanvas value={SITE_URL} size={36} bgColor="#ffffff" fgColor="#0f7a5a" level="M" />
       </div>
-      <div className="text-left">
-        <p className="text-xs font-semibold text-white">Escanea desde tu celular</p>
-        <p className="text-[10px] text-gray-400 mt-0.5">Descarga la app al instante</p>
-      </div>
+      <p className="text-[11px] text-gray-300 leading-tight">Escanea desde<br />tu celular</p>
     </div>
   );
 }
@@ -125,7 +122,7 @@ export default function DownloadLanding() {
         </div>
       );
     }
-    return <QrCard />;
+    return <p className="text-gray-400 max-w-sm">Escanea el codigo QR desde tu celular para descargar la app al instante.</p>;
   };
 
   return (
@@ -185,12 +182,12 @@ export default function DownloadLanding() {
             </div>
 
             {/* Right: phone mockup + QR for desktop */}
-            <div className="shrink-0 flex flex-col items-center gap-5">
+            <div className="shrink-0 flex flex-col items-center gap-4">
               <PhoneMockup />
               {device === 'desktop' && (
-                <div className="hidden lg:flex items-center gap-2 text-xs text-gray-500">
-                  <span className="w-1.5 h-1.5 rounded-full bg-primary-500 animate-pulse" />
-                  Escanea el QR de arriba desde tu celular
+                <div className="flex flex-col items-center gap-2">
+                  <QrSmall />
+                  <p className="text-[10px] text-gray-500">o abri <span className="font-mono text-gray-400">miprofesional.online</span> desde tu navegador</p>
                 </div>
               )}
             </div>
