@@ -1,35 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
+import { ArrowRight, LayoutGrid } from 'lucide-react';
 import api from '../lib/axios';
-import {
-  Building2, Wrench, Hammer, Zap, Droplets, Paintbrush, Lock, TreePine,
-  SprayCan, Truck, Stethoscope, Users, Heart, Briefcase, AlertTriangle,
-  ArrowRight, LayoutGrid, Monitor, Car, Home, Wifi, Camera, Code, Snowflake,
-  Flame, CircleDot, Dog, Sparkles, ChefHat, Shield
-} from 'lucide-react';
-
-const iconMap = {
-  Building2, Wrench, Hammer, Zap, Droplets, Paintbrush, Lock, TreePine,
-  SprayCan, Truck, Stethoscope, Users, Heart, Briefcase, AlertTriangle,
-  Monitor, Car, Home, Wifi, Camera, Code, Snowflake, Flame, CircleDot,
-  Dog, Sparkles, ChefHat, Shield,
-};
-
-const clusterColors = {
-  construccion: 'from-amber-700 to-amber-900',
-  'servicios-generales': 'from-primary-700 to-primary-900',
-  emergencias: 'from-red-700 to-red-900',
-  empresas: 'from-blue-700 to-blue-900',
-  tecnologia: 'from-purple-700 to-purple-900',
-  automotor: 'from-cyan-700 to-cyan-900',
-  hogar: 'from-amber-600 to-amber-800',
-  mascotas: 'from-cyan-700 to-cyan-900',
-  belleza: 'from-pink-700 to-pink-900',
-  gastronomia: 'from-red-700 to-red-900',
-  transporte: 'from-blue-700 to-blue-900',
-  cerrajeria: 'from-lime-700 to-lime-900',
-};
+import { resolveIcon, getInlineGradient } from '../utils/categoryIcons';
 
 const CategoriesPage = () => {
   const [categories, setCategories] = useState([]);
@@ -69,8 +43,8 @@ const CategoriesPage = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {categories.sort((a, b) => a.sortOrder - b.sortOrder).map(cat => {
-            const Icon = iconMap[cat.icon] || Briefcase;
-            const color = clusterColors[cat.slug] || 'from-gray-700 to-gray-900';
+            const Icon = resolveIcon(cat.icon);
+            const gradient = getInlineGradient(cat.metadata?.color);
             return (
               <Link key={cat._id} to={`/categoria/${cat.slug}`}
                 className="group relative rounded-2xl overflow-hidden border border-gray-200 bg-white hover-lift"
@@ -83,7 +57,7 @@ const CategoriesPage = () => {
                   <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent" />
                   <div className="absolute bottom-4 left-4 right-4">
                     <div className="flex items-center gap-3">
-                      <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${color} flex items-center justify-center shadow-lg`}>
+                      <div className="w-12 h-12 rounded-xl flex items-center justify-center shadow-lg" style={{ background: gradient }}>
                         <Icon size={24} className="text-white" />
                       </div>
                       <div>

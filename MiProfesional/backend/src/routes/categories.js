@@ -254,6 +254,36 @@ router.get('/stats', async (req, res) => {
   }
 });
 
+// GET /api/v1/categories/tree
+router.get('/tree', async (req, res) => {
+  try {
+    const parents = await Category.find({ isActive: true, parentCategory: null })
+      .populate({
+        path: 'subcategories',
+        match: { isActive: true },
+        select: 'title slug icon description image metadata.color sortOrder professionalCount'
+      })
+      .sort({ sortOrder: 1, title: 1 })
+      .select('title slug icon description image metadata.color sortOrder professionalCount');
+
+    logger.info('Category tree retrieved', { count: parents.length });
+
+    res.json({
+      success: true,
+      message: 'Category tree retrieved successfully',
+      data: parents
+    });
+
+  } catch (error) {
+    logger.error('Get category tree error', { error: error.message });
+    res.status(500).json({
+      success: false,
+      error: 'Failed to retrieve category tree',
+      message: 'An error occurred while retrieving the category tree'
+    });
+  }
+});
+
 // GET /api/v1/categories/:id
 router.get('/:id', [
   param('id').isMongoId().withMessage('Invalid category ID')

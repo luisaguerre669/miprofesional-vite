@@ -7,7 +7,7 @@ import {
   BadgeCheck, ChevronRight, Briefcase, Navigation
 } from 'lucide-react';
 import MapView from '../components/MapView';
-
+import { getAccurateLocation } from '../utils/geolocation';
 function StarRating({ rating, size = 14 }) {
   return (
     <div className="flex items-center gap-0.5">
@@ -43,6 +43,13 @@ const Search = () => {
 
   useEffect(() => {
     api.get('/categories?limit=50').then(r => setCategories(r.data.data || [])).catch(() => {});
+    
+    getAccurateLocation().then(res => {
+      if (!res.error && res.lat && res.lng) {
+        setUserLocation({ lat: res.lat, lng: res.lng });
+      }
+    });
+
     const q = searchParams.get('q');
     const cat = searchParams.get('category');
     if (q || cat) {
@@ -77,9 +84,24 @@ const Search = () => {
       if (filterOpts.maxPrice) params.maxPrice = filterOpts.maxPrice;
       if (filterOpts.verified) params.isVerified = true;
       if (filterOpts.featured) params.featured = true;
-      if (filterOpts.location) params.location = filterOpts.location;
       if (filterOpts.sortBy) params.sortBy = filterOpts.sortBy;
       params.limit = 20;
+
+      // Geocodificar siempre, asegurando coordenadas reales
+      if (filterOpts.location && filterOpts.location.trim()) {
+        const geoRes = await api.get('/professionals/geocode', { params: { city: filterOpts.location, country: 'Argentina' } });
+        if (geoRes.data?.success && geoRes.data?.data) {
+          params.location = JSON.stringify({ 
+            latitude: geoRes.data.data.latitude, 
+            longitude: geoRes.data.data.longitude 
+          });
+        }
+      } else if (userLocation) {
+        params.location = JSON.stringify({ 
+          latitude: userLocation.lat, 
+          longitude: userLocation.lng 
+        });
+      }
 
       const response = await api.get('/professionals/search', { params: { q, ...params } });
       setProfessionals(response.data.data || []);
