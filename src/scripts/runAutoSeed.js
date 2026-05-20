@@ -35,7 +35,21 @@ async function runAutoSeed() {
     totalSubs += subIds.length;
   }
 
-  return { parents: categoriesData.length, subs: totalSubs };
+  // Cleanup: deactivate old parent categories that no longer exist in seed data
+  const currentSlugs = categoriesData.map(c => c.slug);
+  const oldParents = await Category.find({
+    isActive: true,
+    parentCategory: null,
+    slug: { $nin: currentSlugs }
+  });
+  if (oldParents.length > 0) {
+    for (const old of oldParents) {
+      old.isActive = false;
+      await old.save();
+    }
+  }
+
+  return { parents: categoriesData.length, subs: totalSubs, removed: oldParents.length };
 }
 
 module.exports = runAutoSeed;
