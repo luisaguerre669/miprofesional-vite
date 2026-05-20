@@ -65,6 +65,9 @@ function getAllowedOrigins() {
 function isAllowedOrigin(origin, allowedOrigins) {
   if (!origin) return true;
   if (allowedOrigins.includes(origin)) return true;
+  if (/^https?:\/\/localhost(:\d+)?$/.test(origin)) return true;
+  if (/^capacitor:\/\/localhost$/.test(origin)) return true;
+  if (/^file:\/\//.test(origin)) return true;
   try {
     const hostname = new URL(origin).hostname;
     if (hostname.endsWith(".vercel.app")) return true;
@@ -74,7 +77,7 @@ function isAllowedOrigin(origin, allowedOrigins) {
   } catch {
     return false;
   }
-  return process.env.NODE_ENV !== "production" && /^http:\/\/localhost:\d+$/.test(origin);
+  return false;
 }
 
 class Server {

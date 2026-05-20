@@ -48,7 +48,7 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       return { 
         success: false, 
-        error: error.response?.data?.message || 'Login failed' 
+        error: error.response?.data?.message || 'Error al iniciar sesion. Verifica tus credenciales.' 
       };
     }
   };
@@ -66,7 +66,7 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       return { 
         success: false, 
-        error: error.response?.data?.message || 'Registration failed' 
+        error: error.response?.data?.message || 'Error al registrarse. Intenta de nuevo mas tarde.' 
       };
     }
   };
@@ -86,7 +86,7 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       return { 
         success: false, 
-        error: error.response?.data?.message || 'Update failed' 
+        error: error.response?.data?.message || 'Error al actualizar perfil.' 
       };
     }
   };
