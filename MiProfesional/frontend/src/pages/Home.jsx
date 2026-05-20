@@ -6,13 +6,14 @@ import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import api from '../lib/axios';
 import { getAccurateLocation } from '../utils/geolocation';
+import { useAuth } from '../context/AuthContext';
 import {
   Search, ArrowRight, Star, MapPin, Building2, Wrench,
   Hammer, Zap, Droplets, Paintbrush, Lock, TreePine,
   SprayCan, Truck, Stethoscope, Users, Heart, Briefcase,
   AlertTriangle, ChevronLeft, ChevronRight, Shield, Clock,
   UserPlus, LayoutGrid, X, Phone, CheckCircle, Award,
-  TrendingUp, MessageCircle
+  TrendingUp, MessageCircle, LogOut, Menu, User, Settings
 } from 'lucide-react';
 import AdBanner from '../components/ads/AdBanner';
 
@@ -72,6 +73,8 @@ const PROVINCES = [
 
 const Home = () => {
   const navigate = useNavigate();
+  const { user, isAuthenticated, logout, isProfessional } = useAuth();
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [featuredPros, setFeaturedPros] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -378,10 +381,50 @@ const Home = () => {
             <Link to="/categoria/emergencias" className="text-red-600 font-medium flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />Urgencias</Link>
           </nav>
           <div className="flex items-center gap-2">
-            <Link to="/register" className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors">Ingresar</Link>
-            <Link to="/register?role=professional" className="px-4 py-2 text-sm font-semibold bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-all shadow-sm">
-              Soy Profesional
-            </Link>
+            {isAuthenticated ? (
+              <div className="relative flex items-center gap-2">
+                <button onClick={() => setUserMenuOpen(!userMenuOpen)}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-gray-100 transition-colors">
+                  <div className="w-8 h-8 rounded-full bg-primary-600 flex items-center justify-center text-white text-xs font-bold">
+                    {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+                  </div>
+                  <span className="text-sm font-medium text-gray-900 hidden sm:block">{user?.name?.split(' ')[0] || 'Usuario'}</span>
+                  <svg className={`w-3.5 h-3.5 text-gray-400 transition-transform ${userMenuOpen ? 'rotate-180' : ''}`} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                {userMenuOpen && (
+                  <>
+                    <div className="fixed inset-0 z-10" onClick={() => setUserMenuOpen(false)} />
+                    <div className="absolute right-0 top-full mt-2 w-52 bg-white rounded-xl shadow-xl border border-gray-200 py-2 z-20">
+                      <Link to={isProfessional ? '/dashboard/professional' : '/dashboard/client'}
+                        onClick={() => setUserMenuOpen(false)}
+                        className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50">
+                        <LayoutDashboard size={16} className="text-gray-400" /> Dashboard
+                      </Link>
+                      <Link to="/profile" onClick={() => setUserMenuOpen(false)}
+                        className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50">
+                        <User size={16} className="text-gray-400" /> Mi Perfil
+                      </Link>
+                      <Link to="/settings" onClick={() => setUserMenuOpen(false)}
+                        className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50">
+                        <Settings size={16} className="text-gray-400" /> Configuracion
+                      </Link>
+                      <div className="border-t border-gray-100 my-1" />
+                      <button onClick={() => { setUserMenuOpen(false); logout(); navigate('/'); }}
+                        className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50">
+                        <LogOut size={16} /> Cerrar Sesion
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            ) : (
+              <>
+                <Link to="/login" className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors">Ingresar</Link>
+                <Link to="/register?role=professional" className="px-4 py-2 text-sm font-semibold bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-all shadow-sm">
+                  Soy Profesional
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </header>
