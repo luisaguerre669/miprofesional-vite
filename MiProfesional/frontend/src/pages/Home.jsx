@@ -446,47 +446,15 @@ const Home = () => {
       </header>
 
       {/* HERO PREMIUM */}
-      <section className="relative lg:min-h-screen flex items-center overflow-hidden bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950">
+      <section className="relative flex items-center overflow-hidden bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950">
         <div className="absolute inset-0">
           <img src="https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=1600&q=80" alt="" className="w-full h-full object-cover opacity-20" style={{ filter: 'brightness(0.3)' }} />
           <div className="absolute inset-0 bg-gradient-to-r from-gray-950/90 via-gray-900/70 to-transparent" />
           <div className="absolute inset-0 bg-gradient-to-t from-gray-950/60 via-transparent to-gray-950/20" />
         </div>
-        <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-20">
+        <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-8 lg:py-16">
           {/* MOBILE LAYOUT */}
-          <div className="block lg:hidden space-y-3">
-            {!alreadyInstalled && (
-              <>
-                <div className="flex items-stretch gap-2">
-                  <div className="flex-1">
-                    {device === 'android' && (
-                      <a href={APK_URL} download
-                        className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-primary-500 text-white font-bold text-sm rounded-xl hover:bg-primary-600 transition-all shadow-lg shadow-primary-500/25"
-                      ><Download size={18} /> Descargar APK</a>
-                    )}
-                    {device === 'ios' && (
-                      <a href={SITE_URL} target="_blank" rel="noopener noreferrer"
-                        className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-primary-500 text-white font-bold text-sm rounded-xl hover:bg-primary-600 transition-all shadow-lg shadow-primary-500/25"
-                      ><Plus size={18} /> Instalar en iPhone</a>
-                    )}
-                    {device === 'desktop' && (
-                      <a href={SITE_URL} target="_blank" rel="noopener noreferrer"
-                        className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-primary-500 text-white font-bold text-sm rounded-xl hover:bg-primary-600 transition-all shadow-lg shadow-primary-500/25"
-                      ><Download size={18} /> Abrir App</a>
-                    )}
-                  </div>
-                  {(device === 'android' || device === 'desktop') && (
-                    <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-1.5 shrink-0 flex items-center">
-                      <QRCodeCanvas value={SITE_URL} size={54} bgColor="#ffffff" fgColor="#0f7a5a" level="M" />
-                    </div>
-                  )}
-                </div>
-                <p className="text-[10px] text-gray-500 text-center -mt-1">{device === 'android' ? `Version ${APK_VERSION} · Gratis` : 'Gratis · Sin registro'}</p>
-                <div className="flex justify-center">
-                  <PhoneMockup />
-                </div>
-              </>
-            )}
+          <div className="block lg:hidden space-y-4">
             <div className="text-center">
               <div className="inline-flex items-center gap-1.5 bg-white/5 backdrop-blur-sm border border-white/10 rounded-full px-3 py-0.5 text-[10px] text-gray-300 mb-2">
                 <Shield size={10} className="text-primary-400" />
@@ -496,7 +464,28 @@ const Home = () => {
                 El profesional que necesitas<br />
                 <span className="bg-gradient-to-r from-primary-400 via-primary-300 to-emerald-300 bg-clip-text text-transparent">esta mas cerca</span>
               </h1>
+              <p className="text-sm text-gray-400 mt-1">Conectamos clientes con profesionales verificados en toda Argentina.</p>
             </div>
+
+            {!alreadyInstalled && (
+              <div className="space-y-3">
+                <a href={APK_URL} download
+                  className="w-full inline-flex items-center justify-center gap-3 px-6 py-4 bg-primary-500 text-white font-bold text-base rounded-xl hover:bg-primary-600 active:bg-primary-700 transition-all shadow-xl shadow-primary-500/30"
+                ><Download size={22} /> Descargar APK — Gratis</a>
+
+                <div className="flex items-center justify-center gap-2">
+                  <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-1.5 shrink-0">
+                    <QRCodeCanvas value={SITE_URL} size={54} bgColor="#ffffff" fgColor="#0f7a5a" level="M" />
+                  </div>
+                  <p className="text-[11px] text-gray-400">{device === 'android' ? `Version ${APK_VERSION} · Gratis` : 'Gratis · Sin registro'}</p>
+                </div>
+
+                <div className="flex justify-center">
+                  <PhoneMockup />
+                </div>
+              </div>
+            )}
+
             <form onSubmit={handleSearch}>
               <div className="relative flex bg-white/5 backdrop-blur-sm border border-gray-700/50 rounded-xl overflow-hidden focus-within:border-primary-500/50 focus-within:ring-1 focus-within:ring-primary-500/20 transition-all">
                 <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
@@ -552,39 +541,34 @@ const Home = () => {
                 ))}
               </div>
             </div>
-            <div className="shrink-0 flex items-stretch gap-4">
-              <div className="relative w-[300px] xl:w-[360px] aspect-[4/3] rounded-2xl overflow-hidden shadow-2xl shadow-black/40">
-                <img src="/images/hero-workers.jpg" alt="Equipo de profesionales verificados"
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-gray-900/80 via-gray-900/20 to-transparent" />
-              </div>
-              {!alreadyInstalled && (
-                <div className="flex flex-col justify-center gap-3 bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-5 min-w-[180px]">
-                  <div className="flex justify-center">
-                    <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-2">
-                      <QRCodeCanvas value={SITE_URL} size={72} bgColor="#ffffff" fgColor="#0f7a5a" level="M" />
-                    </div>
+            {!alreadyInstalled && (
+              <div className="shrink-0 flex flex-col items-center gap-5">
+                <PhoneMockup />
+                <div className="flex items-stretch gap-3">
+                  <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-2.5 shrink-0 flex items-center">
+                    <QRCodeCanvas value={SITE_URL} size={70} bgColor="#ffffff" fgColor="#0f7a5a" level="M" />
                   </div>
-                  {device === 'android' && (
-                    <a href={APK_URL} download
-                      className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-primary-500 text-white font-bold text-sm rounded-xl hover:bg-primary-600 transition-all shadow-lg shadow-primary-500/30"
-                    ><Download size={18} /> Descargar APK</a>
-                  )}
-                  {device === 'ios' && (
-                    <a href={SITE_URL} target="_blank" rel="noopener noreferrer"
-                      className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-primary-500 text-white font-bold text-sm rounded-xl hover:bg-primary-600 transition-all shadow-lg shadow-primary-500/30"
-                    ><Plus size={18} /> Instalar en iPhone</a>
-                  )}
-                  {device === 'desktop' && (
-                    <a href={SITE_URL} target="_blank" rel="noopener noreferrer"
-                      className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-primary-500 text-white font-bold text-sm rounded-xl hover:bg-primary-600 transition-all shadow-lg shadow-primary-500/30"
-                    ><Download size={18} /> Ir a la App</a>
-                  )}
-                  <p className="text-[11px] text-gray-500 text-center">{device === 'android' ? `Version ${APK_VERSION} · Gratis` : 'Gratis · Sin registro'}</p>
+                  <div className="flex flex-col justify-center gap-1.5">
+                    {device === 'android' && (
+                      <a href={APK_URL} download
+                        className="inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-primary-500 text-white font-bold text-base rounded-xl hover:bg-primary-600 transition-all shadow-xl shadow-primary-500/30"
+                      ><Download size={20} /> Descargar APK</a>
+                    )}
+                    {device === 'ios' && (
+                      <a href={SITE_URL} target="_blank" rel="noopener noreferrer"
+                        className="inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-primary-500 text-white font-bold text-base rounded-xl hover:bg-primary-600 transition-all shadow-xl shadow-primary-500/30"
+                      ><Plus size={20} /> Instalar en iPhone</a>
+                    )}
+                    {device === 'desktop' && (
+                      <a href={SITE_URL} target="_blank" rel="noopener noreferrer"
+                        className="inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-primary-500 text-white font-bold text-base rounded-xl hover:bg-primary-600 transition-all shadow-xl shadow-primary-500/30"
+                      ><Download size={20} /> Ir a la App</a>
+                    )}
+                    <p className="text-[11px] text-gray-500 text-center">{device === 'android' ? `Version ${APK_VERSION} · Gratis` : 'Gratis · Sin registro'}</p>
+                  </div>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         </div>
         <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-gray-50 to-transparent" />

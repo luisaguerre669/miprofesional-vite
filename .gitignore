@@ -25,3 +25,4 @@ pnpm-debug.log*
 # Capacitor / Android
 MiProfesional/frontend/android/
 MiProfesional/frontend/MiProfesional.apk
+.env*
