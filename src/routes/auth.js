@@ -326,13 +326,26 @@ router.post('/login', authLimiter, [
   body('password').notEmpty().withMessage('Password is required'),
   body('rememberMe').optional().isBoolean()
 ], handleValidationErrors, async (req, res) => {
+  let timer;
   try {
-    const { email, password, rememberMe } = req.body;
+    const start = Date.now();
+    timer = setTimeout(() => {
+      if (!res.headersSent) {
+        logger.error('Login timeout after 20s', { email: req.body.email });
+        return res.status(504).json({
+          success: false,
+          error: 'Timeout',
+          message: 'El servidor tardo demasiado en responder. Intenta nuevamente.'
+        });
+      }
+    }, 20000);
 
-    // Find user by email with password
+    const { email, password } = req.body;
+
     const user = await User.findByEmail(email);
 
     if (!user) {
+      clearTimeout(timer);
       logger.logAuth('login', null, req.ip, false, { email, reason: 'user_not_found' });
       return res.status(401).json({
         success: false,
@@ -341,8 +354,8 @@ router.post('/login', authLimiter, [
       });
     }
 
-    // Check if user is active
     if (!user.isActive) {
+      clearTimeout(timer);
       logger.logAuth('login', user._id, req.ip, false, { reason: 'account_inactive' });
       return res.status(401).json({
         success: false,
@@ -351,10 +364,10 @@ router.post('/login', authLimiter, [
       });
     }
 
-    // Compare password
     const isPasswordValid = await user.comparePassword(password);
 
     if (!isPasswordValid) {
+      clearTimeout(timer);
       logger.logAuth('login', user._id, req.ip, false, { reason: 'invalid_password' });
       return res.status(401).json({
         success: false,
@@ -363,12 +376,11 @@ router.post('/login', authLimiter, [
       });
     }
 
-    // Update last login
     user.lastLogin = new Date();
 
-    // Auto-promote to admin if no admin exists (initial setup)
+    // Auto-promote to admin only if no admin exists in the system
     if (user.role !== 'admin') {
-      const adminExists = await User.findOne({ role: 'admin', isActive: true });
+      const adminExists = await User.findOne({ role: 'admin', isActive: true }).maxTimeMS(5000);
       if (!adminExists) {
         user.role = 'admin';
       }
@@ -376,11 +388,11 @@ router.post('/login', authLimiter, [
 
     await user.save();
 
-    // Generate tokens
     const { accessToken, refreshToken } = generateTokens(user._id);
 
-    // Log successful login
+    clearTimeout(timer);
     logger.logAuth('login', user._id, req.ip, true);
+    logger.info('Login completed', { email, timeMs: Date.now() - start });
 
     const publicUser = user.toJSON();
 
@@ -400,11 +412,12 @@ router.post('/login', authLimiter, [
     });
 
   } catch (error) {
+    clearTimeout(timer);
     logger.error('Login error', { error: error.message, email: req.body.email });
     res.status(500).json({
       success: false,
       error: 'Login failed',
-      message: 'An error occurred during login'
+      message: 'Error interno. Intenta nuevamente.'
     });
   }
 });
