@@ -29,8 +29,6 @@ const userIcon = new L.DivIcon({
   iconSize: [32, 32], iconAnchor: [16, 32], popupAnchor: [0, -32],
 });
 
-
-
 const benefits = [
   { icon: Shield, title: 'Profesionales Verificados', desc: 'Todos los profesionales pasan por un proceso de verificacion de identidad y antecedentes.' },
   { icon: Star, title: 'Calificaciones Reales', desc: 'Cada profesional tiene calificaciones y opiniones de clientes reales como vos.' },
@@ -105,6 +103,7 @@ const Home = () => {
   const [bannerSide2] = useState(true);
 
   const [categories, setCategories] = useState([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
   const [device, setDevice] = useState('desktop');
   const [alreadyInstalled, setAlreadyInstalled] = useState(false);
 
@@ -120,7 +119,8 @@ const Home = () => {
   useEffect(() => {
     api.get('/categories/tree')
       .then(r => setCategories(r.data.data || []))
-      .catch(() => setCategories([]));
+      .catch(() => setCategories([]))
+      .finally(() => setCategoriesLoading(false));
   }, []);
 
   const [manualCity, setManualCity] = useState('');
@@ -452,73 +452,136 @@ const Home = () => {
           <div className="absolute inset-0 bg-gradient-to-r from-gray-950/90 via-gray-900/70 to-transparent" />
           <div className="absolute inset-0 bg-gradient-to-t from-gray-950/60 via-transparent to-gray-950/20" />
         </div>
-        <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 lg:py-20">
-          <div className="flex flex-col lg:flex-row items-center gap-6 lg:gap-14">
-            {/* RIGHT: phone mockup + QR + download button — first on mobile via order */}
+        <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-20">
+          {/* MOBILE LAYOUT */}
+          <div className="block lg:hidden space-y-3">
             {!alreadyInstalled && (
-              <div className="order-1 lg:order-2 shrink-0 flex flex-col items-center gap-4 lg:gap-6">
-                <PhoneMockup />
-                <div className="flex items-stretch gap-3 w-full max-w-[300px] sm:max-w-[320px]">
+              <>
+                <div className="flex items-stretch gap-2">
+                  <div className="flex-1">
+                    {device === 'android' && (
+                      <a href={APK_URL} download
+                        className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-primary-500 text-white font-bold text-sm rounded-xl hover:bg-primary-600 transition-all shadow-lg shadow-primary-500/25"
+                      ><Download size={18} /> Descargar APK</a>
+                    )}
+                    {device === 'ios' && (
+                      <a href={SITE_URL} target="_blank" rel="noopener noreferrer"
+                        className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-primary-500 text-white font-bold text-sm rounded-xl hover:bg-primary-600 transition-all shadow-lg shadow-primary-500/25"
+                      ><Plus size={18} /> Instalar en iPhone</a>
+                    )}
+                    {device === 'desktop' && (
+                      <a href={SITE_URL} target="_blank" rel="noopener noreferrer"
+                        className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-primary-500 text-white font-bold text-sm rounded-xl hover:bg-primary-600 transition-all shadow-lg shadow-primary-500/25"
+                      ><Download size={18} /> Abrir App</a>
+                    )}
+                  </div>
                   {(device === 'android' || device === 'desktop') && (
-                    <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-2 shrink-0 flex items-center">
-                      <QRCodeCanvas value={SITE_URL} size={56} bgColor="#ffffff" fgColor="#0f7a5a" level="M" />
+                    <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-1.5 shrink-0 flex items-center">
+                      <QRCodeCanvas value={SITE_URL} size={54} bgColor="#ffffff" fgColor="#0f7a5a" level="M" />
+                    </div>
+                  )}
+                </div>
+                <p className="text-[10px] text-gray-500 text-center -mt-1">{device === 'android' ? `Version ${APK_VERSION} · Gratis` : 'Gratis · Sin registro'}</p>
+                <div className="flex justify-center">
+                  <PhoneMockup />
+                </div>
+              </>
+            )}
+            <div className="text-center">
+              <div className="inline-flex items-center gap-1.5 bg-white/5 backdrop-blur-sm border border-white/10 rounded-full px-3 py-0.5 text-[10px] text-gray-300 mb-2">
+                <Shield size={10} className="text-primary-400" />
+                <span>Marketplace de confianza</span>
+              </div>
+              <h1 className="text-xl sm:text-2xl font-black text-white leading-tight">
+                El profesional que necesitas<br />
+                <span className="bg-gradient-to-r from-primary-400 via-primary-300 to-emerald-300 bg-clip-text text-transparent">esta mas cerca</span>
+              </h1>
+            </div>
+            <form onSubmit={handleSearch}>
+              <div className="relative flex bg-white/5 backdrop-blur-sm border border-gray-700/50 rounded-xl overflow-hidden focus-within:border-primary-500/50 focus-within:ring-1 focus-within:ring-primary-500/20 transition-all">
+                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+                <input type="text" value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+                  placeholder="Plomero, Electricista, Medico..."
+                  className="w-full pl-9 pr-2 py-2.5 bg-transparent text-white placeholder-gray-600 focus:outline-none text-sm"
+                />
+                <button type="submit" className="px-3 py-2.5 bg-primary-500 text-white font-bold text-xs hover:bg-primary-600 transition-all flex items-center gap-1">
+                  Buscar
+                </button>
+              </div>
+            </form>
+            <div className="flex flex-wrap gap-1.5 justify-center">
+              {['Albanil', 'Plomero', 'Electricista', 'Medico', 'Cerrajero', 'Gasista'].map(cat => (
+                <Link key={cat} to={`/search?q=${encodeURIComponent(cat)}`}
+                  className="px-2.5 py-1 bg-white/5 hover:bg-white/10 backdrop-blur-sm border border-white/10 hover:border-primary-500/30 rounded-lg text-[10px] text-gray-300 hover:text-white transition-all"
+                >{cat}</Link>
+              ))}
+            </div>
+          </div>
+
+          {/* DESKTOP LAYOUT */}
+          <div className="hidden lg:flex lg:flex-row items-center gap-14">
+            <div className="flex-1 text-left">
+              <div className="inline-flex items-center gap-2 bg-white/5 backdrop-blur-sm border border-white/10 rounded-full px-4 py-1.5 text-sm text-gray-300 mb-6">
+                <Shield size={14} className="text-primary-400" />
+                <span>Marketplace de confianza en Argentina</span>
+              </div>
+              <h1 className="text-6xl xl:text-7xl font-black text-white leading-[1.05] mb-4">
+                El profesional que necesitas<br />
+                <span className="bg-gradient-to-r from-primary-400 via-primary-300 to-emerald-300 bg-clip-text text-transparent">esta mas cerca de lo que crees</span>
+              </h1>
+              <p className="text-lg text-gray-400 mb-6 max-w-xl leading-relaxed">
+                Conectamos clientes con profesionales verificados en toda Argentina.
+              </p>
+              <form onSubmit={handleSearch} className="max-w-xl">
+                <div className="relative flex bg-white/5 backdrop-blur-sm border border-gray-700/50 rounded-2xl overflow-hidden focus-within:border-primary-500/50 focus-within:ring-1 focus-within:ring-primary-500/20 transition-all shadow-xl shadow-black/20">
+                  <Search size={20} className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-500" />
+                  <input type="text" value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+                    placeholder="Busca un servicio: Plomero, Electricista, Medico..."
+                    className="w-full pl-12 pr-4 py-5 bg-transparent text-white placeholder-gray-600 focus:outline-none text-base"
+                  />
+                  <button type="submit" className="px-8 py-5 bg-primary-500 text-white font-bold hover:bg-primary-600 transition-all flex items-center gap-2">
+                    <span>Buscar</span> <Search size={18} />
+                  </button>
+                </div>
+              </form>
+              <div className="flex flex-wrap gap-2 mt-6">
+                {['Albanil', 'Plomero', 'Electricista', 'Medico', 'Cerrajero', 'Gasista'].map(cat => (
+                  <Link key={cat} to={`/search?q=${encodeURIComponent(cat)}`}
+                    className="px-3.5 py-1.5 bg-white/5 hover:bg-white/10 backdrop-blur-sm border border-white/10 hover:border-primary-500/30 rounded-xl text-xs text-gray-300 hover:text-white transition-all"
+                  >{cat}</Link>
+                ))}
+              </div>
+            </div>
+            {!alreadyInstalled && (
+              <div className="shrink-0 flex flex-col items-center gap-6">
+                <PhoneMockup />
+                <div className="flex items-stretch gap-3 w-full max-w-[320px]">
+                  {(device === 'android' || device === 'desktop') && (
+                    <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-2.5 shrink-0 flex items-center">
+                      <QRCodeCanvas value={SITE_URL} size={60} bgColor="#ffffff" fgColor="#0f7a5a" level="M" />
                     </div>
                   )}
                   <div className="flex-1 flex flex-col gap-1.5">
                     {device === 'android' && (
                       <a href={APK_URL} download
-                        className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3 bg-primary-500 text-white font-bold text-sm rounded-xl hover:bg-primary-600 transition-all shadow-xl shadow-primary-500/30"
-                      ><Download size={18} /> Descargar APK</a>
+                        className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-primary-500 text-white font-bold text-base rounded-xl hover:bg-primary-600 transition-all shadow-xl shadow-primary-500/30"
+                      ><Download size={20} /> Descargar APK</a>
                     )}
                     {device === 'ios' && (
                       <a href={SITE_URL} target="_blank" rel="noopener noreferrer"
-                        className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3 bg-primary-500 text-white font-bold text-sm rounded-xl hover:bg-primary-600 transition-all shadow-xl shadow-primary-500/30"
-                      ><Plus size={18} /> Instalar en iPhone</a>
+                        className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-primary-500 text-white font-bold text-base rounded-xl hover:bg-primary-600 transition-all shadow-xl shadow-primary-500/30"
+                      ><Plus size={20} /> Instalar en iPhone</a>
                     )}
                     {device === 'desktop' && (
                       <a href={SITE_URL} target="_blank" rel="noopener noreferrer"
-                        className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3 bg-primary-500 text-white font-bold text-sm rounded-xl hover:bg-primary-600 transition-all shadow-xl shadow-primary-500/30"
-                      ><Download size={18} /> Ir a la App</a>
+                        className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-primary-500 text-white font-bold text-base rounded-xl hover:bg-primary-600 transition-all shadow-xl shadow-primary-500/30"
+                      ><Download size={20} /> Ir a la App</a>
                     )}
                     <p className="text-[11px] text-gray-500 text-center">{device === 'android' ? `Version ${APK_VERSION} · Gratis` : 'Gratis · Sin registro'}</p>
                   </div>
                 </div>
               </div>
             )}
-
-            {/* LEFT: text + search + tags — second on mobile via order */}
-            <div className="order-2 lg:order-1 flex-1 text-center lg:text-left">
-              <div className="inline-flex items-center gap-2 bg-white/5 backdrop-blur-sm border border-white/10 rounded-full px-3.5 py-1 text-xs sm:text-sm text-gray-300 mb-4 lg:mb-6">
-                <Shield size={13} className="text-primary-400" />
-                <span>Marketplace de confianza en Argentina</span>
-              </div>
-              <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-black text-white leading-[1.05] mb-3 lg:mb-4">
-                El profesional que necesitas<br />
-                <span className="bg-gradient-to-r from-primary-400 via-primary-300 to-emerald-300 bg-clip-text text-transparent">esta mas cerca de lo que crees</span>
-              </h1>
-              <p className="text-xs sm:text-sm md:text-base lg:text-lg text-gray-400 mb-4 lg:mb-6 max-w-xl mx-auto lg:mx-0 leading-relaxed">
-                Conectamos clientes con profesionales verificados en toda Argentina.
-              </p>
-              <form onSubmit={handleSearch} className="max-w-xl mx-auto lg:mx-0">
-                <div className="relative flex bg-white/5 backdrop-blur-sm border border-gray-700/50 rounded-2xl overflow-hidden focus-within:border-primary-500/50 focus-within:ring-1 focus-within:ring-primary-500/20 transition-all shadow-xl shadow-black/20">
-                  <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" />
-                  <input type="text" value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
-                    placeholder="Busca un servicio: Plomero, Electricista, Medico..."
-                    className="w-full pl-10 pr-3 py-3 md:py-5 bg-transparent text-white placeholder-gray-600 focus:outline-none text-sm md:text-base"
-                  />
-                  <button type="submit" className="px-4 md:px-8 py-3 md:py-5 bg-primary-500 text-white font-bold hover:bg-primary-600 transition-all flex items-center gap-2 text-sm md:text-base">
-                    <span className="hidden sm:inline">Buscar</span> <Search size={16} />
-                  </button>
-                </div>
-              </form>
-              <div className="flex flex-wrap gap-2 mt-4 lg:mt-6 justify-center lg:justify-start">
-                {['Albanil', 'Plomero', 'Electricista', 'Medico', 'Cerrajero', 'Gasista'].map(cat => (
-                  <Link key={cat} to={`/search?q=${encodeURIComponent(cat)}`}
-                    className="px-3 py-1 lg:px-3.5 lg:py-1.5 bg-white/5 hover:bg-white/10 backdrop-blur-sm border border-white/10 hover:border-primary-500/30 rounded-xl text-[11px] lg:text-xs text-gray-300 hover:text-white transition-all"
-                  >{cat}</Link>
-                ))}
-              </div>
-            </div>
           </div>
         </div>
         <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-gray-50 to-transparent" />
@@ -581,33 +644,47 @@ const Home = () => {
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mt-1">Categorias</h2>
           <p className="text-gray-500 mt-2 max-w-xl mx-auto">Explora nuestros rubros y encuentra al profesional que necesitas</p>
         </div>
-        <div className="flex md:grid md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-hide md:overflow-visible pb-2 md:pb-0">
-          {categories.map((cat) => {
-            const Icon = resolveIcon(cat.icon);
-            const gradient = getInlineGradient(cat.metadata?.color);
-            const subCount = cat.subcategories?.length || 0;
-            return (
-              <Link key={cat.slug} to={`/categoria/${cat.slug}`}
-                className="snap-start shrink-0 w-[160px] md:w-auto md:flex-1 group relative overflow-hidden rounded-xl border border-gray-200 bg-white hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200"
-              >
-                <div className="aspect-[4/3] overflow-hidden">
-                  <img src={cat.image} alt={cat.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" loading="lazy" />
-                  <div className="absolute inset-0 opacity-60 group-hover:opacity-75 transition-all duration-300" style={{ background: gradient }} />
+        {categoriesLoading ? (
+          <div className="flex md:grid md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-hide md:overflow-visible pb-2 md:pb-0">
+            {[1,2,3,4,5].map(i => (
+              <div key={i} className="snap-start shrink-0 w-[160px] md:w-auto md:flex-1 rounded-xl border border-gray-200 bg-white overflow-hidden animate-pulse">
+                <div className="aspect-[4/3] bg-gray-200" />
+                <div className="p-3 space-y-2">
+                  <div className="h-4 bg-gray-200 rounded w-3/4" />
+                  <div className="h-3 bg-gray-200 rounded w-1/2" />
                 </div>
-                <div className="absolute bottom-0 left-0 right-0 p-3">
-                  <div className="flex items-center gap-1.5">
-                    <Icon size={14} className="text-white shrink-0" />
-                    <h3 className="text-sm font-bold text-white truncate group-hover:drop-shadow-md transition-all">{cat.title}</h3>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="flex md:grid md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-hide md:overflow-visible pb-2 md:pb-0">
+            {categories.map((cat) => {
+              const Icon = resolveIcon(cat.icon);
+              const gradient = getInlineGradient(cat.metadata?.color);
+              const subCount = cat.subcategories?.length || 0;
+              return (
+                <Link key={cat.slug} to={`/categoria/${cat.slug}`}
+                  className="snap-start shrink-0 w-[160px] md:w-auto md:flex-1 group relative overflow-hidden rounded-xl border border-gray-200 bg-white hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200"
+                >
+                  <div className="aspect-[4/3] overflow-hidden">
+                    <img src={cat.image} alt={cat.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" loading="lazy" />
+                    <div className="absolute inset-0 opacity-60 group-hover:opacity-75 transition-all duration-300" style={{ background: gradient }} />
                   </div>
-                  <p className="text-[11px] text-white/70 mt-0.5">{subCount} servicios</p>
-                </div>
-                {cat.metadata?.emergency && (
-                  <span className="absolute top-2 right-2 px-2 py-0.5 bg-red-500 text-white text-[10px] font-bold rounded-md animate-pulse">24/7</span>
-                )}
-              </Link>
-            );
-          })}
-        </div>
+                  <div className="absolute bottom-0 left-0 right-0 p-3">
+                    <div className="flex items-center gap-1.5">
+                      <Icon size={14} className="text-white shrink-0" />
+                      <h3 className="text-sm font-bold text-white truncate group-hover:drop-shadow-md transition-all">{cat.title}</h3>
+                    </div>
+                    <p className="text-[11px] text-white/70 mt-0.5">{subCount} servicios</p>
+                  </div>
+                  {cat.metadata?.emergency && (
+                    <span className="absolute top-2 right-2 px-2 py-0.5 bg-red-500 text-white text-[10px] font-bold rounded-md animate-pulse">24/7</span>
+                  )}
+                </Link>
+              );
+            })}
+          </div>
+        )}
       </section>
 
       {/* MAP + ADS SECTION */}
