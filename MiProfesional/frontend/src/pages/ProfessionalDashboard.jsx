@@ -417,13 +417,7 @@ const ProfessionalDashboard = () => {
                           </div>
                           <p className="text-2xl font-black text-gray-900">$10.000</p>
                           <p className="text-xs text-gray-500 mb-3">ARS / mes</p>
-                          <ul className="space-y-1.5">
-                            {['Perfil visible en busquedas', 'Recibir contactos', 'Sin comisiones', 'Panel de control'].map((b, i) => (
-                              <li key={i} className="flex items-start gap-1.5 text-xs text-gray-600">
-                                <CheckCircle size={12} className="text-green-500 mt-0.5 shrink-0" /> {b}
-                              </li>
-                            ))}
-                          </ul>
+                          <p className="text-xs text-gray-600">Acceso completo a la plataforma</p>
                         </button>
 
                         <button onClick={() => setSelectedPlan('semester')}
@@ -439,13 +433,7 @@ const ProfessionalDashboard = () => {
                           <p className="text-xs text-gray-500 mb-3">
                             <span className="text-green-600 font-semibold">15% descuento</span> - <span className="line-through text-gray-400">$60.000</span>
                           </p>
-                          <ul className="space-y-1.5">
-                            {['Perfil visible en busquedas', 'Recibir contactos', 'Sin comisiones', 'Panel de control', 'Ahorro del 15%'].map((b, i) => (
-                              <li key={i} className="flex items-start gap-1.5 text-xs text-gray-600">
-                                <CheckCircle size={12} className="text-green-500 mt-0.5 shrink-0" /> {b}
-                              </li>
-                            ))}
-                          </ul>
+                          <p className="text-xs text-gray-600">Acceso completo a la plataforma</p>
                         </button>
                       </div>
 
@@ -479,20 +467,8 @@ const ProfessionalDashboard = () => {
                   )}
 
                   <div className="p-5 bg-gray-50 rounded-xl border border-gray-200">
-                    <h4 className="font-bold text-gray-900 text-sm mb-3">Beneficios de la suscripcion</h4>
-                    <ul className="space-y-2">
-                      {[
-                        'Perfil destacado en los resultados de busqueda',
-                        'Recibir contactos de clientes directamente',
-                        'Sin comisiones por servicio prestado',
-                        'Panel de control con estadisticas',
-                        'Soporte prioritario',
-                      ].map((b, i) => (
-                        <li key={i} className="flex items-start gap-2 text-sm text-gray-600">
-                          <CheckCircle size={14} className="text-green-500 mt-0.5 shrink-0" /> {b}
-                        </li>
-                      ))}
-                    </ul>
+                    <h4 className="font-bold text-gray-900 text-sm mb-2">Que incluye la suscripcion</h4>
+                    <p className="text-xs text-gray-500">Acceso completo a la plataforma: tu perfil aparece en los resultados de busqueda del marketplace y los clientes pueden contactarte directamente.</p>
                   </div>
 
                   {subscription.isVisible === false && (subscription.status === 'inactive' || subscription.status === 'pending_payment') && (
