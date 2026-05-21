@@ -228,7 +228,9 @@ async function activateSubscription(payment) {
         type: 'premium',
         plan,
         expiresAt,
-        benefits: ['Perfil destacado en busquedas', 'Recibe contactos de clientes', 'Sin comisiones por servicio', 'Panel de control', 'Soporte prioritario']
+        benefits: isSemester
+          ? ['Acceso completo a la plataforma', 'Ahorro del 15%']
+          : ['Acceso completo a la plataforma']
       };
       await user.save();
     }
