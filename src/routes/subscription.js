@@ -26,7 +26,7 @@ router.get("/plans", (req, res) => {
         name: "Suscripcion Mensual",
         price: MONTHLY_PRICE,
         duration: "1 mes",
-        benefits: ["Perfil destacado en busquedas", "Recibe contactos de clientes", "Sin comisiones por servicio", "Panel de control", "Soporte prioritario"],
+        benefits: ["Acceso completo a la plataforma"],
       },
       {
         id: "semester",
@@ -35,7 +35,7 @@ router.get("/plans", (req, res) => {
         duration: "6 meses",
         originalPrice: MONTHLY_PRICE * SEMESTER_MONTHS,
         discount: `${SEMESTER_DISCOUNT * 100}%`,
-        benefits: ["Perfil destacado en busquedas", "Recibe contactos de clientes", "Sin comisiones por servicio", "Panel de control", "Soporte prioritario", "Ahorro del 15%"],
+        benefits: ["Acceso completo a la plataforma", "Ahorro del 15%"],
       },
     ]
   });
@@ -224,7 +224,6 @@ router.post("/webhook", async (req, res) => {
             type: "premium",
             plan,
             expiresAt,
-            benefits: ["Perfil destacado en busquedas", "Recibe contactos de clientes", "Sin comisiones por servicio", "Panel de control", "Soporte prioritario"],
           };
           await user.save();
 

@@ -75,7 +75,7 @@ const templates = {
     return wrapper('Suscripcion vencida', `
       <h1 style="text-align:center">Tu suscripcion ha vencido</h1>
       <p style="text-align:center">Hola ${name}, tu suscripcion en MiProfesional ha expirado. Tu perfil ya no aparece en los resultados de busqueda.</p>
-      <p style="text-align:center">Renova tu suscripcion para seguir recibiendo contactos de clientes.</p>
+      <p style="text-align:center">Renova tu suscripcion para seguir activo en el marketplace.</p>
       <div style="text-align:center"><a href="${FRONTEND_URL}/subscriptions" class="btn">Renovar suscripcion</a></div>
     `);
   },
