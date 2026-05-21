@@ -552,13 +552,38 @@ const Home = () => {
                 ))}
               </div>
             </div>
-            <div className="shrink-0 relative">
-              <div className="relative w-[420px] xl:w-[500px] aspect-[4/3] rounded-2xl overflow-hidden shadow-2xl shadow-black/40">
+            <div className="shrink-0 flex items-stretch gap-4">
+              <div className="relative w-[300px] xl:w-[360px] aspect-[4/3] rounded-2xl overflow-hidden shadow-2xl shadow-black/40">
                 <img src="/images/hero-workers.jpg" alt="Equipo de profesionales verificados"
                   className="w-full h-full object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-gray-900/80 via-gray-900/20 to-transparent" />
               </div>
+              {!alreadyInstalled && (
+                <div className="flex flex-col justify-center gap-3 bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-5 min-w-[180px]">
+                  <div className="flex justify-center">
+                    <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-2">
+                      <QRCodeCanvas value={SITE_URL} size={72} bgColor="#ffffff" fgColor="#0f7a5a" level="M" />
+                    </div>
+                  </div>
+                  {device === 'android' && (
+                    <a href={APK_URL} download
+                      className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-primary-500 text-white font-bold text-sm rounded-xl hover:bg-primary-600 transition-all shadow-lg shadow-primary-500/30"
+                    ><Download size={18} /> Descargar APK</a>
+                  )}
+                  {device === 'ios' && (
+                    <a href={SITE_URL} target="_blank" rel="noopener noreferrer"
+                      className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-primary-500 text-white font-bold text-sm rounded-xl hover:bg-primary-600 transition-all shadow-lg shadow-primary-500/30"
+                    ><Plus size={18} /> Instalar en iPhone</a>
+                  )}
+                  {device === 'desktop' && (
+                    <a href={SITE_URL} target="_blank" rel="noopener noreferrer"
+                      className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-primary-500 text-white font-bold text-sm rounded-xl hover:bg-primary-600 transition-all shadow-lg shadow-primary-500/30"
+                    ><Download size={18} /> Ir a la App</a>
+                  )}
+                  <p className="text-[11px] text-gray-500 text-center">{device === 'android' ? `Version ${APK_VERSION} · Gratis` : 'Gratis · Sin registro'}</p>
+                </div>
+              )}
             </div>
           </div>
         </div>
