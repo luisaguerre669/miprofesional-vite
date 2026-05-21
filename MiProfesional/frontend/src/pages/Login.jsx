@@ -40,8 +40,14 @@ const Login = () => {
     setError('');
     setLoading(true);
 
+    const safetyTimer = setTimeout(() => {
+      setLoading(false);
+      setError('Error de conexion. El servidor no responde. Intentá nuevamente.');
+    }, 20000);
+
     if (mode === 'email') {
       const result = await login(formData.email, formData.password);
+      clearTimeout(safetyTimer);
       if (result.success) navigate('/');
       else setError(result.error);
     }
