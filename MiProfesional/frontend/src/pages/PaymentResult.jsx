@@ -4,7 +4,7 @@ import { CheckCircle, XCircle, Clock, Loader2 } from 'lucide-react';
 import api from '../lib/axios';
 
 const STATUS_CONFIG = {
-  success: { icon: CheckCircle, bg: 'bg-green-50', border: 'border-green-200', text: 'text-green-800', iconColor: 'text-green-500', title: 'Pago Exitoso', msg: 'Tu suscripcion ha sido activada. Ya puedes recibir contactos de clientes.' },
+  success: { icon: CheckCircle, bg: 'bg-green-50', border: 'border-green-200', text: 'text-green-800', iconColor: 'text-green-500', title: 'Pago Exitoso', msg: 'Tu suscripcion ha sido activada. Ya formas parte del marketplace.' },
   failure: { icon: XCircle, bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-800', iconColor: 'text-red-500', title: 'Pago Rechazado', msg: 'El pago no pudo completarse. Intenta nuevamente.' },
   pending: { icon: Clock, bg: 'bg-yellow-50', border: 'border-yellow-200', text: 'text-yellow-800', iconColor: 'text-yellow-500', title: 'Pago Pendiente', msg: 'El pago esta siendo procesado. Te notificaremos cuando se confirme.' },
 };

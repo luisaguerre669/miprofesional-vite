@@ -282,7 +282,7 @@ const Layout = ({ children }) => {
               <h3 className="text-white font-semibold text-sm mb-4">Profesionales</h3>
               <ul className="space-y-2.5">
                 <li><Link to="/register?role=professional" className="text-gray-400 text-sm hover:text-white transition-colors">Registrarse</Link></li>
-                <li><Link to="/register?role=professional" className="text-gray-400 text-sm hover:text-white transition-colors">Suscripción $10.000/mes</Link></li>
+                <li><Link to="/register?role=professional" className="text-gray-400 text-sm hover:text-white transition-colors">Planes de suscripcion</Link></li>
               </ul>
             </div>
 
@@ -301,7 +301,7 @@ const Layout = ({ children }) => {
                 MiProfesional.com &mdash; Plataforma de conexion entre clientes y profesionales
               </p>
               <p className="text-gray-500 text-xs">
-                Suscripcion: $10.000 ARS / mes
+                Suscripcion desde $10.000 ARS / mes
               </p>
             </div>
             <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-4 border-t border-gray-800/50">
