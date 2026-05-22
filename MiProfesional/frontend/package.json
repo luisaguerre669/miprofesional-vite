@@ -5,6 +5,8 @@
   "private": true,
   "scripts": {
     "dev": "vite",
+    "generate-pwa": "node scripts/generate-pwa-assets.cjs",
+    "prebuild": "node scripts/generate-pwa-assets.cjs",
     "build": "vite build",
     "preview": "vite preview"
   },

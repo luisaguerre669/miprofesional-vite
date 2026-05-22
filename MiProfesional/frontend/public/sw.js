@@ -5,8 +5,14 @@ const STATIC_ASSETS = [
   '/index.html',
   '/manifest.json',
   '/favicon.svg',
-  '/icons/icon-192.svg',
-  '/icons/icon-512.svg',
+  '/icons/icon-192.png',
+  '/icons/icon-512.png',
+  '/icons/apple-icon-180.png',
+  '/splash/apple-splash-640-1136.png',
+  '/splash/apple-splash-750-1334.png',
+  '/splash/apple-splash-828-1792.png',
+  '/splash/apple-splash-1125-2436.png',
+  '/splash/apple-splash-1242-2688.png',
 ];
 
 self.addEventListener('install', (event) => {
