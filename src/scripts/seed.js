@@ -50,12 +50,12 @@ const categories = [
     ]
   },
   {
-    title: 'Emergencias 24/7',
-    slug: 'emergencias',
-    description: 'Medicos, enfermeros, cuidadores, electricistas urgentes, plomeros urgentes y cerrajeros.',
+    title: '24-7',
+    slug: '24-7',
+    description: 'Profesionales disponibles 24 horas, 7 días a la semana.',
     image: 'https://images.unsplash.com/photo-1587745416684-47953f16fdd1?w=800&q=80',
     icon: 'AlertTriangle',
-    metadata: { color: '#dc2626', featured: true },
+    metadata: { color: '#dc2626', featured: true, emergency: true },
     sortOrder: 3,
     subcategories: [
       { title: 'Medico a Domicilio', slug: 'medico-domicilio', description: 'Atencion medica a domicilio 24/7', image: 'https://images.unsplash.com/photo-1550837368-6594235de4c0?w=600&q=80', icon: 'Stethoscope' },
