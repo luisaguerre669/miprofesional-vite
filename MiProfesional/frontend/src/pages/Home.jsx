@@ -455,18 +455,6 @@ const Home = () => {
         <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-8 lg:py-16">
           {/* MOBILE LAYOUT */}
           <div className="block lg:hidden space-y-4">
-            <div className="text-center">
-              <div className="inline-flex items-center gap-1.5 bg-white/5 backdrop-blur-sm border border-white/10 rounded-full px-3 py-0.5 text-[10px] text-gray-300 mb-2">
-                <Shield size={10} className="text-primary-400" />
-                <span>Marketplace de confianza</span>
-              </div>
-              <h1 className="text-xl sm:text-2xl font-black text-white leading-tight">
-                El profesional que necesitas<br />
-                <span className="bg-gradient-to-r from-primary-400 via-primary-300 to-emerald-300 bg-clip-text text-transparent">esta mas cerca</span>
-              </h1>
-              <p className="text-sm text-gray-400 mt-1">Conectamos clientes con profesionales verificados en toda Argentina.</p>
-            </div>
-
             {!alreadyInstalled && (
               <div className="space-y-3">
                 {device === 'android' && (
@@ -502,6 +490,18 @@ const Home = () => {
                 </div>
               </div>
             )}
+
+            <div className="text-center">
+              <div className="inline-flex items-center gap-1.5 bg-white/5 backdrop-blur-sm border border-white/10 rounded-full px-3 py-0.5 text-[10px] text-gray-300 mb-2">
+                <Shield size={10} className="text-primary-400" />
+                <span>Marketplace de confianza</span>
+              </div>
+              <h1 className="text-xl sm:text-2xl font-black text-white leading-tight">
+                El profesional que necesitas<br />
+                <span className="bg-gradient-to-r from-primary-400 via-primary-300 to-emerald-300 bg-clip-text text-transparent">esta mas cerca</span>
+              </h1>
+              <p className="text-sm text-gray-400 mt-1">Conectamos clientes con profesionales verificados en toda Argentina.</p>
+            </div>
 
             <form onSubmit={handleSearch}>
               <div className="relative flex bg-white/5 backdrop-blur-sm border border-gray-700/50 rounded-xl overflow-hidden focus-within:border-primary-500/50 focus-within:ring-1 focus-within:ring-primary-500/20 transition-all">
