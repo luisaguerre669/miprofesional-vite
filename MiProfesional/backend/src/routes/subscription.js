@@ -23,18 +23,23 @@ router.get("/plans", (req, res) => {
     data: [
       {
         id: "monthly",
-        name: "Suscripcion Mensual",
+        name: "Plan Mensual",
         price: MONTHLY_PRICE,
+        description: "Publicá tu perfil profesional y recibí consultas de clientes.",
+        cta: "Probar gratis",
         duration: "1 mes",
         benefits: ["Acceso completo a la plataforma"],
       },
       {
         id: "semester",
-        name: "Suscripcion Semestral",
+        name: "Plan Semestral",
         price: SEMESTER_PRICE,
-        duration: "6 meses",
         originalPrice: MONTHLY_PRICE * SEMESTER_MONTHS,
-        discount: `${SEMESTER_DISCOUNT * 100}%`,
+        discount: 15,
+        badge: "15% OFF",
+        description: "Ahorrá 15% pagando 6 meses juntos.",
+        cta: "Suscribirme",
+        duration: "6 meses",
         benefits: ["Acceso completo a la plataforma", "Ahorro del 15%"],
       },
     ]

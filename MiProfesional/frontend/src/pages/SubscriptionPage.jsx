@@ -1,9 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Loader2, CheckCircle, XCircle, Zap, Crown, Sparkles } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, Sparkles, Zap, Gift, ArrowRight } from 'lucide-react';
 import api from '../lib/axios';
 import { useAuth } from '../context/AuthContext';
-
-const PLAN_ICONS = { free: Sparkles, premium: Crown, pro: Zap };
 
 export default function SubscriptionPage() {
   const { user } = useAuth();
@@ -26,11 +24,11 @@ export default function SubscriptionPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const handleUpgrade = async (planName) => {
-    setActionLoading(planName);
+  const handleUpgrade = async (planId) => {
+    setActionLoading(planId);
     setMessage(null);
     try {
-      const res = await api.post('/subscription/create-preference', { plan: planName });
+      const res = await api.post('/subscription/create-preference', { plan: planId });
       const initPoint = res.data?.data?.initPoint || res.data?.initPoint;
       if (initPoint) {
         window.location.href = initPoint;
@@ -48,8 +46,8 @@ export default function SubscriptionPage() {
     setActionLoading('cancel');
     setMessage(null);
     try {
-      const res = await api.post('/subscription/cancel');
-      setCurrentPlan(res.data?.plan ?? 'free');
+      await api.post('/subscription/cancel');
+      setCurrentPlan((prev) => ({ ...prev, status: 'inactive', plan: 'free' }));
       setMessage({ type: 'success', text: 'Suscripción cancelada.' });
     } catch {
       setMessage({ type: 'error', text: 'Error al cancelar la suscripción.' });
@@ -61,18 +59,14 @@ export default function SubscriptionPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 py-10 px-4">
-        <div className="max-w-5xl mx-auto space-y-6">
-          <div className="h-8 w-64 bg-gray-200 rounded animate-pulse mx-auto" />
-          <div className="grid md:grid-cols-3 gap-6">
-            {[1, 2, 3].map((i) => (
+        <div className="max-w-4xl mx-auto space-y-6">
+          <div className="h-8 w-72 bg-gray-200 rounded animate-pulse mx-auto" />
+          <div className="grid md:grid-cols-2 gap-6">
+            {[1, 2].map((i) => (
               <div key={i} className="bg-white rounded-xl shadow-sm p-6 space-y-4">
-                <div className="h-6 w-20 bg-gray-200 rounded animate-pulse" />
+                <div className="h-6 w-24 bg-gray-200 rounded animate-pulse" />
                 <div className="h-8 w-28 bg-gray-200 rounded animate-pulse" />
-                <div className="space-y-2">
-                  {[1, 2, 3].map((j) => (
-                    <div key={j} className="h-4 w-full bg-gray-200 rounded animate-pulse" />
-                  ))}
-                </div>
+                <div className="h-4 w-48 bg-gray-200 rounded animate-pulse" />
                 <div className="h-10 w-full bg-gray-200 rounded-lg animate-pulse" />
               </div>
             ))}
@@ -82,14 +76,31 @@ export default function SubscriptionPage() {
     );
   }
 
-  const currentPlanName = currentPlan?.plan?.toLowerCase() ?? currentPlan?.name?.toLowerCase() ?? currentPlan?.toLowerCase() ?? 'free';
   const currentStatus = currentPlan?.status ?? 'inactive';
+  const currentPlanId = currentPlan?.plan?.toLowerCase() ?? null;
 
   return (
-    <div className="min-h-screen bg-gray-50 py-10 px-4">
-      <div className="max-w-5xl mx-auto">
-        <h1 className="text-3xl font-bold text-center text-gray-900 mb-2">Planes de Suscripción</h1>
-        <p className="text-center text-gray-500 mb-8">Elige el plan que mejor se adapte a tus necesidades</p>
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white py-10 px-4">
+      <div className="max-w-4xl mx-auto">
+
+        {/* FREE MONTH BANNER */}
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-primary-600 via-primary-500 to-emerald-500 shadow-xl shadow-primary-500/25 mb-10 p-6 sm:p-8 text-center">
+          <div className="absolute inset-0 opacity-10">
+            <div className="absolute -top-10 -right-10 w-40 h-40 bg-white rounded-full" />
+            <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-white rounded-full" />
+          </div>
+          <div className="relative z-10">
+            <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-full px-4 py-1.5 text-white text-xs font-semibold mb-3">
+              <Gift size={14} /> Oferta por tiempo limitado
+            </div>
+            <h2 className="text-2xl sm:text-3xl font-black text-white mb-2">
+              Primer mes GRATIS para nuevos profesionales
+            </h2>
+            <p className="text-primary-100 text-sm sm:text-base max-w-lg mx-auto">
+              Publica tu perfil, recibí consultas de clientes y hace crecer tu servicio sin riesgo.
+            </p>
+          </div>
+        </div>
 
         {currentStatus === 'pending_payment' && (
           <div className="max-w-xl mx-auto mb-6 flex items-start gap-3 px-4 py-4 rounded-lg bg-amber-50 border border-amber-200">
@@ -117,55 +128,90 @@ export default function SubscriptionPage() {
           </div>
         )}
 
-        <div className="grid md:grid-cols-3 gap-6">
+        {/* PLANS GRID */}
+        <div className="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto">
           {plans.map((plan) => {
-            const planKey = plan.name?.toLowerCase() ?? '';
-            const isCurrent = currentPlanName === planKey;
-            const Icon = PLAN_ICONS[planKey] ?? Sparkles;
-            const isFree = planKey === 'free';
-            const isLoading = actionLoading === planKey;
+            const isCurrent = currentPlanId === plan.id && currentStatus === 'active';
+            const isLoading = actionLoading === plan.id;
+            const isSemester = plan.id === 'semester';
 
             return (
               <div
-                key={planKey}
-                className={`relative bg-white rounded-xl shadow-sm p-6 flex flex-col transition ${
-                  isCurrent ? 'ring-2 ring-primary-500' : ''
+                key={plan.id}
+                className={`relative bg-white rounded-2xl shadow-sm border-2 flex flex-col transition-all ${
+                  isCurrent
+                    ? 'border-primary-500 shadow-lg shadow-primary-500/10'
+                    : isSemester
+                      ? 'border-emerald-200 hover:border-emerald-300 shadow-lg'
+                      : 'border-gray-200 hover:border-gray-300 shadow-sm'
                 }`}
               >
-                {(isCurrent || currentStatus === 'active') && (
-                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary-600 text-white text-xs font-semibold px-3 py-1 rounded-full">
+                {/* Badge */}
+                {plan.badge && (
+                  <div className="absolute -top-3 right-4 z-10">
+                    <span className="inline-flex items-center gap-1 bg-emerald-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">
+                      <Sparkles size={12} /> {plan.badge}
+                    </span>
+                  </div>
+                )}
+
+                {isCurrent && (
+                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary-600 text-white text-xs font-semibold px-3 py-1 rounded-full z-10">
                     Plan Actual
                   </span>
                 )}
 
-                <div className="flex items-center gap-2 mb-2">
-                  <Icon className={`w-6 h-6 ${isCurrent ? 'text-primary-600' : 'text-gray-400'}`} />
-                  <h2 className="text-xl font-semibold text-gray-900 capitalize">{plan.name}</h2>
-                </div>
+                <div className="p-6 sm:p-8 flex flex-col flex-1">
+                  {/* Header */}
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-bold text-gray-900">{plan.name}</h3>
+                    {isSemester && (
+                      <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
+                        Mejor valor
+                      </span>
+                    )}
+                  </div>
 
-                <p className="text-3xl font-bold text-gray-900 mb-4">
-                  {plan.price != null && plan.price > 0
-                    ? `$${plan.price?.toLocaleString?.() ?? plan.price}/mes`
-                    : 'Gratis'}
-                </p>
+                  {/* Price */}
+                  <div className="mb-1">
+                    {plan.originalPrice && (
+                      <p className="text-sm text-gray-400 line-through mb-0.5">
+                        ${plan.originalPrice.toLocaleString()}
+                      </p>
+                    )}
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-4xl font-black text-gray-900">
+                        ${plan.price.toLocaleString()}
+                      </span>
+                      <span className="text-gray-500 text-sm">ARS</span>
+                    </div>
+                    <p className="text-xs text-gray-400 mt-0.5">
+                      {plan.id === 'monthly' ? '/ mes' : '/ 6 meses'}
+                    </p>
+                  </div>
 
-                <ul className="space-y-2 mb-6 flex-1">
-                  {(plan.benefits ?? []).map((benefit, idx) => (
-                    <li key={idx} className="flex items-start gap-2 text-sm text-gray-600">
-                      <CheckCircle size={16} className="text-green-500 mt-0.5 shrink-0" />
-                      {benefit}
-                    </li>
-                  ))}
-                </ul>
+                  {plan.originalPrice && (
+                    <p className="text-xs text-emerald-600 font-medium mt-1 flex items-center gap-1">
+                      <CheckCircle size={12} />
+                      Ahorro del {plan.discount}% — ${(plan.originalPrice - plan.price).toLocaleString()} ARS de descuento
+                    </p>
+                  )}
 
-                {!isFree && (
+                  {/* Description */}
+                  <p className="text-sm text-gray-600 mt-4 mb-6 flex-1">
+                    {plan.description}
+                  </p>
+
+                  {/* CTA */}
                   <button
-                    onClick={() => handleUpgrade(planKey)}
+                    onClick={() => handleUpgrade(plan.id)}
                     disabled={isCurrent || isLoading}
-                    className={`w-full py-2.5 rounded-lg text-sm font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed ${
+                    className={`w-full py-3 rounded-xl text-sm font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${
                       isCurrent
                         ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                        : 'bg-primary-600 text-white hover:bg-primary-700'
+                        : isSemester
+                          ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-lg shadow-emerald-500/25'
+                          : 'bg-primary-600 text-white hover:bg-primary-700 shadow-lg shadow-primary-500/25'
                     }`}
                   >
                     {isLoading ? (
@@ -175,16 +221,18 @@ export default function SubscriptionPage() {
                     ) : isCurrent ? (
                       'Plan Actual'
                     ) : (
-                      'Actualizar'
+                      <>
+                        {plan.cta || 'Suscribirme'} <ArrowRight size={16} />
+                      </>
                     )}
                   </button>
-                )}
+                </div>
               </div>
             );
           })}
         </div>
 
-        {currentPlanName !== 'free' && (
+        {currentStatus === 'active' && (
           <div className="flex justify-center mt-8">
             <button
               onClick={handleCancel}

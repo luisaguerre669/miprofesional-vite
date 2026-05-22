@@ -7,7 +7,7 @@ import {
   BarChart3, TrendingUp, Award, MessageSquare, Eye, Settings,
   Edit3, BadgeCheck, ChevronRight, Bell, Shield, Briefcase,
   Upload, Image as ImageIcon, Trash2, Plus, CreditCard, AlertTriangle,
-  Sparkles, ExternalLink, RefreshCw, FileText
+  Sparkles, ExternalLink, RefreshCw, FileText, ArrowRight
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
 import DashboardStats from '../components/dashboard/StatsCards';
@@ -397,7 +397,19 @@ const ProfessionalDashboard = () => {
 
                   {(subscription.status === 'inactive' || subscription.status === 'pending_payment') && (
                     <>
-                      <div className="p-5 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3">
+                      <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-primary-600 via-primary-500 to-emerald-500 p-4 text-center mb-4">
+                        <div className="absolute inset-0 opacity-10">
+                          <div className="absolute -top-6 -right-6 w-20 h-20 bg-white rounded-full" />
+                          <div className="absolute -bottom-6 -left-6 w-16 h-16 bg-white rounded-full" />
+                        </div>
+                        <div className="relative z-10">
+                          <p className="text-white text-xs font-semibold flex items-center justify-center gap-1.5">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                            Primer mes GRATIS para nuevos profesionales
+                          </p>
+                        </div>
+                      </div>
+                      <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3">
                         <AlertTriangle size={18} className="text-amber-600 shrink-0 mt-0.5" />
                         <div>
                           <p className="text-sm font-semibold text-amber-800">Suscripcion requerida</p>
@@ -412,36 +424,42 @@ const ProfessionalDashboard = () => {
                           }`}
                         >
                           <div className="flex items-center justify-between mb-3">
-                            <h4 className="font-bold text-gray-900">Mensual</h4>
+                            <h4 className="font-bold text-gray-900">Plan Mensual</h4>
                             {selectedPlan === 'monthly' && <CheckCircle size={18} className="text-primary-600" />}
                           </div>
                           <p className="text-2xl font-black text-gray-900">$10.000</p>
-                          <p className="text-xs text-gray-500 mb-3">ARS / mes</p>
-                          <p className="text-xs text-gray-600">Acceso completo a la plataforma</p>
+                          <p className="text-xs text-gray-500 mb-2">ARS / mes</p>
+                          <p className="text-xs text-gray-600">Publicá tu perfil profesional y recibí consultas de clientes.</p>
                         </button>
 
                         <button onClick={() => setSelectedPlan('semester')}
-                          className={`p-5 rounded-xl border-2 text-left transition-all ${
-                            selectedPlan === 'semester' ? 'border-primary-500 bg-primary-50 shadow-md' : 'border-gray-200 hover:border-gray-300 bg-white'
+                          className={`relative p-5 rounded-xl border-2 text-left transition-all ${
+                            selectedPlan === 'semester' ? 'border-emerald-500 bg-emerald-50 shadow-md' : 'border-gray-200 hover:border-gray-300 bg-white'
                           }`}
                         >
+                          <span className="absolute -top-2.5 right-3 bg-emerald-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">15% OFF</span>
                           <div className="flex items-center justify-between mb-3">
-                            <h4 className="font-bold text-gray-900">Semestral</h4>
-                            {selectedPlan === 'semester' && <CheckCircle size={18} className="text-primary-600" />}
+                            <h4 className="font-bold text-gray-900">Plan Semestral</h4>
+                            {selectedPlan === 'semester' && <CheckCircle size={18} className="text-emerald-600" />}
                           </div>
-                          <p className="text-2xl font-black text-gray-900">$51.000</p>
-                          <p className="text-xs text-gray-500 mb-3">
-                            <span className="text-green-600 font-semibold">15% descuento</span> - <span className="line-through text-gray-400">$60.000</span>
-                          </p>
-                          <p className="text-xs text-gray-600">Acceso completo a la plataforma</p>
+                          <p className="text-xs text-gray-400 line-through">$60.000</p>
+                          <p className="text-2xl font-black text-gray-900 -mt-0.5">$51.000</p>
+                          <p className="text-xs text-gray-500 mb-2">ARS / 6 meses</p>
+                          <p className="text-xs text-gray-600">Ahorrá 15% pagando 6 meses juntos.</p>
                         </button>
                       </div>
 
                       <button onClick={() => handleCreatePayment(selectedPlan)}
                         disabled={creatingPayment}
-                        className="w-full flex items-center justify-center gap-2 px-5 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 transition-all disabled:opacity-50"
+                        className="w-full flex items-center justify-center gap-2 px-5 py-3 bg-primary-600 text-white font-bold rounded-xl hover:bg-primary-700 transition-all disabled:opacity-50 shadow-lg shadow-primary-500/25"
                       >
-                        {creatingPayment ? 'Generando pago...' : `Pagar $${selectedPlan === 'semester' ? '51.000' : '10.000'} ARS`} <CreditCard size={16} />
+                        {creatingPayment ? (
+                          'Generando pago...'
+                        ) : selectedPlan === 'semester' ? (
+                          <>Suscribirme <ArrowRight size={16} /></>
+                        ) : (
+                          <>Probar gratis <ArrowRight size={16} /></>
+                        )}
                       </button>
                     </>
                   )}
