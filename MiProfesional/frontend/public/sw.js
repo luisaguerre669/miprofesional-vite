@@ -1,7 +1,5 @@
-const CACHE_NAME = 'miprofesional-v2';
-const STATIC_ASSETS = [
-  '/',
-  '/index.html',
+const CACHE_NAME = 'miprofesional-v3';
+const IMMUTABLE_ASSETS = [
   '/manifest.json',
   '/favicon.svg',
   '/icons/icon-192.png',
@@ -17,7 +15,7 @@ const STATIC_ASSETS = [
 self.addEventListener('install', (event) => {
   self.skipWaiting();
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS))
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(IMMUTABLE_ASSETS))
   );
 });
 
@@ -34,13 +32,32 @@ self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  if (request.method !== 'GET' || url.origin !== self.location.origin) return;
+  if (request.method !== 'GET') return;
+  if (url.origin !== self.location.origin) return;
   if (url.pathname.startsWith('/api/')) return;
   if (url.pathname.endsWith('.apk')) return;
 
+  if (request.mode === 'navigate') {
+    event.respondWith(
+      fetch(request).then((response) => {
+        const clone = response.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+        return response;
+      }).catch(() => caches.match(request).then((fallback) => fallback || new Response('', { status: 503 })))
+    );
+    return;
+  }
+
   event.respondWith(
     caches.match(request).then((cached) => {
-      if (cached) return cached;
+      if (cached) {
+        fetch(request).then((response) => {
+          if (response && response.status === 200) {
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, response));
+          }
+        }).catch(() => {});
+        return cached;
+      }
       return fetch(request).then((response) => {
         if (response && response.status === 200) {
           const clone = response.clone();
@@ -48,13 +65,12 @@ self.addEventListener('fetch', (event) => {
         }
         return response;
       });
-    }).catch(() => {
-      if (request.mode === 'navigate') return caches.match('/');
-      return new Response('', { status: 503 });
     })
   );
 });
 
 self.addEventListener('message', (e) => {
-  if (e.data && e.data.type === 'SKIP_WAITING') self.skipWaiting();
+  if (e.data && e.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });

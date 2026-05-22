@@ -9,7 +9,7 @@ import { getAccurateLocation } from '../utils/geolocation';
 import {
   Search, ArrowRight, Star, MapPin,
   ChevronLeft, ChevronRight, Shield, Clock,
-  UserPlus, Download, Plus, Smartphone
+  UserPlus, Download, Plus, Smartphone, AlertTriangle
 } from 'lucide-react';
 import { QRCodeCanvas } from 'qrcode.react';
 import AdBanner from '../components/ads/AdBanner';
@@ -381,152 +381,158 @@ const Home = () => {
           <div className="absolute inset-0 bg-gradient-to-r from-gray-950/90 via-gray-900/70 to-transparent" />
           <div className="absolute inset-0 bg-gradient-to-t from-gray-950/60 via-transparent to-gray-950/20" />
         </div>
-        <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-16">
+        <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-5 lg:py-10">
           {/* MOBILE LAYOUT */}
-          <div className="block lg:hidden space-y-3">
+          <div className="block lg:hidden space-y-2.5">
             {!alreadyInstalled && (
               <div className="space-y-2">
                 {device === 'android' && (
                   <a href={APK_URL} download
-                    className="w-full inline-flex items-center justify-center gap-3 px-6 py-4 bg-primary-500 text-white font-bold text-base rounded-xl hover:bg-primary-600 active:bg-primary-700 transition-all shadow-xl shadow-primary-500/30"
-                  ><Download size={22} /> Descargar APK — Gratis</a>
+                    className="w-full inline-flex items-center justify-center gap-3 px-5 py-3.5 bg-primary-500 text-white font-bold text-sm rounded-xl hover:bg-primary-600 active:bg-primary-700 transition-all shadow-lg shadow-primary-500/30"
+                  ><Download size={20} /> Descargar APK — Gratis</a>
                 )}
                 {device === 'ios' && (
                   <div onClick={() => window.dispatchEvent(new CustomEvent('open-ios-guide'))}
-                    className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-primary-500 text-white font-bold text-base rounded-xl hover:bg-primary-600 active:bg-primary-700 transition-all shadow-xl shadow-primary-500/30 cursor-pointer"
-                  ><Plus size={22} /> Agregar a pantalla de inicio</div>
+                    className="w-full flex items-center justify-center gap-3 px-5 py-3.5 bg-primary-500 text-white font-bold text-sm rounded-xl hover:bg-primary-600 active:bg-primary-700 transition-all shadow-lg shadow-primary-500/30 cursor-pointer"
+                  ><Plus size={20} /> Agregar a pantalla de inicio</div>
                 )}
 
                 <div className="flex gap-2">
                   <Link to="/register"
-                    className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-primary-500 text-white font-bold text-sm rounded-xl hover:bg-primary-600 transition-all shadow-lg shadow-primary-500/25"
-                  ><UserPlus size={16} /> Crear cuenta gratis</Link>
+                    className="flex-1 inline-flex items-center justify-center gap-2 px-3 py-2.5 bg-primary-500 text-white font-bold text-xs rounded-xl hover:bg-primary-600 transition-all shadow-lg shadow-primary-500/25"
+                  ><UserPlus size={15} /> Crear cuenta gratis</Link>
                   <Link to="/search"
-                    className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-white/10 text-white font-semibold text-sm rounded-xl hover:bg-white/20 transition-all border border-gray-700 backdrop-blur-sm"
-                  ><Search size={16} /> Explorar servicios</Link>
+                    className="flex-1 inline-flex items-center justify-center gap-2 px-3 py-2.5 bg-white/10 text-white font-semibold text-xs rounded-xl hover:bg-white/20 transition-all border border-gray-700 backdrop-blur-sm"
+                  ><Search size={15} /> Explorar servicios</Link>
                 </div>
               </div>
             )}
             {alreadyInstalled && (
               <div className="flex gap-2">
                 <Link to="/register"
-                  className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-primary-500 text-white font-bold text-sm rounded-xl hover:bg-primary-600 transition-all shadow-lg shadow-primary-500/25"
-                ><UserPlus size={16} /> Crear cuenta gratis</Link>
+                  className="flex-1 inline-flex items-center justify-center gap-2 px-3 py-2.5 bg-primary-500 text-white font-bold text-xs rounded-xl hover:bg-primary-600 transition-all shadow-lg shadow-primary-500/25"
+                ><UserPlus size={15} /> Crear cuenta gratis</Link>
                 <Link to="/search"
-                  className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-white/10 text-white font-semibold text-sm rounded-xl hover:bg-white/20 transition-all border border-gray-700 backdrop-blur-sm"
-                ><Search size={16} /> Explorar servicios</Link>
+                  className="flex-1 inline-flex items-center justify-center gap-2 px-3 py-2.5 bg-white/10 text-white font-semibold text-xs rounded-xl hover:bg-white/20 transition-all border border-gray-700 backdrop-blur-sm"
+                ><Search size={15} /> Explorar servicios</Link>
               </div>
             )}
 
-            <div className="text-center pt-1">
-              <h1 className="text-lg sm:text-xl font-black text-white leading-tight">
+            <div className="text-center">
+              <h1 className="text-base sm:text-lg font-black text-white leading-tight">
                 El profesional que necesitas<br />
                 <span className="bg-gradient-to-r from-primary-400 via-primary-300 to-emerald-300 bg-clip-text text-transparent">esta mas cerca</span>
               </h1>
-              <p className="text-xs text-gray-400 mt-1">Conectamos clientes con profesionales verificados en toda Argentina.</p>
+              <p className="text-[11px] text-gray-400 mt-0.5">Conectamos clientes con profesionales verificados en toda Argentina.</p>
             </div>
 
             <form onSubmit={handleSearch}>
               <div className="relative flex bg-white/5 backdrop-blur-sm border border-gray-700/50 rounded-xl overflow-hidden focus-within:border-primary-500/50 focus-within:ring-1 focus-within:ring-primary-500/20 transition-all">
-                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
                 <input type="text" value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
                   placeholder="Plomero, Electricista, Medico..."
-                  className="w-full pl-9 pr-2 py-2.5 bg-transparent text-white placeholder-gray-600 focus:outline-none text-sm"
+                  className="w-full pl-9 pr-2 py-2 bg-transparent text-white placeholder-gray-600 focus:outline-none text-xs"
                 />
-                <button type="submit" className="px-3 py-2.5 bg-primary-500 text-white font-bold text-xs hover:bg-primary-600 transition-all flex items-center gap-1">
+                <button type="submit" className="px-3 py-2 bg-primary-500 text-white font-bold text-[11px] hover:bg-primary-600 transition-all flex items-center gap-1">
                   Buscar
                 </button>
               </div>
             </form>
-            <div className="flex flex-wrap gap-1.5 justify-center">
+            <div className="flex flex-wrap gap-1 justify-center">
               {['Albanil', 'Plomero', 'Electricista', 'Medico', 'Cerrajero', 'Gasista'].map(cat => (
                 <Link key={cat} to={`/search?q=${encodeURIComponent(cat)}`}
-                  className="px-2.5 py-1 bg-white/5 hover:bg-white/10 backdrop-blur-sm border border-white/10 hover:border-primary-500/30 rounded-lg text-[10px] text-gray-300 hover:text-white transition-all"
+                  className="px-2 py-0.5 bg-white/5 hover:bg-white/10 backdrop-blur-sm border border-white/10 hover:border-primary-500/30 rounded-lg text-[10px] text-gray-300 hover:text-white transition-all"
                 >{cat}</Link>
               ))}
             </div>
+            <Link to="/search?disponibilidad=24-7"
+              className="flex items-center justify-center gap-2 px-3 py-1.5 bg-gradient-to-r from-red-600/20 to-orange-600/20 hover:from-red-600/30 hover:to-orange-600/30 border border-red-500/30 hover:border-red-500/50 rounded-xl text-[11px] text-red-400 hover:text-red-300 transition-all"
+            ><AlertTriangle size={12} /> 24-7 — Profesionales disponibles todo el dia <ArrowRight size={12} /></Link>
           </div>
 
           {/* DESKTOP LAYOUT */}
-          <div className="hidden lg:flex lg:flex-row items-center gap-12">
+          <div className="hidden lg:flex lg:flex-row items-center gap-8">
             <div className="flex-1 text-left">
-              <div className="inline-flex items-center gap-2 bg-white/5 backdrop-blur-sm border border-white/10 rounded-full px-4 py-1.5 text-sm text-gray-300 mb-6">
-                <Shield size={14} className="text-primary-400" />
+              <div className="inline-flex items-center gap-2 bg-white/5 backdrop-blur-sm border border-white/10 rounded-full px-3.5 py-1 text-xs text-gray-300 mb-4">
+                <Shield size={12} className="text-primary-400" />
                 <span>Marketplace de confianza en Argentina</span>
               </div>
-              <h1 className="text-5xl md:text-6xl xl:text-7xl font-black text-white leading-[1.05] mb-4">
+              <h1 className="text-4xl md:text-5xl xl:text-6xl font-black text-white leading-[1.05] mb-3">
                 El profesional que necesitas<br />
                 <span className="bg-gradient-to-r from-primary-400 via-primary-300 to-emerald-300 bg-clip-text text-transparent">esta mas cerca de lo que crees</span>
               </h1>
-              <p className="text-lg text-gray-400 mb-6 max-w-xl leading-relaxed">
+              <p className="text-base text-gray-400 mb-4 max-w-xl leading-relaxed">
                 Conectamos clientes con profesionales verificados en toda Argentina.
               </p>
-              <div className="flex gap-3 mb-6">
+              <div className="flex gap-3 mb-4">
                 <Link to="/register"
-                  className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-primary-500 text-white font-bold text-sm rounded-xl hover:bg-primary-600 transition-all shadow-lg shadow-primary-500/25"
-                ><UserPlus size={18} /> Crear cuenta gratis</Link>
+                  className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-primary-500 text-white font-bold text-sm rounded-xl hover:bg-primary-600 transition-all shadow-lg shadow-primary-500/25"
+                ><UserPlus size={16} /> Crear cuenta gratis</Link>
                 <Link to="/search"
-                  className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-white/10 text-white font-semibold text-sm rounded-xl hover:bg-white/20 transition-all border border-gray-700 backdrop-blur-sm"
-                ><Search size={18} /> Explorar servicios</Link>
+                  className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-white/10 text-white font-semibold text-sm rounded-xl hover:bg-white/20 transition-all border border-gray-700 backdrop-blur-sm"
+                ><Search size={16} /> Explorar servicios</Link>
               </div>
               <form onSubmit={handleSearch} className="max-w-xl">
                 <div className="relative flex bg-white/5 backdrop-blur-sm border border-gray-700/50 rounded-2xl overflow-hidden focus-within:border-primary-500/50 focus-within:ring-1 focus-within:ring-primary-500/20 transition-all shadow-xl shadow-black/20">
-                  <Search size={20} className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-500" />
+                  <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" />
                   <input type="text" value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
                     placeholder="Busca un servicio: Plomero, Electricista, Medico..."
-                    className="w-full pl-12 pr-4 py-5 bg-transparent text-white placeholder-gray-600 focus:outline-none text-base"
+                    className="w-full pl-10 pr-4 py-3.5 bg-transparent text-white placeholder-gray-600 focus:outline-none text-sm"
                   />
-                  <button type="submit" className="px-8 py-5 bg-primary-500 text-white font-bold hover:bg-primary-600 transition-all flex items-center gap-2">
-                    <span>Buscar</span> <Search size={18} />
+                  <button type="submit" className="px-6 py-3.5 bg-primary-500 text-white font-bold hover:bg-primary-600 transition-all flex items-center gap-2 text-sm">
+                    <span>Buscar</span> <Search size={16} />
                   </button>
                 </div>
               </form>
-              <div className="flex flex-wrap gap-2 mt-6">
+              <div className="flex flex-wrap gap-2 mt-4">
                 {['Albanil', 'Plomero', 'Electricista', 'Medico', 'Cerrajero', 'Gasista'].map(cat => (
                   <Link key={cat} to={`/search?q=${encodeURIComponent(cat)}`}
-                    className="px-3.5 py-1.5 bg-white/5 hover:bg-white/10 backdrop-blur-sm border border-white/10 hover:border-primary-500/30 rounded-xl text-xs text-gray-300 hover:text-white transition-all"
+                    className="px-3 py-1 bg-white/5 hover:bg-white/10 backdrop-blur-sm border border-white/10 hover:border-primary-500/30 rounded-xl text-[11px] text-gray-300 hover:text-white transition-all"
                   >{cat}</Link>
                 ))}
               </div>
+              <Link to="/search?disponibilidad=24-7"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-red-600/20 to-orange-600/20 hover:from-red-600/30 hover:to-orange-600/30 border border-red-500/30 hover:border-red-500/50 rounded-xl text-xs text-red-400 hover:text-red-300 transition-all"
+              ><AlertTriangle size={14} /> 24-7 — Profesionales disponibles todo el dia <ArrowRight size={14} /></Link>
             </div>
             {!alreadyInstalled && (
-              <div className="shrink-0 flex flex-col items-center gap-5">
+              <div className="shrink-0 flex flex-col items-center gap-3">
                 <PhoneMockup />
-                <div className="flex items-stretch gap-3">
-                  <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-2.5 shrink-0 flex items-center">
-                    <QRCodeCanvas value={SITE_URL} size={70} bgColor="#ffffff" fgColor="#0f7a5a" level="M" />
+                <div className="flex items-stretch gap-2">
+                  <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-2 shrink-0 flex items-center">
+                    <QRCodeCanvas value={SITE_URL} size={60} bgColor="#ffffff" fgColor="#0f7a5a" level="M" />
                   </div>
-                  <div className="flex flex-col justify-center gap-1.5">
+                  <div className="flex flex-col justify-center gap-1">
                     {device === 'android' && (
                       <a href={APK_URL} download
-                        className="inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-primary-500 text-white font-bold text-base rounded-xl hover:bg-primary-600 transition-all shadow-xl shadow-primary-500/30"
-                      ><Download size={20} /> Descargar APK</a>
+                        className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-primary-500 text-white font-bold text-sm rounded-xl hover:bg-primary-600 transition-all shadow-xl shadow-primary-500/30"
+                      ><Download size={18} /> Descargar APK</a>
                     )}
                     {device === 'ios' && (
                       <button onClick={() => window.dispatchEvent(new CustomEvent('open-ios-guide'))}
-                        className="inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-primary-500 text-white font-bold text-base rounded-xl hover:bg-primary-600 transition-all shadow-xl shadow-primary-500/30"
-                      ><Plus size={20} /> Instalar en iPhone</button>
+                        className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-primary-500 text-white font-bold text-sm rounded-xl hover:bg-primary-600 transition-all shadow-xl shadow-primary-500/30"
+                      ><Plus size={18} /> Instalar en iPhone</button>
                     )}
                     {device === 'desktop' && (
                       <a href={SITE_URL} target="_blank" rel="noopener noreferrer"
-                        className="inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-primary-500 text-white font-bold text-base rounded-xl hover:bg-primary-600 transition-all shadow-xl shadow-primary-500/30"
-                      ><Download size={20} /> Ir a la App</a>
+                        className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-primary-500 text-white font-bold text-sm rounded-xl hover:bg-primary-600 transition-all shadow-xl shadow-primary-500/30"
+                      ><Download size={18} /> Ir a la App</a>
                     )}
-                    <p className="text-[11px] text-gray-500 text-center">{device === 'android' ? `Version ${APK_VERSION} · Gratis` : 'Gratis · Sin registro'}</p>
+                    <p className="text-[10px] text-gray-500 text-center">{device === 'android' ? `v${APK_VERSION} · Gratis` : 'Gratis · Sin registro'}</p>
                   </div>
                 </div>
               </div>
             )}
           </div>
         </div>
-        <div className="absolute bottom-0 left-0 right-0 h-20 md:h-32 bg-gradient-to-t from-gray-50 to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 h-12 md:h-24 bg-gradient-to-t from-gray-50 to-transparent" />
       </section>
 
       {/* FEATURED PROS CAROUSEL */}
       {featuredPros.length > 0 && (
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-12 md:-mt-20 relative z-20 mb-12 md:mb-20">
-          <div className="bg-white/80 backdrop-blur-xl border border-gray-200/80 rounded-2xl shadow-sm p-6 md:p-8">
-            <div className="flex items-center justify-between mb-6">
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-12 md:-mt-20 relative z-20 mb-6 md:mb-20">
+          <div className="bg-white/80 backdrop-blur-xl border border-gray-200/80 rounded-2xl shadow-sm p-4 md:p-6">
+            <div className="flex items-center justify-between mb-4">
               <div>
                 <span className="text-primary-500 text-xs font-semibold uppercase tracking-widest">Profesionales</span>
                 <h2 className="text-xl md:text-2xl font-bold text-gray-900 mt-1">Destacados de la Semana</h2>
@@ -540,14 +546,14 @@ const Home = () => {
                 ><ChevronRight size={18} /></button>
               </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               {visiblePros.map((pro) => (
                 <Link key={pro._id} to={`/service/${pro._id}`}
-                  className="group relative flex items-start gap-4 p-4 rounded-xl hover:bg-gray-50/80 transition-all border border-transparent hover:border-gray-200"
+                  className="group relative flex items-start gap-3 p-3 rounded-xl hover:bg-gray-50/80 transition-all border border-transparent hover:border-gray-200"
                 >
                   <div className="relative shrink-0">
                     <img src={pro.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(pro.businessName || pro.profession)}&background=0f7a5a&color=fff&bold=true`}
-                      alt="" className="w-14 h-14 rounded-xl object-cover shadow-sm" />
+                      alt="" className="w-12 h-12 rounded-xl object-cover shadow-sm" />
                     {pro.verification?.isVerified && (
                       <div className="absolute -top-1 -right-1 w-5 h-5 bg-primary-500 rounded-full flex items-center justify-center shadow-sm">
                         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
@@ -573,10 +579,10 @@ const Home = () => {
       )}
 
       {/* CATEGORIES */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-20">
-        <div className="text-center mb-10">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-10 md:mb-20">
+        <div className="text-center mb-6 md:mb-10">
           <span className="text-primary-500 text-xs font-semibold uppercase tracking-widest">Rubros</span>
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mt-1">Categorias</h2>
+          <h2 className="text-2xl md:text-4xl font-bold text-gray-900 mt-1">Categorias</h2>
           <p className="text-gray-500 mt-2 max-w-xl mx-auto">Explora nuestros rubros y encuentra al profesional que necesitas</p>
         </div>
         {categoriesLoading ? (
@@ -623,10 +629,10 @@ const Home = () => {
       </section>
 
       {/* MAP + ADS SECTION */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-20">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-10 md:mb-20">
         <div className="mb-6">
           <span className="text-primary-500 text-xs font-semibold uppercase tracking-widest">Ubicacion</span>
-          <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mt-1">Profesionales cerca de tu zona</h2>
+          <h2 className="text-xl md:text-3xl font-bold text-gray-900 mt-1">Profesionales cerca de tu zona</h2>
         </div>
         <div className="flex flex-col lg:flex-row gap-4">
           <div className="lg:w-[40%]">
@@ -642,22 +648,22 @@ const Home = () => {
       </section>
 
       {/* BENEFITS COMPACT */}
-      <section className="py-14 md:py-20 px-4">
+      <section className="py-10 md:py-16 px-4">
         <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-10">
-            <h2 className="text-2xl md:text-3xl font-bold text-gray-900">Por que elegir MiProfesional</h2>
-            <p className="text-gray-500 mt-2 max-w-xl mx-auto text-sm">La forma mas simple de conectar con profesionales verificados</p>
+          <div className="text-center mb-6 md:mb-10">
+            <h2 className="text-xl md:text-2xl font-bold text-gray-900">Por que elegir MiProfesional</h2>
+            <p className="text-gray-500 mt-1 max-w-xl mx-auto text-xs md:text-sm">La forma mas simple de conectar con profesionales verificados</p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {benefits.map((b, i) => {
               const Icon = b.icon;
               return (
-                <div key={i} className="bg-white rounded-2xl border border-gray-100 p-6 text-center hover:shadow-md transition-all">
-                  <div className="w-10 h-10 rounded-xl bg-primary-50 flex items-center justify-center mx-auto mb-3">
-                    <Icon size={20} className="text-primary-600" />
+                <div key={i} className="bg-white rounded-2xl border border-gray-100 p-4 md:p-5 text-center hover:shadow-md transition-all">
+                  <div className="w-9 h-9 rounded-xl bg-primary-50 flex items-center justify-center mx-auto mb-2">
+                    <Icon size={18} className="text-primary-600" />
                   </div>
-                  <h3 className="font-bold text-gray-900 text-sm mb-1.5">{b.title}</h3>
-                  <p className="text-xs text-gray-500 leading-relaxed">{b.desc}</p>
+                  <h3 className="font-bold text-gray-900 text-xs mb-1">{b.title}</h3>
+                  <p className="text-[11px] text-gray-500 leading-relaxed">{b.desc}</p>
                 </div>
               );
             })}
@@ -687,28 +693,28 @@ const Home = () => {
       )}
 
       {/* PRICING */}
-      <section className="py-14 md:py-20 px-4">
+      <section className="py-10 md:py-16 px-4">
         <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-10">
-            <h2 className="text-2xl md:text-3xl font-bold text-gray-900">Planes para profesionales</h2>
-            <p className="text-gray-500 mt-2 text-sm">Elegi el plan que mejor se adapte a tus necesidades</p>
+          <div className="text-center mb-6 md:mb-10">
+            <h2 className="text-xl md:text-2xl font-bold text-gray-900">Planes para profesionales</h2>
+            <p className="text-gray-500 mt-1 text-xs md:text-sm">Elegi el plan que mejor se adapte a tus necesidades</p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-lg mx-auto">
-            <div className="bg-white rounded-2xl border border-gray-200 p-6 text-center">
-              <p className="text-xs text-gray-400 font-semibold uppercase tracking-wider mb-1">Plan Mensual</p>
-              <p className="text-3xl font-black text-gray-900">$10.000</p>
-              <p className="text-xs text-gray-500 mb-4">por mes</p>
-              <Link to="/subscription" className="block w-full px-4 py-2.5 bg-primary-500 text-white font-bold text-sm rounded-xl hover:bg-primary-600 transition-all shadow-sm">
+            <div className="bg-white rounded-2xl border border-gray-200 p-4 md:p-5 text-center">
+              <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider mb-1">Plan Mensual</p>
+              <p className="text-2xl md:text-3xl font-black text-gray-900">$10.000</p>
+              <p className="text-[11px] text-gray-500 mb-3">por mes</p>
+              <Link to="/subscription" className="block w-full px-4 py-2 bg-primary-500 text-white font-bold text-xs rounded-xl hover:bg-primary-600 transition-all shadow-sm">
                 Elegir plan
               </Link>
             </div>
-            <div className="bg-white rounded-2xl border-2 border-primary-200 p-6 text-center relative">
+            <div className="bg-white rounded-2xl border-2 border-primary-200 p-4 md:p-5 text-center relative">
               <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-primary-500 text-white text-[10px] font-bold px-3 py-0.5 rounded-full">15% OFF</span>
-              <p className="text-xs text-gray-400 font-semibold uppercase tracking-wider mb-1">Plan Semestral</p>
-              <p className="text-3xl font-black text-gray-900">$51.000</p>
-              <p className="text-xs text-gray-400 line-through mb-1">$60.000</p>
-              <p className="text-xs text-gray-500 mb-4">6 meses</p>
-              <Link to="/subscription" className="block w-full px-4 py-2.5 bg-primary-600 text-white font-bold text-sm rounded-xl hover:bg-primary-700 transition-all shadow-sm">
+              <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider mb-1">Plan Semestral</p>
+              <p className="text-2xl md:text-3xl font-black text-gray-900">$51.000</p>
+              <p className="text-[11px] text-gray-400 line-through mb-1">$60.000</p>
+              <p className="text-[11px] text-gray-500 mb-3">6 meses</p>
+              <Link to="/subscription" className="block w-full px-4 py-2 bg-primary-600 text-white font-bold text-xs rounded-xl hover:bg-primary-700 transition-all shadow-sm">
                 Elegir plan
               </Link>
             </div>
