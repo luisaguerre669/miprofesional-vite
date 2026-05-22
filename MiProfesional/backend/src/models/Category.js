@@ -233,6 +233,8 @@ categorySchema.statics.findEmergency = function() {
   .sort({ title: 1 });
 };
 
+categorySchema.statics.find247 = categorySchema.statics.findEmergency;
+
 categorySchema.statics.search = function(query, options = {}) {
   const {
     limit = 20,

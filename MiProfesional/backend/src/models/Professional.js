@@ -557,6 +557,7 @@ professionalSchema.statics.findByLocation = function(longitude, latitude, maxDis
 professionalSchema.statics.search = function(query, options = {}) {
   const {
     categoryId,
+    categoryIds,
     subcategoryId,
     location,
     maxDistance = 50,
@@ -582,6 +583,9 @@ professionalSchema.statics.search = function(query, options = {}) {
   // Category filter
   if (categoryId) {
     searchQuery.categoryId = categoryId;
+  }
+  if (categoryIds) {
+    searchQuery.categoryId = { $in: categoryIds };
   }
   if (subcategoryId) {
     searchQuery.subcategoryId = subcategoryId;

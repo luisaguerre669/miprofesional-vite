@@ -161,25 +161,25 @@ router.get('/popular', [
   }
 });
 
-// GET /api/v1/categories/emergency
-router.get('/emergency', async (req, res) => {
+// GET /api/v1/categories/24-7
+router.get('/24-7', async (req, res) => {
   try {
-    const categories = await Category.findEmergency();
+    const categories = await Category.find247();
 
-    logger.info('Emergency categories retrieved', { count: categories.length });
+    logger.info('24-7 categories retrieved', { count: categories.length });
 
     res.json({
       success: true,
-      message: 'Emergency categories retrieved successfully',
+      message: '24-7 categories retrieved successfully',
       data: categories
     });
 
   } catch (error) {
-    logger.error('Get emergency categories error', { error: error.message });
+    logger.error('Get 24-7 categories error', { error: error.message });
     res.status(500).json({
       success: false,
-      error: 'Failed to retrieve emergency categories',
-      message: 'An error occurred while retrieving emergency categories'
+      error: 'Failed to retrieve 24-7 categories',
+      message: 'An error occurred while retrieving 24-7 categories'
     });
   }
 });

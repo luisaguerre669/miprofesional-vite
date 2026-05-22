@@ -48,6 +48,7 @@ router.get('/', [
   query('featured').optional().isBoolean().withMessage('featured must be a boolean'),
   query('isVerified').optional().isBoolean().withMessage('isVerified must be a boolean'),
   query('availability').optional().isBoolean().withMessage('availability must be a boolean'),
+  query('disponibilidad').optional().isIn(['24-7', '247']).withMessage('Invalid disponibilidad value'),
   query('sortBy').optional().isIn(['rating', 'price', 'responseTime', 'reviewCount', 'createdAt', 'ranking']).withMessage('Invalid sort field'),
   query('sort').optional().isIn(['rating', 'price', 'responseTime', 'reviewCount', 'createdAt', 'ranking']).withMessage('Invalid sort field'),
   query('sortOrder').optional().isIn(['asc', 'desc']).withMessage('Sort order must be asc or desc'),
@@ -65,6 +66,7 @@ router.get('/', [
       featured,
       isVerified = false,
       availability,
+      disponibilidad,
       sort: sortAlias,
       sortBy = sortAlias || 'stats.rating',
       sortOrder = 'desc',
@@ -120,14 +122,24 @@ router.get('/', [
       });
     }
 
+    let emergencyCategoryIds = null;
+    if (disponibilidad === '24-7' || disponibilidad === '247') {
+      const emergencyCats = await Category.find({ 'metadata.emergency': true }).select('_id');
+      emergencyCategoryIds = emergencyCats.map(c => c._id);
+      if (emergencyCategoryIds.length === 0) {
+        return res.json({ success: true, message: 'No hay profesionales disponibles 24-7 actualmente', data: [], pagination: { page: 1, limit, total: 0, totalPages: 0, hasNext: false, hasPrev: false } });
+      }
+    }
+
     if (search || location || minRating > 0 || maxPrice || isVerified === 'true') {
-      professionals = await Professional.search(search, options);
+      professionals = await Professional.search(search, { ...options, categoryIds: emergencyCategoryIds });
     } else {
       let query = { isActive: true, 'subscription.status': 'active' };
 
       if (categoryId) query.categoryId = categoryId;
       if (featured === 'true') query.isFeatured = true;
       if (availability !== undefined) query['availability.isAvailable'] = availability === 'true';
+      if (emergencyCategoryIds) query.categoryId = { $in: emergencyCategoryIds };
 
       const sort = {};
       sort[sortBy] = sortOrder === 'desc' ? -1 : 1;
