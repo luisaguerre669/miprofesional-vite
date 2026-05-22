@@ -391,7 +391,7 @@ const Home = () => {
             <Link to="/" className="font-medium text-gray-900">Inicio</Link>
             <Link to="/categorias">Categorias</Link>
             <Link to="/search">Profesionales</Link>
-            <Link to="/categoria/emergencias" className="text-red-600 font-medium flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />Urgencias</Link>
+            <Link to="/search?disponibilidad=24-7" className="text-red-600 font-medium flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />24-7</Link>
           </nav>
           <div className="flex items-center gap-2">
             {isAuthenticated ? (
@@ -798,7 +798,7 @@ const Home = () => {
               <ul className="space-y-2.5 text-sm text-gray-500">
                 <li><Link to="/search" className="hover:text-primary-600 transition-colors">Buscar profesionales</Link></li>
                 <li><Link to="/categorias" className="hover:text-primary-600 transition-colors">Categorias</Link></li>
-                <li><Link to="/categoria/emergencias" className="hover:text-red-600 transition-colors">Emergencias 24/7</Link></li>
+                <li><Link to="/search?disponibilidad=24-7" className="hover:text-red-600 transition-colors">24-7</Link></li>
               </ul>
             </div>
             <div>

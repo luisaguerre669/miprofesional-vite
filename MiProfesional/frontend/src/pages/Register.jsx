@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 
 const LICENSED_PROFESSIONS = [
-  'medico-domicilio', 'medico', 'enfermero', 'terapeuta', 'psicologo-urgencia',
+  'medico-domicilio', 'medico', 'enfermero', 'terapeuta', 'psicologo-247',
   'electricista', 'gasista', 'cerrajero-urgente', 'cerrajero'
 ];
 
@@ -153,10 +153,10 @@ const Register = () => {
       { value: 'piletero', label: 'Piletero / Mantenimiento de Piletas' },
       { value: 'cerrajero', label: 'Cerrajero' },
     ]},
-    { group: 'Emergencias 24/7', items: [
+    { group: '24-7', items: [
       { value: 'medico-domicilio', label: 'Medico a Domicilio' },
       { value: 'enfermero', label: 'Enfermero/a' },
-      { value: 'psicologo-urgencia', label: 'Psicologo de Urgencia' },
+      { value: 'psicologo-247', label: 'Psicologo 24-7' },
       { value: 'ambulancia', label: 'Servicio de Ambulancia' },
       { value: 'vigilancia', label: 'Vigilancia Privada' },
     ]},
