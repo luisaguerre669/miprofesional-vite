@@ -3,7 +3,7 @@ const categoriesData = [
     title: 'Salud',
     slug: 'salud',
     description: 'Medicos, psicologos, kinesiologos, enfermeros, dentistas y todos los profesionales de la salud para atencion a domicilio o consulta.',
-    image: 'https://images.unsplash.com/photo-1550837368-6594235de4c0?w=800&q=80',
+    image: 'https://images.unsplash.com/photo-1579684453423-f84349ef60b0?w=800&q=80',
     icon: 'Stethoscope',
     metadata: { color: '#0f7a5a', featured: true },
     sortOrder: 1,
@@ -19,8 +19,27 @@ const categoriesData = [
       { title: 'Acompanantes terapeuticos', slug: 'acompanantes-terapeuticos', description: 'Acompanamiento terapeutico personalizado', image: 'https://images.unsplash.com/photo-1544027993-37dbfe43562a?w=600&q=80', icon: 'Users' },
       { title: 'Masajistas terapeuticos', slug: 'masajistas-terapeuticos', description: 'Masajes terapeuticos y descontracturantes', image: 'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=600&q=80', icon: 'Heart' },
       { title: 'Veterinarios', slug: 'veterinarios', description: 'Atencion veterinaria a domicilio', image: 'https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?w=600&q=80', icon: 'Stethoscope' },
-      { title: 'Farmacias', slug: 'farmacias', description: 'Farmacias de turno y servicios farmaceuticos', image: 'https://images.unsplash.com/photo-1550837368-6594235de4c0?w=600&q=80', icon: 'Heart' },
-      { title: 'Opticas', slug: 'opticas', description: 'Opticas y servicios de optometria', image: 'https://images.unsplash.com/photo-1550837368-6594235de4c0?w=600&q=80', icon: 'Stethoscope' },
+      { title: 'Farmacias', slug: 'farmacias', description: 'Farmacias de turno y servicios farmaceuticos', image: 'https://images.unsplash.com/photo-1584820927498-cfe5211fd8bf?w=600&q=80', icon: 'Heart' },
+      { title: 'Opticas', slug: 'opticas', description: 'Opticas y servicios de optometria', image: 'https://images.unsplash.com/photo-1584820927498-cfe5211fd8bf?w=600&q=80', icon: 'Stethoscope' },
+    ]
+  },
+  {
+    title: '24-7',
+    slug: '24-7',
+    description: 'Profesionales disponibles 24 horas, 7 dias a la semana. Servicios urgentes y atencion permanente.',
+    image: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&q=80',
+    icon: 'AlertTriangle',
+    metadata: { color: '#dc2626', featured: true, emergency: true },
+    sortOrder: 2,
+    subcategories: [
+      { title: 'Medico a Domicilio', slug: 'medico-domicilio', description: 'Atencion medica a domicilio 24/7', image: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=600&q=80', icon: 'Stethoscope' },
+      { title: 'Enfermero/a', slug: 'enfermero', description: 'Cuidados de enfermeria a domicilio', image: 'https://images.unsplash.com/photo-1584820927498-cfe5211fd8bf?w=600&q=80', icon: 'Heart' },
+      { title: 'Cuidador Adultos Mayores', slug: 'cuidador-mayores', description: 'Cuidado de adultos mayores', image: 'https://images.unsplash.com/photo-1544027993-37dbfe43562a?w=600&q=80', icon: 'Users' },
+      { title: 'Terapeuta', slug: 'terapeuta', description: 'Terapias fisicas y de recuperacion', image: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=600&q=80', icon: 'Heart' },
+      { title: 'Psicologo de Urgencia', slug: 'psicologo-urgencia', description: 'Atencion psicologica de emergencia online', image: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=600&q=80', icon: 'Heart' },
+      { title: 'Electricista Urgente', slug: 'electricista-urgente', description: 'Emergencias electricas 24/7', image: 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=600&q=80', icon: 'Zap' },
+      { title: 'Plomero Urgente', slug: 'plomero-urgente', description: 'Emergencias de plomeria 24/7', image: 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=600&q=80', icon: 'Droplets' },
+      { title: 'Cerrajero Urgente', slug: 'cerrajero-urgente', description: 'Apertura y reparacion de cerraduras 24/7', image: 'https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=600&q=80', icon: 'Lock' },
     ]
   },
   {
@@ -30,7 +49,7 @@ const categoriesData = [
     image: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=800&q=80',
     icon: 'Scale',
     metadata: { color: '#1d4ed8', featured: true },
-    sortOrder: 2,
+    sortOrder: 3,
     subcategories: [
       { title: 'Abogados', slug: 'abogados', description: 'Asesoria legal en todas las ramas del derecho', image: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=600&q=80', icon: 'Scale' },
       { title: 'Contadores', slug: 'contadores', description: 'Contabilidad, impuestos y balances', image: 'https://images.unsplash.com/photo-1450101499163-c8848c66ca85?w=600&q=80', icon: 'Briefcase' },
@@ -51,7 +70,7 @@ const categoriesData = [
     image: 'https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?w=800&q=80',
     icon: 'Building2',
     metadata: { color: '#b45309', featured: true },
-    sortOrder: 3,
+    sortOrder: 4,
     subcategories: [
       { title: 'Albanil', slug: 'albanil', description: 'Construccion y reparacion de estructuras', image: 'https://images.unsplash.com/photo-1574359411650-95473a0e1f2b?w=600&q=80', icon: 'Hammer' },
       { title: 'Plomero', slug: 'plomero', description: 'Instalaciones hidraulicas y sanitarias', image: 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=600&q=80', icon: 'Droplets' },
@@ -76,7 +95,7 @@ const categoriesData = [
     image: 'https://images.unsplash.com/photo-1618220179428-22790b461013?w=800&q=80',
     icon: 'Palette',
     metadata: { color: '#d97706', featured: false },
-    sortOrder: 4,
+    sortOrder: 5,
     subcategories: [
       { title: 'Arquitecto', slug: 'arquitecto', description: 'Diseno y proyecto arquitectonico', image: 'https://images.unsplash.com/photo-1487958449943-2429e8be8625?w=600&q=80', icon: 'Building2' },
       { title: 'Disenador de interiores', slug: 'disenador-interiores', description: 'Diseno y decoracion de interiores', image: 'https://images.unsplash.com/photo-1618220179428-22790b461013?w=600&q=80', icon: 'Palette' },
@@ -92,7 +111,7 @@ const categoriesData = [
     image: 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=800&q=80',
     icon: 'Wrench',
     metadata: { color: '#0f7a5a', featured: true },
-    sortOrder: 5,
+    sortOrder: 6,
     subcategories: [
       { title: 'Limpieza profesional', slug: 'limpieza-profesional', description: 'Limpieza general de hogares y oficinas', image: 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=600&q=80', icon: 'SprayCan' },
       { title: 'Mudanzas', slug: 'mudanzas', description: 'Traslados y mudanzas', image: 'https://images.unsplash.com/photo-1603796846097-bee99e4a601f?w=600&q=80', icon: 'Truck' },
@@ -110,7 +129,7 @@ const categoriesData = [
     image: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=800&q=80',
     icon: 'Monitor',
     metadata: { color: '#7c3aed', featured: false },
-    sortOrder: 6,
+    sortOrder: 7,
     subcategories: [
       { title: 'Reparacion de PC', slug: 'reparacion-pc', description: 'Reparacion de computadoras y notebooks', image: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=600&q=80', icon: 'Monitor' },
       { title: 'Reparacion de celulares', slug: 'reparacion-celulares', description: 'Reparacion de smartphones y tablets', image: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=600&q=80', icon: 'Monitor' },
@@ -128,7 +147,7 @@ const categoriesData = [
     image: 'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?w=800&q=80',
     icon: 'Car',
     metadata: { color: '#0891b2', featured: false },
-    sortOrder: 7,
+    sortOrder: 8,
     subcategories: [
       { title: 'Mecanico general', slug: 'mecanico-general', description: 'Reparacion y mantenimiento de vehiculos', image: 'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?w=600&q=80', icon: 'Wrench' },
       { title: 'Electricista automotriz', slug: 'electricista-automotriz', description: 'Sistema electrico de vehiculos', image: 'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?w=600&q=80', icon: 'Zap' },
@@ -146,7 +165,7 @@ const categoriesData = [
     image: 'https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?w=800&q=80',
     icon: 'Dog',
     metadata: { color: '#059669', featured: false },
-    sortOrder: 8,
+    sortOrder: 9,
     subcategories: [
       { title: 'Peluqueria canina', slug: 'peluqueria-canina', description: 'Corte y bano para mascotas', image: 'https://images.unsplash.com/photo-1516734212186-a967f81ad0d7?w=600&q=80', icon: 'Scissors' },
       { title: 'Paseador de perros', slug: 'paseador-perros', description: 'Paseos diarios para tu mascota', image: 'https://images.unsplash.com/photo-1601758228041-f3b2795255f1?w=600&q=80', icon: 'Dog' },
@@ -162,7 +181,7 @@ const categoriesData = [
     image: 'https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?w=800&q=80',
     icon: 'Bus',
     metadata: { color: '#2563eb', featured: false },
-    sortOrder: 9,
+    sortOrder: 10,
     subcategories: [
       { title: 'Taxi y remis', slug: 'taxi-remis', description: 'Viajes urbanos e interurbanos', image: 'https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?w=600&q=80', icon: 'Car' },
       { title: 'Transporte escolar', slug: 'transporte-escolar', description: 'Traslado escolar diario', image: 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=600&q=80', icon: 'Bus' },
@@ -179,7 +198,7 @@ const categoriesData = [
     image: 'https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=800&q=80',
     icon: 'Calendar',
     metadata: { color: '#dc2626', featured: false },
-    sortOrder: 10,
+    sortOrder: 11,
     subcategories: [
       { title: 'Catering y servicio de comidas', slug: 'catering', description: 'Servicio de catering para eventos', image: 'https://images.unsplash.com/photo-1555244162-803834f70033?w=600&q=80', icon: 'ChefHat' },
       { title: 'Fotografo', slug: 'fotografo', description: 'Fotografia profesional de eventos', image: 'https://images.unsplash.com/photo-1554048612-b6a482bc67e5?w=600&q=80', icon: 'Camera' },
@@ -198,7 +217,7 @@ const categoriesData = [
     image: 'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=800&q=80',
     icon: 'GraduationCap',
     metadata: { color: '#0891b2', featured: false },
-    sortOrder: 11,
+    sortOrder: 12,
     subcategories: [
       { title: 'Profesores particulares', slug: 'profesores-particulares', description: 'Clases particulares de todas las materias', image: 'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=600&q=80', icon: 'BookOpen' },
       { title: 'Ingles', slug: 'ingles', description: 'Clases de ingles y preparacion de examenes', image: 'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=600&q=80', icon: 'BookOpen' },
@@ -222,7 +241,7 @@ const categoriesData = [
     image: 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=800&q=80',
     icon: 'Dumbbell',
     metadata: { color: '#db2777', featured: false },
-    sortOrder: 12,
+    sortOrder: 13,
     subcategories: [
       { title: 'Personal trainer', slug: 'personal-trainer', description: 'Entrenamiento personalizado a domicilio', image: 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=600&q=80', icon: 'Dumbbell' },
       { title: 'Yoga', slug: 'yoga', description: 'Clases de yoga y estiramiento', image: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=600&q=80', icon: 'Heart' },
@@ -243,7 +262,7 @@ const categoriesData = [
     image: 'https://images.unsplash.com/photo-1558002038-1055907df827?w=800&q=80',
     icon: 'Shield',
     metadata: { color: '#374151', featured: false },
-    sortOrder: 13,
+    sortOrder: 14,
     subcategories: [
       { title: 'Vigilancia privada', slug: 'vigilancia-privada', description: 'Servicio de vigilancia y seguridad fisica', image: 'https://images.unsplash.com/photo-1558002038-1055907df827?w=600&q=80', icon: 'Shield' },
       { title: 'Alarmas y monitoreo', slug: 'alarmas-monitoreo', description: 'Instalacion y monitoreo de alarmas', image: 'https://images.unsplash.com/photo-1558002038-1055907df827?w=600&q=80', icon: 'Shield' },
@@ -255,3 +274,4 @@ const categoriesData = [
 ];
 
 module.exports = categoriesData;
+
