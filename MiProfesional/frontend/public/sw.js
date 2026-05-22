@@ -1,5 +1,4 @@
-const CACHE_NAME = 'miprofesional-v1';
-
+const CACHE_NAME = 'miprofesional-v2';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -16,23 +15,17 @@ const STATIC_ASSETS = [
 ];
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(STATIC_ASSETS);
-    })
-  );
   self.skipWaiting();
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS))
+  );
 });
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames
-          .filter((name) => name !== CACHE_NAME)
-          .map((name) => caches.delete(name))
-      );
-    })
+    caches.keys().then((keys) => Promise.all(
+      keys.map((k) => { if (k !== CACHE_NAME) return caches.delete(k); return null; })
+    ))
   );
   self.clients.claim();
 });
@@ -41,16 +34,10 @@ self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Only handle same-origin GET requests
   if (request.method !== 'GET' || url.origin !== self.location.origin) return;
-
-  // Skip API and backend calls
   if (url.pathname.startsWith('/api/')) return;
-
-  // Skip APK downloads
   if (url.pathname.endsWith('.apk')) return;
 
-  // Cache-first for static assets
   event.respondWith(
     caches.match(request).then((cached) => {
       if (cached) return cached;
@@ -62,11 +49,12 @@ self.addEventListener('fetch', (event) => {
         return response;
       });
     }).catch(() => {
-      // Offline fallback
-      if (request.mode === 'navigate') {
-        return caches.match('/');
-      }
+      if (request.mode === 'navigate') return caches.match('/');
       return new Response('', { status: 503 });
     })
   );
+});
+
+self.addEventListener('message', (e) => {
+  if (e.data && e.data.type === 'SKIP_WAITING') self.skipWaiting();
 });
