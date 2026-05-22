@@ -30,12 +30,9 @@ const userIcon = new L.DivIcon({
 });
 
 const benefits = [
-  { icon: Shield, title: 'Profesionales Verificados', desc: 'Todos los profesionales pasan por un proceso de verificacion de identidad y antecedentes.' },
-  { icon: Star, title: 'Calificaciones Reales', desc: 'Cada profesional tiene calificaciones y opiniones de clientes reales como vos.' },
-  { icon: TrendingUp, title: 'Sin Comisiones', desc: 'La plataforma solo conecta. No cobramos comisiones por los trabajos realizados.' },
-  { icon: MessageCircle, title: 'Contacto Directo', desc: 'Comunicate directamente con el profesional sin intermediarios ni barreras.' },
-  { icon: Clock, title: 'Respuesta Rapida', desc: 'La mayoria de los profesionales responden en menos de 2 horas.' },
-  { icon: MapPin, title: 'Cerca de tu Zona', desc: 'Filtra por ubicacion y encuentra profesionales cerca de tu domicilio.' },
+  { icon: MapPin, title: 'Profesionales cerca tuyo', desc: 'Filtra por ubicacion y conecta con profesionales verificados en tu zona.' },
+  { icon: Search, title: 'Todo en un solo lugar', desc: 'Busca, compara y contacta profesionales de todos los rubros desde una misma plataforma.' },
+  { icon: Clock, title: 'Rapido y simple', desc: 'Encontra al profesional que necesitas en minutos, sin vueltas ni comisiones.' },
 ];
 
 const APK_VERSION = 'v1.0.0';
@@ -454,48 +451,42 @@ const Home = () => {
         </div>
         <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-8 lg:py-16">
           {/* MOBILE LAYOUT */}
-          <div className="block lg:hidden space-y-4">
+          <div className="block lg:hidden space-y-3">
             {!alreadyInstalled && (
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {device === 'android' && (
-                  <>
-                    <a href={APK_URL} download
-                      className="w-full inline-flex items-center justify-center gap-3 px-6 py-4 bg-primary-500 text-white font-bold text-base rounded-xl hover:bg-primary-600 active:bg-primary-700 transition-all shadow-xl shadow-primary-500/30"
-                    ><Download size={22} /> Descargar APK — Gratis</a>
-                    <div className="flex items-center justify-center gap-2">
-                      <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-1.5 shrink-0">
-                        <QRCodeCanvas value={SITE_URL} size={54} bgColor="#ffffff" fgColor="#0f7a5a" level="M" />
-                      </div>
-                      <p className="text-[11px] text-gray-400">{`Version ${APK_VERSION} · Gratis`}</p>
-                    </div>
-                  </>
+                  <a href={APK_URL} download
+                    className="w-full inline-flex items-center justify-center gap-3 px-6 py-4 bg-primary-500 text-white font-bold text-base rounded-xl hover:bg-primary-600 active:bg-primary-700 transition-all shadow-xl shadow-primary-500/30"
+                  ><Download size={22} /> Descargar APK — Gratis</a>
                 )}
                 {device === 'ios' && (
-                  <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-4 text-center">
-                    <Smartphone size={24} className="mx-auto text-white/60 mb-2" />
-                    <p className="text-white text-sm font-bold mb-1">Usa MiProfesional en iPhone</p>
-                    <p className="text-white/50 text-xs mb-3">Agregala a tu pantalla de inicio como una app nativa.</p>
-                    <button onClick={() => window.dispatchEvent(new CustomEvent('open-ios-guide'))} className="px-5 py-2.5 bg-primary-500 text-white font-bold text-sm rounded-xl hover:bg-primary-600 transition-all shadow-lg shadow-primary-500/30">
-                      Ver instrucciones
-                    </button>
-                  </div>
+                  <div onClick={() => window.dispatchEvent(new CustomEvent('open-ios-guide'))}
+                    className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-primary-500 text-white font-bold text-base rounded-xl hover:bg-primary-600 active:bg-primary-700 transition-all shadow-xl shadow-primary-500/30 cursor-pointer"
+                  ><Plus size={22} /> Agregar a pantalla de inicio</div>
                 )}
-                {device === 'desktop' && (
-                  <a href={SITE_URL} target="_blank" rel="noopener noreferrer"
-                    className="w-full inline-flex items-center justify-center gap-3 px-6 py-4 bg-primary-500 text-white font-bold text-base rounded-xl hover:bg-primary-600 active:bg-primary-700 transition-all shadow-xl shadow-primary-500/30"
-                  ><Download size={22} /> Ir a la App</a>
-                )}
-                <div className="flex justify-center">
-                  <PhoneMockup />
+
+                <div className="flex gap-2">
+                  <Link to="/register"
+                    className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-primary-500 text-white font-bold text-sm rounded-xl hover:bg-primary-600 transition-all shadow-lg shadow-primary-500/25"
+                  ><UserPlus size={16} /> Crear cuenta gratis</Link>
+                  <Link to="/search"
+                    className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-white/10 text-white font-semibold text-sm rounded-xl hover:bg-white/20 transition-all border border-gray-700 backdrop-blur-sm"
+                  ><Search size={16} /> Explorar servicios</Link>
                 </div>
               </div>
             )}
-
-            <div className="text-center">
-              <div className="inline-flex items-center gap-1.5 bg-white/5 backdrop-blur-sm border border-white/10 rounded-full px-3 py-0.5 text-[10px] text-gray-300 mb-2">
-                <Shield size={10} className="text-primary-400" />
-                <span>Marketplace de confianza</span>
+            {alreadyInstalled && (
+              <div className="flex gap-2">
+                <Link to="/register"
+                  className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-primary-500 text-white font-bold text-sm rounded-xl hover:bg-primary-600 transition-all shadow-lg shadow-primary-500/25"
+                ><UserPlus size={16} /> Crear cuenta gratis</Link>
+                <Link to="/search"
+                  className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-white/10 text-white font-semibold text-sm rounded-xl hover:bg-white/20 transition-all border border-gray-700 backdrop-blur-sm"
+                ><Search size={16} /> Explorar servicios</Link>
               </div>
+            )}
+
+            <div className="text-center pt-1">
               <h1 className="text-xl sm:text-2xl font-black text-white leading-tight">
                 El profesional que necesitas<br />
                 <span className="bg-gradient-to-r from-primary-400 via-primary-300 to-emerald-300 bg-clip-text text-transparent">esta mas cerca</span>
@@ -538,6 +529,14 @@ const Home = () => {
               <p className="text-lg text-gray-400 mb-6 max-w-xl leading-relaxed">
                 Conectamos clientes con profesionales verificados en toda Argentina.
               </p>
+              <div className="flex gap-3 mb-6">
+                <Link to="/register"
+                  className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-primary-500 text-white font-bold text-sm rounded-xl hover:bg-primary-600 transition-all shadow-lg shadow-primary-500/25"
+                ><UserPlus size={18} /> Crear cuenta gratis</Link>
+                <Link to="/search"
+                  className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-white/10 text-white font-semibold text-sm rounded-xl hover:bg-white/20 transition-all border border-gray-700 backdrop-blur-sm"
+                ><Search size={18} /> Explorar servicios</Link>
+              </div>
               <form onSubmit={handleSearch} className="max-w-xl">
                 <div className="relative flex bg-white/5 backdrop-blur-sm border border-gray-700/50 rounded-2xl overflow-hidden focus-within:border-primary-500/50 focus-within:ring-1 focus-within:ring-primary-500/20 transition-all shadow-xl shadow-black/20">
                   <Search size={20} className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-500" />
@@ -710,24 +709,23 @@ const Home = () => {
         </div>
       </section>
 
-      {/* BENEFITS */}
-      <section className="bg-gray-50 py-20 md:py-24 px-4">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-12">
-            <span className="text-primary-500 text-xs font-semibold uppercase tracking-widest">Por que elegirnos</span>
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mt-1">Beneficios de la Plataforma</h2>
-            <p className="text-gray-500 mt-2 max-w-xl mx-auto">Todo lo que necesitas para conectar con el profesional ideal</p>
+      {/* BENEFITS COMPACT */}
+      <section className="py-14 md:py-20 px-4">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-10">
+            <h2 className="text-2xl md:text-3xl font-bold text-gray-900">Por que elegir MiProfesional</h2>
+            <p className="text-gray-500 mt-2 max-w-xl mx-auto text-sm">La forma mas simple de conectar con profesionales verificados</p>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {benefits.map((b, i) => {
               const Icon = b.icon;
               return (
-                <div key={i} className="bg-white rounded-2xl border border-gray-200 p-6 md:p-8 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
-                  <div className="w-12 h-12 rounded-xl bg-primary-50 flex items-center justify-center mb-4">
-                    <Icon size={24} className="text-primary-600" />
+                <div key={i} className="bg-white rounded-2xl border border-gray-100 p-6 text-center hover:shadow-md transition-all">
+                  <div className="w-10 h-10 rounded-xl bg-primary-50 flex items-center justify-center mx-auto mb-3">
+                    <Icon size={20} className="text-primary-600" />
                   </div>
-                  <h3 className="font-bold text-gray-900 mb-2">{b.title}</h3>
-                  <p className="text-sm text-gray-500 leading-relaxed">{b.desc}</p>
+                  <h3 className="font-bold text-gray-900 text-sm mb-1.5">{b.title}</h3>
+                  <p className="text-xs text-gray-500 leading-relaxed">{b.desc}</p>
                 </div>
               );
             })}
@@ -735,31 +733,51 @@ const Home = () => {
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950 py-20 md:py-24 px-4">
-        <div className="absolute inset-0 opacity-5">
-          <div className="absolute top-10 left-10 w-72 h-72 bg-primary-500 rounded-full blur-[100px]" />
-          <div className="absolute bottom-10 right-10 w-96 h-96 bg-emerald-500 rounded-full blur-[120px]" />
-        </div>
-        <div className="relative max-w-3xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2 bg-white/5 backdrop-blur-sm border border-white/10 rounded-full px-4 py-1.5 text-sm text-gray-300 mb-6">
-            <UserPlus size={14} /> <span>Comienza hoy</span>
+      {/* IOS BLOCK */}
+      <section className="bg-gray-50 py-10 md:py-14 px-4">
+        <div className="max-w-5xl mx-auto">
+          <div className="bg-white rounded-2xl border border-gray-200 p-5 md:p-8 flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
+            <div className="w-12 h-12 rounded-xl bg-primary-50 flex items-center justify-center shrink-0">
+              <Smartphone size={24} className="text-primary-600" />
+            </div>
+            <div className="text-center sm:text-left">
+              <p className="text-gray-900 font-bold text-sm">Usa MiProfesional desde tu iPhone</p>
+              <p className="text-gray-500 text-xs mt-1">Safari <span className="text-gray-300 mx-1">→</span> Compartir <span className="text-gray-300 mx-1">→</span> Agregar a pantalla de inicio</p>
+            </div>
+            <button onClick={() => window.dispatchEvent(new CustomEvent('open-ios-guide'))}
+              className="shrink-0 px-5 py-2.5 bg-primary-500 text-white font-bold text-sm rounded-xl hover:bg-primary-600 transition-all shadow-lg shadow-primary-500/25 ml-auto">
+              Como hacerlo
+            </button>
           </div>
-          <h2 className="text-3xl md:text-5xl font-black text-white mb-4 leading-tight">
-            {featuredPros.length > 0 ? 'Unite a miles de profesionales' : 'Encontra al profesional ideal'}
-          </h2>
-          <p className="text-gray-400 text-lg mb-8 max-w-lg mx-auto">
-            {featuredPros.length > 0
-              ? 'Registrate gratis y ofrece tus servicios a miles de clientes en toda Argentina.'
-              : 'Explora profesionales verificados cerca tuyo y contacta directo sin intermediarios.'}
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link to="/register" className="px-8 py-3.5 bg-primary-500 text-white font-bold rounded-xl hover:bg-primary-600 transition-all shadow-lg shadow-primary-500/25 text-base">
-              Crear Cuenta Gratis
-            </Link>
-            <Link to="/search" className="px-8 py-3.5 bg-white/10 text-white font-semibold rounded-xl hover:bg-white/20 transition-all border border-gray-700 text-base backdrop-blur-sm">
-              Explorar Servicios
-            </Link>
+        </div>
+      </section>
+
+      {/* PRICING */}
+      <section className="py-14 md:py-20 px-4">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-10">
+            <h2 className="text-2xl md:text-3xl font-bold text-gray-900">Planes para profesionales</h2>
+            <p className="text-gray-500 mt-2 text-sm">Elegi el plan que mejor se adapte a tus necesidades</p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-lg mx-auto">
+            <div className="bg-white rounded-2xl border border-gray-200 p-6 text-center">
+              <p className="text-xs text-gray-400 font-semibold uppercase tracking-wider mb-1">Plan Mensual</p>
+              <p className="text-3xl font-black text-gray-900">$10.000</p>
+              <p className="text-xs text-gray-500 mb-4">por mes</p>
+              <Link to="/subscription" className="block w-full px-4 py-2.5 bg-primary-500 text-white font-bold text-sm rounded-xl hover:bg-primary-600 transition-all shadow-sm">
+                Elegir plan
+              </Link>
+            </div>
+            <div className="bg-white rounded-2xl border-2 border-primary-200 p-6 text-center relative">
+              <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-primary-500 text-white text-[10px] font-bold px-3 py-0.5 rounded-full">15% OFF</span>
+              <p className="text-xs text-gray-400 font-semibold uppercase tracking-wider mb-1">Plan Semestral</p>
+              <p className="text-3xl font-black text-gray-900">$51.000</p>
+              <p className="text-xs text-gray-400 line-through mb-1">$60.000</p>
+              <p className="text-xs text-gray-500 mb-4">6 meses</p>
+              <Link to="/subscription" className="block w-full px-4 py-2.5 bg-primary-600 text-white font-bold text-sm rounded-xl hover:bg-primary-700 transition-all shadow-sm">
+                Elegir plan
+              </Link>
+            </div>
           </div>
         </div>
       </section>
