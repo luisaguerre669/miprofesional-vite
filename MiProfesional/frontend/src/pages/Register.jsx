@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import api from '../lib/axios';
 import {
   UserPlus, Shield, ArrowRight, CheckCircle, AlertCircle,
-  Phone, Mail, Lock, User, Briefcase, Upload,
+  Phone, Mail, Lock, User, Briefcase, Upload, Gift,
   FileText, Building2, Sparkles, Smartphone, Info, CreditCard
 } from 'lucide-react';
 
@@ -428,6 +428,17 @@ const Register = () => {
 
                 {isProfessional && (
                   <div className="space-y-3">
+                    <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-primary-600 via-primary-500 to-emerald-500 p-4 text-center">
+                      <div className="absolute inset-0 opacity-10">
+                        <div className="absolute -top-6 -right-6 w-20 h-20 bg-white rounded-full" />
+                        <div className="absolute -bottom-6 -left-6 w-16 h-16 bg-white rounded-full" />
+                      </div>
+                      <div className="relative z-10">
+                        <p className="text-white text-xs font-semibold flex items-center justify-center gap-1.5">
+                          <Gift size={12} /> Primer mes GRATIS para nuevos profesionales
+                        </p>
+                      </div>
+                    </div>
                     <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
                       <p className="text-xs text-amber-800">
                         <strong className="text-amber-900">Suscripcion obligatoria:</strong> Elegi un plan para activar tu perfil profesional en el marketplace.
@@ -439,17 +450,19 @@ const Register = () => {
                         className={`p-3 rounded-xl border text-left transition-all ${
                           selectedPlan === 'monthly' ? 'border-primary-500 bg-primary-50 ring-1 ring-primary-500' : 'border-gray-200 hover:border-gray-300'
                         }`}>
-                        <p className="text-sm font-semibold text-gray-900">Mensual</p>
+                        <p className="text-sm font-semibold text-gray-900">Plan Mensual</p>
                         <p className="text-lg font-bold text-primary-600">$10.000</p>
-                        <p className="text-xs text-gray-500">/mes</p>
+                        <p className="text-xs text-gray-500">/ mes — Probar gratis</p>
                       </button>
                       <button type="button" onClick={() => setSelectedPlan('semester')}
-                        className={`p-3 rounded-xl border text-left transition-all ${
-                          selectedPlan === 'semester' ? 'border-primary-500 bg-primary-50 ring-1 ring-primary-500' : 'border-gray-200 hover:border-gray-300'
+                        className={`relative p-3 rounded-xl border text-left transition-all ${
+                          selectedPlan === 'semester' ? 'border-emerald-500 bg-emerald-50 ring-1 ring-emerald-500' : 'border-gray-200 hover:border-gray-300'
                         }`}>
-                        <p className="text-sm font-semibold text-gray-900">Semestral</p>
-                        <p className="text-lg font-bold text-primary-600">$51.000</p>
-                        <p className="text-xs text-gray-500">$60.000 sin descuento</p>
+                        <span className="absolute -top-2 -right-2 bg-emerald-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">15% OFF</span>
+                        <p className="text-sm font-semibold text-gray-900">Plan Semestral</p>
+                        <p className="text-xs text-gray-400 line-through">$60.000</p>
+                        <p className="text-lg font-bold text-emerald-600 -mt-0.5">$51.000</p>
+                        <p className="text-xs text-gray-500">/ 6 meses — Suscribirme</p>
                       </button>
                     </div>
                   </div>
