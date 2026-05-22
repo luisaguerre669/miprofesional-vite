@@ -4,7 +4,7 @@ import { Helmet } from 'react-helmet-async';
 import api from '../lib/axios';
 import {
   Search as SearchIcon, Star, MapPin, SlidersHorizontal, X,
-  BadgeCheck, ChevronRight, Briefcase, Navigation
+  BadgeCheck, ChevronRight, Briefcase, Navigation, AlertTriangle
 } from 'lucide-react';
 import MapView from '../components/MapView';
 import { getAccurateLocation } from '../utils/geolocation';
@@ -30,6 +30,7 @@ const Search = () => {
   const [showMap, setShowMap] = useState(false);
   const [searchRadius, setSearchRadius] = useState(10);
   const [userLocation, setUserLocation] = useState(null);
+  const [disponibilidad247, setDisponibilidad247] = useState(searchParams.get('disponibilidad') === '24-7');
   const [filters, setFilters] = useState({
     category: searchParams.get('category') || '',
     subcategory: '',
@@ -52,10 +53,11 @@ const Search = () => {
 
     const q = searchParams.get('q');
     const cat = searchParams.get('category');
-    if (q || cat) {
+    const disp247 = searchParams.get('disponibilidad') === '24-7';
+    if (q || cat || disp247) {
       if (q) setQuery(q);
       if (cat) setFilters(f => ({ ...f, category: cat }));
-      searchProfessionals(q || '', { ...filters, category: cat || filters.category });
+      searchProfessionals(q || '', { ...filters, category: cat || filters.category }, disp247);
     } else {
       fetchProfessionals();
     }
@@ -64,7 +66,9 @@ const Search = () => {
   const fetchProfessionals = async () => {
     setLoading(true);
     try {
-      const response = await api.get('/professionals', { params: { limit: 20 } });
+      const params = { limit: 20 };
+      if (disponibilidad247) params.disponibilidad = '24-7';
+      const response = await api.get('/professionals', { params });
       setProfessionals(response.data.data || []);
     } catch (error) {
       console.error('Error:', error);
@@ -73,7 +77,7 @@ const Search = () => {
     }
   };
 
-  const searchProfessionals = async (q, filterOpts) => {
+  const searchProfessionals = async (q, filterOpts, disp247) => {
     setLoading(true);
     try {
       const params = {};
@@ -85,6 +89,7 @@ const Search = () => {
       if (filterOpts.verified) params.isVerified = true;
       if (filterOpts.featured) params.featured = true;
       if (filterOpts.sortBy) params.sortBy = filterOpts.sortBy;
+      if (disp247 || disponibilidad247) params.disponibilidad = '24-7';
       params.limit = 20;
 
       // Geocodificar siempre, asegurando coordenadas reales
@@ -116,11 +121,21 @@ const Search = () => {
     e.preventDefault();
     const p = {};
     if (query.trim()) p.q = query;
+    if (disponibilidad247) p.disponibilidad = '24-7';
     setSearchParams(p);
     searchProfessionals(query, filters);
   };
 
-  const applyFilters = () => searchProfessionals(query, filters);
+  const clear247 = () => {
+    setDisponibilidad247(false);
+    const p = {};
+    if (query.trim()) p.q = query;
+    if (filters.category) p.category = filters.category;
+    setSearchParams(p);
+    searchProfessionals(query, filters, false);
+  };
+
+  const applyFilters = () => searchProfessionals(query, filters, disponibilidad247);
 
   const selectedCategory = categories.find(c => c._id === filters.category);
   const subcategories = selectedCategory?.subcategories || [];
@@ -136,6 +151,25 @@ const Search = () => {
       <meta name="description" content="Encuentra profesionales verificados. Filtra por categoría, ubicación, rating y precio." />
     </Helmet>
     <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
+      {/* 24-7 Banner */}
+      {disponibilidad247 && (
+        <div className="bg-gradient-to-r from-red-600 via-red-500 to-orange-500 rounded-2xl p-4 md:p-5 shadow-lg flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
+              <AlertTriangle size={22} className="text-white" />
+            </div>
+            <div>
+              <h3 className="text-white font-bold text-sm">24-7 — Profesionales disponibles todo el dia</h3>
+              <p className="text-white/80 text-xs">Servicios urgentes y atencion permanente</p>
+            </div>
+          </div>
+          <button onClick={clear247}
+            className="shrink-0 px-3 py-1.5 bg-white/20 hover:bg-white/30 text-white text-xs font-semibold rounded-lg transition-all">
+            Quitar filtro
+          </button>
+        </div>
+      )}
+
       {/* Search Bar */}
       <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4 md:p-6">
         <form onSubmit={handleSearch} className="flex gap-3">
