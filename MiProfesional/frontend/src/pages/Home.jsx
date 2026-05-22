@@ -1,17 +1,15 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import api from '../lib/axios';
 import { getAccurateLocation } from '../utils/geolocation';
-import { useAuth } from '../context/AuthContext';
 import {
-  Search, ArrowRight, Star, MapPin, Heart,
-  AlertTriangle, ChevronLeft, ChevronRight, Shield, Clock,
-  UserPlus, TrendingUp, MessageCircle, LogOut, User, Settings,
-  LayoutDashboard, Download, Plus, Smartphone
+  Search, ArrowRight, Star, MapPin,
+  ChevronLeft, ChevronRight, Shield, Clock,
+  UserPlus, Download, Plus, Smartphone
 } from 'lucide-react';
 import { QRCodeCanvas } from 'qrcode.react';
 import AdBanner from '../components/ads/AdBanner';
@@ -87,15 +85,11 @@ const PROVINCES = [
 ];
 
 const Home = () => {
-  const navigate = useNavigate();
-  const { user, isAuthenticated, logout, isProfessional } = useAuth();
-  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [featuredPros, setFeaturedPros] = useState([]);
   const [loading, setLoading] = useState(true);
   const [carouselIndex, setCarouselIndex] = useState(0);
   const [userLocation, setUserLocation] = useState(null);
-  const [bannerTop, setBannerTop] = useState(true);
   const [bannerSide1, setBannerSide1] = useState(true);
   const [bannerSide2] = useState(true);
 
@@ -380,68 +374,6 @@ const Home = () => {
         <link rel="canonical" href="https://www.miprofesional.online" />
       </Helmet>
 
-      {/* NAVBAR */}
-      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-gray-200/80">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
-          <Link to="/" className="flex items-center gap-2 group">
-            <div className="w-8 h-8 rounded-lg bg-primary-600 flex items-center justify-center text-white font-black text-sm group-hover:bg-primary-700 transition-colors">MP</div>
-            <span className="font-bold text-lg text-gray-900">MiProfesional</span>
-          </Link>
-          <nav className="hidden md:flex items-center gap-6 text-sm text-gray-600">
-            <Link to="/" className="font-medium text-gray-900">Inicio</Link>
-            <Link to="/categorias">Categorias</Link>
-            <Link to="/search">Profesionales</Link>
-            <Link to="/search?disponibilidad=24-7" className="text-red-600 font-medium flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />24-7</Link>
-          </nav>
-          <div className="flex items-center gap-2">
-            {isAuthenticated ? (
-              <div className="relative flex items-center gap-2">
-                <button onClick={() => setUserMenuOpen(!userMenuOpen)}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-gray-100 transition-colors">
-                  <div className="w-8 h-8 rounded-full bg-primary-600 flex items-center justify-center text-white text-xs font-bold">
-                    {user?.name?.charAt(0)?.toUpperCase() || 'U'}
-                  </div>
-                  <span className="text-sm font-medium text-gray-900 hidden sm:block">{user?.name?.split(' ')[0] || 'Usuario'}</span>
-                  <svg className={`w-3.5 h-3.5 text-gray-400 transition-transform ${userMenuOpen ? 'rotate-180' : ''}`} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9"/></svg>
-                </button>
-                {userMenuOpen && (
-                  <>
-                    <div className="fixed inset-0 z-10" onClick={() => setUserMenuOpen(false)} />
-                    <div className="absolute right-0 top-full mt-2 w-52 bg-white rounded-xl shadow-xl border border-gray-200 py-2 z-20">
-                      <Link to={isProfessional ? '/dashboard/professional' : '/dashboard/client'}
-                        onClick={() => setUserMenuOpen(false)}
-                        className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50">
-                        <LayoutDashboard size={16} className="text-gray-400" /> Dashboard
-                      </Link>
-                      <Link to="/profile" onClick={() => setUserMenuOpen(false)}
-                        className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50">
-                        <User size={16} className="text-gray-400" /> Mi Perfil
-                      </Link>
-                      <Link to="/settings" onClick={() => setUserMenuOpen(false)}
-                        className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50">
-                        <Settings size={16} className="text-gray-400" /> Configuracion
-                      </Link>
-                      <div className="border-t border-gray-100 my-1" />
-                      <button onClick={() => { setUserMenuOpen(false); logout(); navigate('/'); }}
-                        className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50">
-                        <LogOut size={16} /> Cerrar Sesion
-                      </button>
-                    </div>
-                  </>
-                )}
-              </div>
-            ) : (
-              <>
-                <Link to="/login" className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors">Ingresar</Link>
-                <Link to="/register?role=professional" className="px-4 py-2 text-sm font-semibold bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-all shadow-sm">
-                  Soy Profesional
-                </Link>
-              </>
-            )}
-          </div>
-        </div>
-      </header>
-
       {/* HERO PREMIUM */}
       <section className="relative flex items-center overflow-hidden bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950">
         <div className="absolute inset-0">
@@ -449,7 +381,7 @@ const Home = () => {
           <div className="absolute inset-0 bg-gradient-to-r from-gray-950/90 via-gray-900/70 to-transparent" />
           <div className="absolute inset-0 bg-gradient-to-t from-gray-950/60 via-transparent to-gray-950/20" />
         </div>
-        <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-8 lg:py-16">
+        <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-16">
           {/* MOBILE LAYOUT */}
           <div className="block lg:hidden space-y-3">
             {!alreadyInstalled && (
@@ -487,11 +419,11 @@ const Home = () => {
             )}
 
             <div className="text-center pt-1">
-              <h1 className="text-xl sm:text-2xl font-black text-white leading-tight">
+              <h1 className="text-lg sm:text-xl font-black text-white leading-tight">
                 El profesional que necesitas<br />
                 <span className="bg-gradient-to-r from-primary-400 via-primary-300 to-emerald-300 bg-clip-text text-transparent">esta mas cerca</span>
               </h1>
-              <p className="text-sm text-gray-400 mt-1">Conectamos clientes con profesionales verificados en toda Argentina.</p>
+              <p className="text-xs text-gray-400 mt-1">Conectamos clientes con profesionales verificados en toda Argentina.</p>
             </div>
 
             <form onSubmit={handleSearch}>
@@ -516,13 +448,13 @@ const Home = () => {
           </div>
 
           {/* DESKTOP LAYOUT */}
-          <div className="hidden lg:flex lg:flex-row items-center gap-14">
+          <div className="hidden lg:flex lg:flex-row items-center gap-12">
             <div className="flex-1 text-left">
               <div className="inline-flex items-center gap-2 bg-white/5 backdrop-blur-sm border border-white/10 rounded-full px-4 py-1.5 text-sm text-gray-300 mb-6">
                 <Shield size={14} className="text-primary-400" />
                 <span>Marketplace de confianza en Argentina</span>
               </div>
-              <h1 className="text-6xl xl:text-7xl font-black text-white leading-[1.05] mb-4">
+              <h1 className="text-5xl md:text-6xl xl:text-7xl font-black text-white leading-[1.05] mb-4">
                 El profesional que necesitas<br />
                 <span className="bg-gradient-to-r from-primary-400 via-primary-300 to-emerald-300 bg-clip-text text-transparent">esta mas cerca de lo que crees</span>
               </h1>
@@ -587,12 +519,12 @@ const Home = () => {
             )}
           </div>
         </div>
-        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-gray-50 to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 h-20 md:h-32 bg-gradient-to-t from-gray-50 to-transparent" />
       </section>
 
       {/* FEATURED PROS CAROUSEL */}
       {featuredPros.length > 0 && (
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-20 relative z-20 mb-20">
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-12 md:-mt-20 relative z-20 mb-12 md:mb-20">
           <div className="bg-white/80 backdrop-blur-xl border border-gray-200/80 rounded-2xl shadow-sm p-6 md:p-8">
             <div className="flex items-center justify-between mb-6">
               <div>
@@ -734,23 +666,25 @@ const Home = () => {
       </section>
 
       {/* IOS BLOCK */}
-      <section className="bg-gray-50 py-10 md:py-14 px-4">
-        <div className="max-w-5xl mx-auto">
-          <div className="bg-white rounded-2xl border border-gray-200 p-5 md:p-8 flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
-            <div className="w-12 h-12 rounded-xl bg-primary-50 flex items-center justify-center shrink-0">
-              <Smartphone size={24} className="text-primary-600" />
+      {device === 'ios' && (
+        <section className="bg-gray-50 py-10 md:py-14 px-4">
+          <div className="max-w-5xl mx-auto">
+            <div className="bg-white rounded-2xl border border-gray-200 p-5 md:p-8 flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
+              <div className="w-12 h-12 rounded-xl bg-primary-50 flex items-center justify-center shrink-0">
+                <Smartphone size={24} className="text-primary-600" />
+              </div>
+              <div className="text-center sm:text-left">
+                <p className="text-gray-900 font-bold text-sm">Usa MiProfesional desde tu iPhone</p>
+                <p className="text-gray-500 text-xs mt-1">Safari <span className="text-gray-300 mx-1">→</span> Compartir <span className="text-gray-300 mx-1">→</span> Agregar a pantalla de inicio</p>
+              </div>
+              <button onClick={() => window.dispatchEvent(new CustomEvent('open-ios-guide'))}
+                className="shrink-0 px-5 py-2.5 bg-primary-500 text-white font-bold text-sm rounded-xl hover:bg-primary-600 transition-all shadow-lg shadow-primary-500/25 ml-auto">
+                Como hacerlo
+              </button>
             </div>
-            <div className="text-center sm:text-left">
-              <p className="text-gray-900 font-bold text-sm">Usa MiProfesional desde tu iPhone</p>
-              <p className="text-gray-500 text-xs mt-1">Safari <span className="text-gray-300 mx-1">→</span> Compartir <span className="text-gray-300 mx-1">→</span> Agregar a pantalla de inicio</p>
-            </div>
-            <button onClick={() => window.dispatchEvent(new CustomEvent('open-ios-guide'))}
-              className="shrink-0 px-5 py-2.5 bg-primary-500 text-white font-bold text-sm rounded-xl hover:bg-primary-600 transition-all shadow-lg shadow-primary-500/25 ml-auto">
-              Como hacerlo
-            </button>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* PRICING */}
       <section className="py-14 md:py-20 px-4">
@@ -781,49 +715,6 @@ const Home = () => {
           </div>
         </div>
       </section>
-
-      {/* FOOTER */}
-      <footer className="bg-white border-t border-gray-200 py-12 md:py-16 px-4">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-10">
-            <div className="md:col-span-1">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-7 h-7 rounded-lg bg-primary-600 flex items-center justify-center text-white font-black text-xs">MP</div>
-                <span className="font-bold text-lg text-gray-900">MiProfesional</span>
-              </div>
-              <p className="text-sm text-gray-500 leading-relaxed">Conectando personas con profesionales verificados en toda Argentina.</p>
-            </div>
-            <div>
-              <h4 className="font-semibold text-gray-900 text-sm mb-4">Plataforma</h4>
-              <ul className="space-y-2.5 text-sm text-gray-500">
-                <li><Link to="/search" className="hover:text-primary-600 transition-colors">Buscar profesionales</Link></li>
-                <li><Link to="/categorias" className="hover:text-primary-600 transition-colors">Categorias</Link></li>
-                <li><Link to="/search?disponibilidad=24-7" className="hover:text-red-600 transition-colors">24-7</Link></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold text-gray-900 text-sm mb-4">Profesionales</h4>
-              <ul className="space-y-2.5 text-sm text-gray-500">
-                <li><Link to="/register?role=professional" className="hover:text-primary-600 transition-colors">Registrarse</Link></li>
-                <li><Link to="/subscription" className="hover:text-primary-600 transition-colors">Planes de suscripcion</Link></li>
-                <li><Link to="/login" className="hover:text-primary-600 transition-colors">Iniciar sesion</Link></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold text-gray-900 text-sm mb-4">Legal</h4>
-              <ul className="space-y-2.5 text-sm text-gray-500">
-                <li><span className="hover:text-primary-600 transition-colors cursor-default">Terminos y condiciones</span></li>
-                <li><span className="hover:text-primary-600 transition-colors cursor-default">Politica de privacidad</span></li>
-                <li><span className="hover:text-primary-600 transition-colors cursor-default">Defensa del consumidor</span></li>
-              </ul>
-            </div>
-          </div>
-          <div className="border-t border-gray-100 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
-            <p className="text-gray-400 text-xs"> 2026 MiProfesional — Plataforma de conexion entre clientes y profesionales</p>
-            <p className="text-gray-400 text-xs">Desarrollado por <span className="font-medium text-gray-500">Luis Aguerre</span></p>
-          </div>
-        </div>
-      </footer>
     </>
   );
 };

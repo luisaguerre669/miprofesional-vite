@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Menu, X, User, LogOut, Home, Search, MessageSquare, LayoutDashboard, Bell, CreditCard, Settings, Shield, Plus, LogIn, Building2, Wrench } from 'lucide-react';
+import { Menu, X, User, LogOut, Home, Search, MessageSquare, LayoutDashboard, Bell, CreditCard, Settings, Shield, Plus, LogIn, Building2, Wrench, AlertTriangle } from 'lucide-react';
 import IOSInstallGuide from './ios/IOSInstallGuide';
 
 const Layout = ({ children }) => {
@@ -44,6 +44,7 @@ const Layout = ({ children }) => {
               {[
                 { name: 'Inicio', path: '/', icon: Home },
                 { name: 'Buscar', path: '/search', icon: Search },
+                { name: '24-7', path: '/search?disponibilidad=24-7', icon: AlertTriangle },
                 { name: 'Construcción', path: '/categoria/construccion-y-hogar', icon: Building2 },
                 { name: 'Servicios', path: '/categoria/servicios-generales', icon: Wrench },
                 ...(user?.role === 'admin' ? [{ name: 'Admin', path: '/admin', icon: Shield }] : []),
@@ -177,6 +178,7 @@ const Layout = ({ children }) => {
                 { name: 'Inicio', path: '/', icon: Home },
                 { name: 'Buscar', path: '/search', icon: Search },
                 { name: 'Mensajes', path: '/messages', icon: MessageSquare },
+                { name: '24-7', path: '/search?disponibilidad=24-7', icon: AlertTriangle },
                 { name: 'Dashboard', path: isAuthenticated ? (isProfessional ? '/dashboard/professional' : '/dashboard/client') : '/login', icon: LayoutDashboard },
               ].map((link) => {
                 const Icon = link.icon;
@@ -267,6 +269,7 @@ const Layout = ({ children }) => {
                 <li><Link to="/categoria/servicios-generales" className="text-gray-400 text-sm hover:text-white transition-colors">Servicios Generales</Link></li>
                 <li><Link to="/categoria/salud" className="text-gray-400 text-sm hover:text-white transition-colors">Salud</Link></li>
                 <li><Link to="/categoria/profesionales" className="text-gray-400 text-sm hover:text-white transition-colors">Profesionales</Link></li>
+                <li><Link to="/search?disponibilidad=24-7" className="text-gray-400 text-sm hover:text-red-400 transition-colors">24-7</Link></li>
               </ul>
             </div>
 
@@ -275,6 +278,7 @@ const Layout = ({ children }) => {
               <ul className="space-y-2.5">
                 <li><Link to="/search" className="text-gray-400 text-sm hover:text-white transition-colors">Buscar Servicios</Link></li>
                 <li><Link to="/register" className="text-gray-400 text-sm hover:text-white transition-colors">Crear Cuenta</Link></li>
+                <li><Link to="/subscription" className="text-gray-400 text-sm hover:text-white transition-colors">Planes de suscripcion</Link></li>
               </ul>
             </div>
 
@@ -282,7 +286,8 @@ const Layout = ({ children }) => {
               <h3 className="text-white font-semibold text-sm mb-4">Profesionales</h3>
               <ul className="space-y-2.5">
                 <li><Link to="/register?role=professional" className="text-gray-400 text-sm hover:text-white transition-colors">Registrarse</Link></li>
-                <li><Link to="/register?role=professional" className="text-gray-400 text-sm hover:text-white transition-colors">Planes de suscripcion</Link></li>
+                <li><Link to="/subscription" className="text-gray-400 text-sm hover:text-white transition-colors">Planes de suscripcion</Link></li>
+                <li><Link to="/login" className="text-gray-400 text-sm hover:text-white transition-colors">Iniciar sesion</Link></li>
               </ul>
             </div>
 
@@ -325,6 +330,7 @@ const Layout = ({ children }) => {
               {[
                 { name: 'Inicio', path: '/', icon: Home },
                 { name: 'Buscar', path: '/search', icon: Search },
+                { name: '24-7', path: '/search?disponibilidad=24-7', icon: AlertTriangle },
                 { name: 'Dashboard', path: isAuthenticated ? (isProfessional ? '/dashboard/professional' : '/dashboard/client') : '/login', icon: LayoutDashboard },
                 ...(user?.role === 'admin' ? [{ name: 'Admin', path: '/admin', icon: Shield }] : [{ name: isAuthenticated ? 'Perfil' : 'Ingresar', path: isAuthenticated ? '/profile' : '/login', icon: User }]),
               ].map((link) => {
