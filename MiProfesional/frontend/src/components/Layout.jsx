@@ -2,7 +2,7 @@ import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Menu, X, User, LogOut, Home, Search, MessageSquare, LayoutDashboard, Bell, CreditCard, Settings, Shield, Plus, LogIn, Building2, Wrench } from 'lucide-react';
-import Logo from './Logo';
+import IOSInstallGuide from './ios/IOSInstallGuide';
 
 const Layout = ({ children }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
@@ -345,6 +345,8 @@ const Layout = ({ children }) => {
       </nav>
 
       <div className="lg:hidden h-16" />
+
+      <IOSInstallGuide />
     </div>
   );
 };

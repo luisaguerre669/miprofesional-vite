@@ -11,7 +11,7 @@ import {
   Search, ArrowRight, Star, MapPin, Heart,
   AlertTriangle, ChevronLeft, ChevronRight, Shield, Clock,
   UserPlus, TrendingUp, MessageCircle, LogOut, User, Settings,
-  LayoutDashboard, Download, Plus
+  LayoutDashboard, Download, Plus, Smartphone
 } from 'lucide-react';
 import { QRCodeCanvas } from 'qrcode.react';
 import AdBanner from '../components/ads/AdBanner';
@@ -469,17 +469,34 @@ const Home = () => {
 
             {!alreadyInstalled && (
               <div className="space-y-3">
-                <a href={APK_URL} download
-                  className="w-full inline-flex items-center justify-center gap-3 px-6 py-4 bg-primary-500 text-white font-bold text-base rounded-xl hover:bg-primary-600 active:bg-primary-700 transition-all shadow-xl shadow-primary-500/30"
-                ><Download size={22} /> Descargar APK — Gratis</a>
-
-                <div className="flex items-center justify-center gap-2">
-                  <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-1.5 shrink-0">
-                    <QRCodeCanvas value={SITE_URL} size={54} bgColor="#ffffff" fgColor="#0f7a5a" level="M" />
+                {device === 'android' && (
+                  <>
+                    <a href={APK_URL} download
+                      className="w-full inline-flex items-center justify-center gap-3 px-6 py-4 bg-primary-500 text-white font-bold text-base rounded-xl hover:bg-primary-600 active:bg-primary-700 transition-all shadow-xl shadow-primary-500/30"
+                    ><Download size={22} /> Descargar APK — Gratis</a>
+                    <div className="flex items-center justify-center gap-2">
+                      <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-1.5 shrink-0">
+                        <QRCodeCanvas value={SITE_URL} size={54} bgColor="#ffffff" fgColor="#0f7a5a" level="M" />
+                      </div>
+                      <p className="text-[11px] text-gray-400">{`Version ${APK_VERSION} · Gratis`}</p>
+                    </div>
+                  </>
+                )}
+                {device === 'ios' && (
+                  <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-4 text-center">
+                    <Smartphone size={24} className="mx-auto text-white/60 mb-2" />
+                    <p className="text-white text-sm font-bold mb-1">Usa MiProfesional en iPhone</p>
+                    <p className="text-white/50 text-xs mb-3">Agregala a tu pantalla de inicio como una app nativa.</p>
+                    <button onClick={() => window.dispatchEvent(new CustomEvent('open-ios-guide'))} className="px-5 py-2.5 bg-primary-500 text-white font-bold text-sm rounded-xl hover:bg-primary-600 transition-all shadow-lg shadow-primary-500/30">
+                      Ver instrucciones
+                    </button>
                   </div>
-                  <p className="text-[11px] text-gray-400">{device === 'android' ? `Version ${APK_VERSION} · Gratis` : 'Gratis · Sin registro'}</p>
-                </div>
-
+                )}
+                {device === 'desktop' && (
+                  <a href={SITE_URL} target="_blank" rel="noopener noreferrer"
+                    className="w-full inline-flex items-center justify-center gap-3 px-6 py-4 bg-primary-500 text-white font-bold text-base rounded-xl hover:bg-primary-600 active:bg-primary-700 transition-all shadow-xl shadow-primary-500/30"
+                  ><Download size={22} /> Ir a la App</a>
+                )}
                 <div className="flex justify-center">
                   <PhoneMockup />
                 </div>
@@ -555,9 +572,9 @@ const Home = () => {
                       ><Download size={20} /> Descargar APK</a>
                     )}
                     {device === 'ios' && (
-                      <a href={SITE_URL} target="_blank" rel="noopener noreferrer"
+                      <button onClick={() => window.dispatchEvent(new CustomEvent('open-ios-guide'))}
                         className="inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-primary-500 text-white font-bold text-base rounded-xl hover:bg-primary-600 transition-all shadow-xl shadow-primary-500/30"
-                      ><Plus size={20} /> Instalar en iPhone</a>
+                      ><Plus size={20} /> Instalar en iPhone</button>
                     )}
                     {device === 'desktop' && (
                       <a href={SITE_URL} target="_blank" rel="noopener noreferrer"
