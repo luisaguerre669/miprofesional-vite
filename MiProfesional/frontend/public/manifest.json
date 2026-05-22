@@ -4,11 +4,18 @@
   "description": "Marketplace de servicios profesionales en Argentina. Encuentra profesionales verificados cerca tuyo.",
   "start_url": "/",
   "display": "standalone",
+  "display_override": ["standalone", "browser"],
   "orientation": "portrait-primary",
-  "background_color": "#ffffff",
+  "background_color": "#0f7a5a",
   "theme_color": "#0f7a5a",
   "lang": "es-AR",
   "categories": ["lifestyle", "business", "utilities"],
+  "scope": "/",
+  "id": "/",
+  "edge_side_panel": {},
+  "prefer_related_applications": false,
+  "related_applications": [],
+  "screenshots": [],
   "icons": [
     {
       "src": "/icons/icon-192.svg",
@@ -21,6 +28,12 @@
       "sizes": "512x512",
       "type": "image/svg+xml",
       "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/apple-icon-180.svg",
+      "sizes": "180x180",
+      "type": "image/svg+xml",
+      "purpose": "any"
     }
   ]
 }
