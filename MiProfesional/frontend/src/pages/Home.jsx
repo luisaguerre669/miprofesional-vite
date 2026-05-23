@@ -27,6 +27,46 @@ const userIcon = new L.DivIcon({
   iconSize: [32, 32], iconAnchor: [16, 32], popupAnchor: [0, -32],
 });
 
+const colorClasses = {
+  pink: { tag: 'text-pink-300', bg: 'bg-pink-500', hover: 'hover:bg-pink-600', shadow: 'shadow-pink-500/25' },
+  blue: { tag: 'text-blue-300', bg: 'bg-blue-500', hover: 'hover:bg-blue-600', shadow: 'shadow-blue-500/25' },
+  emerald: { tag: 'text-emerald-300', bg: 'bg-emerald-500', hover: 'hover:bg-emerald-600', shadow: 'shadow-emerald-500/25' },
+};
+
+const promoSlides = [
+  {
+    id: 'belleza',
+    image: 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=1200&q=80',
+    tag: 'Nueva Categoria',
+    title: 'Belleza y ',
+    titleAccent: 'Cuidado Personal',
+    desc: 'Encontra los mejores profesionales de estetica, peluqueria, masajes y cuidado personal cerca de tu zona.',
+    link: '/categoria/belleza-y-cuidado',
+    color: 'pink',
+    subcategories: ['Peluqueria', 'Manicuria', 'Unas', 'Masajista', 'Cosmetologia', 'Barbero', 'Maquilladora', 'Depilacion'],
+  },
+  {
+    id: 'app',
+    image: 'https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=1200&q=80',
+    tag: 'Descargar App',
+    title: 'Descarga nuestra ',
+    titleAccent: 'App',
+    desc: 'Accede a todos los profesionales desde tu celular. Busca, contacta y agenda desde cualquier lugar.',
+    link: '#',
+    color: 'blue',
+  },
+  {
+    id: 'profesional',
+    image: 'https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=1200&q=80',
+    tag: 'Para Profesionales',
+    title: 'Publica tu perfil ',
+    titleAccent: 'y crece',
+    desc: 'Mostra tus servicios a miles de clientes potenciales. Empeza con 30 dias gratis sin compromiso.',
+    link: '/register?role=professional',
+    color: 'emerald',
+  },
+];
+
 const benefits = [
   { icon: MapPin, title: 'Profesionales cerca tuyo', desc: 'Filtra por ubicacion y conecta con profesionales verificados en tu zona.' },
   { icon: Search, title: 'Todo en un solo lugar', desc: 'Busca, compara y contacta profesionales de todos los rubros desde una misma plataforma.' },
@@ -109,9 +149,42 @@ const Home = () => {
 
   useEffect(() => {
     api.get('/categories/tree')
-      .then(r => setCategories(r.data.data || []))
+      .then(r => {
+        const data = r.data.data || [];
+        const hasBelleza = data.some(c => c.slug === 'belleza-y-cuidado');
+        if (!hasBelleza) {
+          data.push({
+            _id: 'belleza-static',
+            title: 'Belleza y Cuidado',
+            slug: 'belleza-y-cuidado',
+            description: 'Peluqueria, manicuria, masajes y cuidado personal',
+            image: 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=800&q=80',
+            icon: 'Sparkles',
+            metadata: { color: '#ec4899' },
+            sortOrder: 15,
+            subcategories: [
+              { name: 'Peluqueria', slug: 'peluqueria' },
+              { name: 'Manicuria', slug: 'manicuria' },
+              { name: 'Unas', slug: 'unas' },
+              { name: 'Masajista', slug: 'masajista' },
+              { name: 'Cosmetologia', slug: 'cosmetologia' },
+              { name: 'Barbero', slug: 'barbero' },
+              { name: 'Maquilladora', slug: 'maquilladora' },
+              { name: 'Depilacion', slug: 'depilacion' },
+            ],
+          });
+        }
+        setCategories(data);
+      })
       .catch(() => setCategories([]))
       .finally(() => setCategoriesLoading(false));
+  }, []);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCarouselIndex(i => (i + 1) % promoSlides.length);
+    }, 5000);
+    return () => clearInterval(timer);
   }, []);
 
   const [manualCity, setManualCity] = useState('');
@@ -628,50 +701,74 @@ const Home = () => {
         )}
       </section>
 
-      {/* BELLEZA Y CUIDADO BANNER */}
+      {/* PROMO CAROUSEL */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-10 md:mb-20">
-        <Link to="/categoria/belleza-y-cuidado"
-          className="group relative block overflow-hidden rounded-2xl border border-gray-200 bg-white hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300"
-        >
-          <div className="aspect-[21/9] md:aspect-[3/1] overflow-hidden">
-            <img
-              src="https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=1200&q=80"
-              alt="Belleza y Cuidado Personal"
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-              loading="lazy"
-            />
-            <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/60 to-transparent" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
-          </div>
-          <div className="absolute inset-0 p-6 md:p-10 lg:p-14 flex flex-col justify-center">
-            <div className="max-w-xl">
-              <div className="flex items-center gap-2 mb-3">
-                <Sparkles size={20} className="text-pink-300" />
-                <span className="text-pink-300 text-xs font-bold uppercase tracking-widest">Nueva Categoria</span>
-              </div>
-              <h2 className="text-2xl md:text-4xl font-black text-white mb-2">
-                Belleza y <span className="text-pink-300">Cuidado Personal</span>
-              </h2>
-              <p className="text-sm md:text-base text-white/60 mb-4 md:mb-6 max-w-md leading-relaxed">
-                Encontra los mejores profesionales de estetica, peluqueria, masajes y cuidado personal cerca de tu zona.
-              </p>
-              <span className="inline-flex items-center gap-2 px-5 py-2.5 bg-pink-500 text-white font-bold rounded-xl hover:bg-pink-600 transition-all shadow-lg shadow-pink-500/25 text-sm">
-                Ver profesionales <ArrowRight size={16} />
-              </span>
-            </div>
-          </div>
-          <div className="absolute bottom-0 right-0 p-4 md:p-6 hidden sm:block">
-            <div className="flex flex-wrap justify-end gap-1.5 max-w-md">
-              {['Peluqueria', 'Manicuria', 'Unas', 'Masajista', 'Cosmetologia', 'Barbero', 'Maquilladora', 'Depilacion'].map((sub) => (
-                <span key={sub}
-                  className="px-2.5 py-1 bg-white/10 backdrop-blur-sm rounded-md text-white/80 text-[11px] font-medium border border-white/10"
+        <div className="relative overflow-hidden rounded-2xl">
+          <div className="relative">
+            {promoSlides.map((slide, i) => {
+              const cc = colorClasses[slide.color];
+              return (
+                <Link key={slide.id} to={slide.link}
+                  className={`${i === carouselIndex ? 'block' : 'hidden'} group relative overflow-hidden rounded-2xl border border-gray-200 bg-white hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300`}
                 >
-                  {sub}
-                </span>
-              ))}
-            </div>
+                  <div className="aspect-[21/9] md:aspect-[3/1] overflow-hidden">
+                    <img src={slide.image} alt={slide.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                      loading="lazy"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/60 to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+                  </div>
+                  <div className="absolute inset-0 p-6 md:p-10 lg:p-14 flex flex-col justify-center">
+                    <div className="max-w-xl">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Sparkles size={20} className={cc.tag} />
+                        <span className={`${cc.tag} text-xs font-bold uppercase tracking-widest`}>{slide.tag}</span>
+                      </div>
+                      <h2 className="text-2xl md:text-4xl font-black text-white mb-2">
+                        {slide.title}<span className={cc.tag}>{slide.titleAccent}</span>
+                      </h2>
+                      <p className="text-sm md:text-base text-white/60 mb-4 md:mb-6 max-w-md leading-relaxed">{slide.desc}</p>
+                      <span className={`inline-flex items-center gap-2 px-5 py-2.5 ${cc.bg} text-white font-bold rounded-xl ${cc.hover} transition-all shadow-lg ${cc.shadow} text-sm`}>
+                        Ver mas <ArrowRight size={16} />
+                      </span>
+                    </div>
+                  </div>
+                  {slide.subcategories && (
+                    <div className="absolute bottom-0 right-0 p-4 md:p-6 hidden sm:block">
+                      <div className="flex flex-wrap justify-end gap-1.5 max-w-md">
+                        {slide.subcategories.map(sub => (
+                          <span key={sub} className="px-2.5 py-1 bg-white/10 backdrop-blur-sm rounded-md text-white/80 text-[11px] font-medium border border-white/10">
+                            {sub}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </Link>
+              );
+            })}
           </div>
-        </Link>
+          {promoSlides.length > 1 && (
+            <>
+              <button onClick={() => setCarouselIndex(i => (i - 1 + promoSlides.length) % promoSlides.length)}
+                className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white hover:bg-white/40 transition-all z-10">
+                <ChevronLeft size={20} />
+              </button>
+              <button onClick={() => setCarouselIndex(i => (i + 1) % promoSlides.length)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white hover:bg-white/40 transition-all z-10">
+                <ChevronRight size={20} />
+              </button>
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 z-10">
+                {promoSlides.map((_, i) => (
+                  <button key={i} onClick={() => setCarouselIndex(i)}
+                    className={`w-2 h-2 rounded-full transition-all ${i === carouselIndex ? 'bg-white w-6' : 'bg-white/40 hover:bg-white/60'}`}
+                  />
+                ))}
+              </div>
+            </>
+          )}
+        </div>
       </section>
 
       {/* MAP + ADS SECTION */}
