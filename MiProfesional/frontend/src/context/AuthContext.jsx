@@ -65,8 +65,8 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       const elapsed = Date.now() - startTime;
       console.warn('[Auth] Login failed:', { status: error.response?.status, message: error.response?.data?.message || error.message, timeMs: elapsed });
-      const userMsg = error.code === 'ECONNABORTED' || elapsed >= 15000
-        ? 'Error de conexion. El servidor no responde. Intentá nuevamente.'
+      const userMsg = error.code === 'ECONNABORTED' || elapsed >= 60000
+        ? 'Error de conexion. El servidor no responde. Intentá nuevamente mas tarde.'
         : error.response?.data?.message || 'Error al iniciar sesion. Verifica tus credenciales.';
       return { success: false, error: userMsg };
     }

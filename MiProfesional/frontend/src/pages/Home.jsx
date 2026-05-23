@@ -31,6 +31,8 @@ const colorClasses = {
   pink: { tag: 'text-pink-300', bg: 'bg-pink-500', hover: 'hover:bg-pink-600', shadow: 'shadow-pink-500/25' },
   blue: { tag: 'text-blue-300', bg: 'bg-blue-500', hover: 'hover:bg-blue-600', shadow: 'shadow-blue-500/25' },
   emerald: { tag: 'text-emerald-300', bg: 'bg-emerald-500', hover: 'hover:bg-emerald-600', shadow: 'shadow-emerald-500/25' },
+  purple: { tag: 'text-purple-300', bg: 'bg-purple-500', hover: 'hover:bg-purple-600', shadow: 'shadow-purple-500/25' },
+  amber: { tag: 'text-amber-300', bg: 'bg-amber-500', hover: 'hover:bg-amber-600', shadow: 'shadow-amber-500/25' },
 };
 
 const promoSlides = [
@@ -64,6 +66,26 @@ const promoSlides = [
     desc: 'Mostra tus servicios a miles de clientes potenciales. Empeza con 30 dias gratis sin compromiso.',
     link: '/register?role=professional',
     color: 'emerald',
+  },
+  {
+    id: 'salud',
+    image: 'https://images.unsplash.com/photo-1579684453423-f84349ef60b0?w=1200&q=80',
+    tag: 'Cuidado de tu Salud',
+    title: 'Medicos y ',
+    titleAccent: 'especialistas',
+    desc: 'Encontrá medicos, psicologos, kinesiologos y profesionales de la salud a domicilio o consulta.',
+    link: '/categoria/salud',
+    color: 'purple',
+  },
+  {
+    id: 'hogar',
+    image: 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=1200&q=80',
+    tag: 'Servicios para tu Hogar',
+    title: 'Reparaciones y ',
+    titleAccent: 'mantenimiento',
+    desc: 'Plomeros, electricistas, pintores y mas profesionales para cuidar tu hogar.',
+    link: '/categoria/servicios-generales',
+    color: 'amber',
   },
 ];
 
