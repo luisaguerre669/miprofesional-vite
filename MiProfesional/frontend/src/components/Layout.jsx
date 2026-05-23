@@ -2,6 +2,7 @@ import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Menu, X, User, LogOut, Home, Search, MessageSquare, LayoutDashboard, Bell, CreditCard, Settings, Shield, Plus, LogIn, Building2, Wrench, AlertTriangle, Sparkles } from 'lucide-react';
+import Logo from './Logo';
 import IOSInstallGuide from './ios/IOSInstallGuide';
 
 const Layout = ({ children }) => {
@@ -49,11 +50,11 @@ const Layout = ({ children }) => {
                 { name: 'Belleza', path: '/categoria/belleza-y-cuidado', icon: Sparkles },
                 { name: 'Servicios', path: '/categoria/servicios-generales', icon: Wrench },
                 ...(user?.role === 'admin' ? [{ name: 'Admin', path: '/admin', icon: Shield }] : []),
-              ].map((link) => {
+              ].map((link, idx) => {
                 const Icon = link.icon;
                 const isActive = location.pathname === link.path;
                 return (
-                  <Link key={link.path} to={link.path}
+                  <Link key={`nav-${idx}-${link.path}`} to={link.path}
                     className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-medium transition-all ${
                       isActive ? 'text-primary-600 bg-primary-50' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                     }`}
@@ -182,11 +183,11 @@ const Layout = ({ children }) => {
                 { name: '24-7', path: '/search?disponibilidad=24-7', icon: AlertTriangle },
                 { name: 'Belleza', path: '/categoria/belleza-y-cuidado', icon: Sparkles },
                 { name: 'Dashboard', path: isAuthenticated ? (isProfessional ? '/dashboard/professional' : '/dashboard/client') : '/login', icon: LayoutDashboard },
-              ].map((link) => {
+              ].map((link, idx) => {
                 const Icon = link.icon;
                 const isActive = location.pathname === link.path;
                 return (
-                  <Link key={link.path} to={link.path}
+                  <Link key={`mobile-nav-${idx}-${link.path}`} to={link.path}
                     onClick={() => setMobileMenuOpen(false)}
                     className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
                       isActive ? 'text-primary-600 bg-primary-50' : 'text-gray-700 hover:text-primary-600 hover:bg-gray-50'
