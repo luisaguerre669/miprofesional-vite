@@ -630,54 +630,48 @@ const Home = () => {
 
       {/* BELLEZA Y CUIDADO BANNER */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-10 md:mb-20">
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-pink-50 via-white to-purple-50 border border-pink-200 shadow-md">
-          <div className="absolute inset-0 opacity-[0.03] pointer-events-none"
-            style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, #ec4899 0%, transparent 50%), radial-gradient(circle at 80% 50%, #a855f7 0%, transparent 50%)' }}
-          />
-          <div className="relative z-10 p-6 md:p-10 lg:p-12">
-            <div className="flex flex-col lg:flex-row items-start gap-6 lg:gap-10">
-              <div className="lg:w-[40%]">
-                <div className="flex items-center gap-2 mb-3">
-                  <Sparkles size={20} className="text-pink-500" />
-                  <span className="text-pink-600 text-xs font-bold uppercase tracking-widest">Nueva Categoria</span>
-                </div>
-                <h2 className="text-2xl md:text-3xl font-black text-gray-900 mb-3">
-                  Belleza y <span className="text-pink-500">Cuidado Personal</span>
-                </h2>
-                <p className="text-sm text-gray-600 mb-4 leading-relaxed">
-                  Encontra los mejores profesionales de estetica, peluqueria, masajes y cuidado personal cerca de tu zona. Todos verificados y listos para ayudarte.
-                </p>
-                <Link to="/categoria/belleza-y-cuidado"
-                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-pink-500 text-white font-bold rounded-xl hover:bg-pink-600 transition-all shadow-lg shadow-pink-500/25 text-sm"
-                >
-                  Ver profesionales <ArrowRight size={16} />
-                </Link>
+        <Link to="/categoria/belleza-y-cuidado"
+          className="group relative block overflow-hidden rounded-2xl border border-gray-200 bg-white hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300"
+        >
+          <div className="aspect-[21/9] md:aspect-[3/1] overflow-hidden">
+            <img
+              src="https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=1200&q=80"
+              alt="Belleza y Cuidado Personal"
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+              loading="lazy"
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/60 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+          </div>
+          <div className="absolute inset-0 p-6 md:p-10 lg:p-14 flex flex-col justify-center">
+            <div className="max-w-xl">
+              <div className="flex items-center gap-2 mb-3">
+                <Sparkles size={20} className="text-pink-300" />
+                <span className="text-pink-300 text-xs font-bold uppercase tracking-widest">Nueva Categoria</span>
               </div>
-              <div className="flex-1 w-full lg:w-[60%]">
-                <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-3">Subcategorias destacadas</p>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                  {[
-                    { name: 'Peluqueria', emoji: '💇' },
-                    { name: 'Manicuria', emoji: '💅' },
-                    { name: 'Unas', emoji: '💅' },
-                    { name: 'Masajista', emoji: '💆' },
-                    { name: 'Cosmetologia', emoji: '✨' },
-                    { name: 'Barbero', emoji: '💈' },
-                    { name: 'Maquilladora', emoji: '💄' },
-                    { name: 'Depilacion', emoji: '🪒' },
-                  ].map((sub) => (
-                    <Link key={sub.name} to={`/categoria/belleza-y-cuidado?subcategoria=${encodeURIComponent(sub.name.toLowerCase())}`}
-                      className="flex items-center gap-2 px-3 py-2.5 bg-white/80 backdrop-blur-sm rounded-lg border border-pink-200/50 hover:border-pink-300 hover:bg-pink-50/80 transition-all group"
-                    >
-                      <span className="text-base">{sub.emoji}</span>
-                      <span className="text-xs font-medium text-gray-700 group-hover:text-pink-600 transition-colors">{sub.name}</span>
-                    </Link>
-                  ))}
-                </div>
-              </div>
+              <h2 className="text-2xl md:text-4xl font-black text-white mb-2">
+                Belleza y <span className="text-pink-300">Cuidado Personal</span>
+              </h2>
+              <p className="text-sm md:text-base text-white/60 mb-4 md:mb-6 max-w-md leading-relaxed">
+                Encontra los mejores profesionales de estetica, peluqueria, masajes y cuidado personal cerca de tu zona.
+              </p>
+              <span className="inline-flex items-center gap-2 px-5 py-2.5 bg-pink-500 text-white font-bold rounded-xl hover:bg-pink-600 transition-all shadow-lg shadow-pink-500/25 text-sm">
+                Ver profesionales <ArrowRight size={16} />
+              </span>
             </div>
           </div>
-        </div>
+          <div className="absolute bottom-0 right-0 p-4 md:p-6 hidden sm:block">
+            <div className="flex flex-wrap justify-end gap-1.5 max-w-md">
+              {['Peluqueria', 'Manicuria', 'Unas', 'Masajista', 'Cosmetologia', 'Barbero', 'Maquilladora', 'Depilacion'].map((sub) => (
+                <span key={sub}
+                  className="px-2.5 py-1 bg-white/10 backdrop-blur-sm rounded-md text-white/80 text-[11px] font-medium border border-white/10"
+                >
+                  {sub}
+                </span>
+              ))}
+            </div>
+          </div>
+        </Link>
       </section>
 
       {/* MAP + ADS SECTION */}
