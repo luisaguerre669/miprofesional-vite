@@ -16,6 +16,10 @@ const Login = () => {
   const [codeSent, setCodeSent] = useState(false);
 
   useEffect(() => {
+    fetch(`${import.meta.env.VITE_API_URL?.replace('/api', '') || 'https://miprofesional-backend.onrender.com'}/health`).catch(() => {});
+  }, []);
+
+  useEffect(() => {
     const token = searchParams.get('token');
     const verified = searchParams.get('verified');
     const errorParam = searchParams.get('error');
@@ -42,8 +46,8 @@ const Login = () => {
 
     const safetyTimer = setTimeout(() => {
       setLoading(false);
-      setError('Error de conexion. El servidor no responde. Intentá nuevamente.');
-    }, 20000);
+      setError('El servidor esta iniciando. Esperá unos segundos e intentá nuevamente.');
+    }, 65000);
 
     if (mode === 'email') {
       const result = await login(formData.email, formData.password);
