@@ -42,6 +42,9 @@ require("./models/Booking");
 // Register event bus listeners
 require("./services/emailService");
 
+// Subscription cron (auto-expire trials)
+const { startSubscriptionCron } = require("./services/subscriptionCron");
+
 const REQUIRED_ENV_VARS = ["JWT_SECRET", "JWT_REFRESH_SECRET", "NODE_ENV"];
 
 function validateEnvironment() {
@@ -249,6 +252,8 @@ class Server {
           nodeEnv: process.env.NODE_ENV || "development"
         });
       });
+
+      startSubscriptionCron();
       this.server.on("error", (error) => {
         logger.error("Server error:", error);
         process.exit(1);

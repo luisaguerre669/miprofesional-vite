@@ -270,6 +270,25 @@ const categoriesData = [
       { title: 'Seguridad personal', slug: 'seguridad-personal', description: 'Proteccion personal y escolta', image: 'https://images.unsplash.com/photo-1558002038-1055907df827?w=600&q=80', icon: 'Shield' },
       { title: 'Proteccion contra incendios', slug: 'proteccion-incendios', description: 'Instalacion y mantenimiento de sistemas contra incendios', image: 'https://images.unsplash.com/photo-1558002038-1055907df827?w=600&q=80', icon: 'Flame' },
     ]
+  },
+  {
+    title: 'Belleza y Cuidado',
+    slug: 'belleza-y-cuidado',
+    description: 'Estetica facial, corporal, manicura, pedicura, maquillaje profesional, peluqueria, barberia y depilacion. Los mejores profesionales de la belleza y el cuidado personal.',
+    image: 'https://images.unsplash.com/photo-1560750588-73207b1ef5b8?w=800&q=80',
+    icon: 'Sparkles',
+    metadata: { color: '#c026d3', featured: true },
+    sortOrder: 15,
+    subcategories: [
+      { title: 'Estetica facial', slug: 'estetica-facial', description: 'Tratamientos faciales, limpieza de cutis y rejuvenecimiento', image: 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=600&q=80', icon: 'Sparkles' },
+      { title: 'Estetica corporal', slug: 'estetica-corporal', description: 'Tratamientos corporales, reduccion y modelado', image: 'https://images.unsplash.com/photo-1540555700478-4be289fbec6d?w=600&q=80', icon: 'Sparkles' },
+      { title: 'Manicura', slug: 'manicura', description: 'Esmaltado semipermanente, acrilico, gel y disenos de unas', image: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=600&q=80', icon: 'Sparkles' },
+      { title: 'Pedicura', slug: 'pedicura', description: 'Cuidado de pies, esmaltado y tratamientos podologicos', image: 'https://images.unsplash.com/photo-1519014816548-bf5fe059798b?w=600&q=80', icon: 'Sparkles' },
+      { title: 'Maquillaje profesional', slug: 'maquillaje-profesional', description: 'Maquillaje social, artistico y profesional para todo tipo de eventos', image: 'https://images.unsplash.com/photo-1487412947147-5cebf100ffc2?w=600&q=80', icon: 'Sparkles' },
+      { title: 'Peluqueria', slug: 'peluqueria', description: 'Corte, tintura, peinados y tratamientos capilares', image: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?w=600&q=80', icon: 'Scissors' },
+      { title: 'Barberia', slug: 'barberia', description: 'Corte de cabello, afeitado clasico y arreglo de barba', image: 'https://images.unsplash.com/photo-1599351431202-1e0f0137899a?w=600&q=80', icon: 'Scissors' },
+      { title: 'Depilacion', slug: 'depilacion', description: 'Depilacion definitiva y tradicional con laser, cera y metodos avanzados', image: 'https://images.unsplash.com/photo-1515377905703-c4788e51af15?w=600&q=80', icon: 'Sparkles' },
+    ]
   }
 ];
 

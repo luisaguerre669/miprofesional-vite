@@ -238,6 +238,7 @@ async function activateSubscription(payment) {
     const professional = await Professional.findOne({ userId });
     if (professional) {
       professional.isActive = true;
+      professional.profileStatus = 'ACTIVE';
       professional.subscription = {
         ...(professional.subscription || {}),
         status: 'active',
