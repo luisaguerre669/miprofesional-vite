@@ -17,10 +17,8 @@ export default defineConfig({
       }
     },
     headers: {
-      '/downloads/*': {
-        'Content-Type': 'application/vnd.android.package-archive',
-        'Content-Disposition': 'attachment'
-      }
+      'X-Content-Type-Options': 'nosniff',
+      'X-Frame-Options': 'SAMEORIGIN'
     }
   },
   build: {
