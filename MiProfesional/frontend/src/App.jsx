@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { SocketProvider } from './context/SocketContext';
+import ErrorBoundary from './components/ErrorBoundary';
 
 // Layout
 import Layout from './components/Layout';
@@ -169,15 +170,17 @@ function AppRoutes() {
 
 function App() {
   return (
-    <HelmetProvider>
-      <BrowserRouter>
-        <AuthProvider>
-          <SocketProvider>
-            <AppRoutes />
-          </SocketProvider>
-        </AuthProvider>
-      </BrowserRouter>
-    </HelmetProvider>
+    <ErrorBoundary>
+      <HelmetProvider>
+        <BrowserRouter>
+          <AuthProvider>
+            <SocketProvider>
+              <AppRoutes />
+            </SocketProvider>
+          </AuthProvider>
+        </BrowserRouter>
+      </HelmetProvider>
+    </ErrorBoundary>
   );
 }
 
