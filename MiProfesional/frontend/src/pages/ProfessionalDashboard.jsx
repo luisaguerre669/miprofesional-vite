@@ -7,7 +7,7 @@ import {
   BarChart3, TrendingUp, Award, MessageSquare, Eye, Settings,
   Edit3, BadgeCheck, ChevronRight, Bell, Shield, Briefcase,
   Upload, Image as ImageIcon, Trash2, Plus, CreditCard, AlertTriangle,
-  Sparkles, ExternalLink, RefreshCw, FileText, ArrowRight
+  Sparkles, Gift, ExternalLink, RefreshCw, FileText, ArrowRight
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
 import DashboardStats from '../components/dashboard/StatsCards';
@@ -26,7 +26,6 @@ const ProfessionalDashboard = () => {
   const [uploadingLicense, setUploadingLicense] = useState(false);
   const [subscription, setSubscription] = useState(null);
   const [creatingPayment, setCreatingPayment] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState('monthly');
 
   useEffect(() => { fetchData(); }, []);
 
@@ -95,10 +94,10 @@ const ProfessionalDashboard = () => {
     setUploadingLicense(false);
   };
 
-  const handleCreatePayment = async (plan) => {
+  const handleCreatePayment = async () => {
     setCreatingPayment(true);
     try {
-      const r = await api.post('/subscription/create-preference', { plan });
+      const r = await api.post('/subscription/create-preapproval', { plan: 'monthly' });
       if (r.data.data.initPoint) {
         window.open(r.data.data.initPoint, '_blank');
       }
@@ -380,7 +379,7 @@ const ProfessionalDashboard = () => {
                           <div>
                             <h4 className="font-bold text-gray-900 text-sm">Suscripcion Activa</h4>
                             <p className="text-xs text-gray-500">
-                              Plan {subscription.plan === 'semester' ? 'Semestral' : 'Mensual'} - Renueva el {new Date(subscription.expiresAt).toLocaleDateString()}
+                              Plan Mensual Recurrente - Renovacion automatica mensual
                             </p>
                           </div>
                         </div>
@@ -395,71 +394,84 @@ const ProfessionalDashboard = () => {
                     </div>
                   )}
 
-                  {(subscription.status === 'inactive' || subscription.status === 'pending_payment') && (
+                  {(subscription.status === 'trial' && subscription.daysRemaining > 0) && (
                     <>
-                      <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-primary-600 via-primary-500 to-emerald-500 p-4 text-center mb-4">
-                        <div className="absolute inset-0 opacity-10">
-                          <div className="absolute -top-6 -right-6 w-20 h-20 bg-white rounded-full" />
-                          <div className="absolute -bottom-6 -left-6 w-16 h-16 bg-white rounded-full" />
+                      <div className="p-5 rounded-xl border bg-primary-50 border-primary-200">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                            <div className="w-10 h-10 rounded-xl bg-primary-500/20 flex items-center justify-center">
+                              <Gift size={20} className="text-primary-600" />
+                            </div>
+                            <div>
+                              <h4 className="font-bold text-gray-900 text-sm">30 días gratis</h4>
+                              <p className="text-xs text-gray-500">
+                                Disfrutá tu mes gratuito sin cargo. Tu perfil esta visible para clientes.
+                              </p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-xs text-primary-600 font-medium">{subscription.daysRemaining} dias restantes</p>
+                          </div>
                         </div>
-                        <div className="relative z-10">
-                          <p className="text-white text-xs font-semibold flex items-center justify-center gap-1.5">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                            Primer mes GRATIS para nuevos profesionales
-                          </p>
+                        <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                          <div className="h-full rounded-full bg-primary-500 transition-all"
+                            style={{ width: `${Math.min(100, (subscription.daysRemaining / 30) * 100)}%` }} />
                         </div>
                       </div>
+                      <div className="p-4 bg-white rounded-xl border border-gray-200">
+                        <div className="flex items-start gap-3">
+                          <RefreshCw size={18} className="text-primary-500 shrink-0 mt-0.5" />
+                          <div>
+                            <p className="text-sm font-semibold text-gray-900">Luego $5.000/mes</p>
+                            <p className="text-xs text-gray-600 mt-1">
+                              Al finalizar los 30 días gratis, se activara automaticamente tu suscripcion recurrente de <strong>$5.000 ARS/mes</strong>.
+                              Sin cargos anticipados. Podes cancelar cuando quieras.
+                            </p>
+                            <button onClick={handleCreatePayment}
+                              disabled={creatingPayment}
+                              className="mt-3 inline-flex items-center gap-1.5 px-4 py-2 bg-primary-600 text-white font-bold text-xs rounded-xl hover:bg-primary-700 transition-all disabled:opacity-50"
+                            >
+                              {creatingPayment ? 'Procesando...' : <>Activar suscripcion ahora <ArrowRight size={14} /></>}
+                            </button>
+                            <p className="text-[10px] text-gray-400 mt-1.5">Al activar ahora, el cobro comenzara al finalizar los 30 días gratis.</p>
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {(subscription.status === 'suspended') && (
+                    <>
+                      <div className="p-5 rounded-xl border bg-red-50 border-red-200">
+                        <div className="flex items-center gap-2 mb-3">
+                          <AlertTriangle size={18} className="text-red-500" />
+                          <h4 className="font-bold text-gray-900 text-sm">Periodo Gratuito Finalizado</h4>
+                        </div>
+                        <p className="text-xs text-red-700 mb-4">Tu perfil ya no es visible. Activa tu suscripcion de $5.000/mes para seguir apareciendo en el marketplace.</p>
+                      </div>
+                      <button onClick={handleCreatePayment}
+                        disabled={creatingPayment}
+                        className="w-full flex items-center justify-center gap-2 px-5 py-3 bg-primary-600 text-white font-bold rounded-xl hover:bg-primary-700 transition-all disabled:opacity-50 shadow-lg shadow-primary-500/25"
+                      >
+                        {creatingPayment ? 'Generando pago...' : <>Activar suscripcion $5.000/mes <ArrowRight size={16} /></>}
+                      </button>
+                    </>
+                  )}
+
+                  {(subscription.status === 'inactive' || subscription.status === 'pending_payment') && (
+                    <>
                       <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3">
                         <AlertTriangle size={18} className="text-amber-600 shrink-0 mt-0.5" />
                         <div>
                           <p className="text-sm font-semibold text-amber-800">Suscripcion requerida</p>
-                          <p className="text-xs text-amber-600">Elegi un plan para activar tu perfil y aparecer en los resultados de busqueda del marketplace.</p>
+                          <p className="text-xs text-amber-600">Activa tu suscripcion para aparecer en los resultados de busqueda del marketplace.</p>
                         </div>
                       </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <button onClick={() => setSelectedPlan('monthly')}
-                          className={`p-5 rounded-xl border-2 text-left transition-all ${
-                            selectedPlan === 'monthly' ? 'border-primary-500 bg-primary-50 shadow-md' : 'border-gray-200 hover:border-gray-300 bg-white'
-                          }`}
-                        >
-                          <div className="flex items-center justify-between mb-3">
-                            <h4 className="font-bold text-gray-900">Plan Mensual</h4>
-                            {selectedPlan === 'monthly' && <CheckCircle size={18} className="text-primary-600" />}
-                          </div>
-                          <p className="text-2xl font-black text-gray-900">$10.000</p>
-                          <p className="text-xs text-gray-500 mb-2">ARS / mes</p>
-                          <p className="text-xs text-gray-600">Publicá tu perfil profesional y recibí consultas de clientes.</p>
-                        </button>
-
-                        <button onClick={() => setSelectedPlan('semester')}
-                          className={`relative p-5 rounded-xl border-2 text-left transition-all ${
-                            selectedPlan === 'semester' ? 'border-emerald-500 bg-emerald-50 shadow-md' : 'border-gray-200 hover:border-gray-300 bg-white'
-                          }`}
-                        >
-                          <span className="absolute -top-2.5 right-3 bg-emerald-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">15% OFF</span>
-                          <div className="flex items-center justify-between mb-3">
-                            <h4 className="font-bold text-gray-900">Plan Semestral</h4>
-                            {selectedPlan === 'semester' && <CheckCircle size={18} className="text-emerald-600" />}
-                          </div>
-                          <p className="text-xs text-gray-400 line-through">$60.000</p>
-                          <p className="text-2xl font-black text-gray-900 -mt-0.5">$51.000</p>
-                          <p className="text-xs text-gray-500 mb-2">ARS / 6 meses</p>
-                          <p className="text-xs text-gray-600">Ahorrá 15% pagando 6 meses juntos.</p>
-                        </button>
-                      </div>
-
-                      <button onClick={() => handleCreatePayment(selectedPlan)}
+                      <button onClick={handleCreatePayment}
                         disabled={creatingPayment}
                         className="w-full flex items-center justify-center gap-2 px-5 py-3 bg-primary-600 text-white font-bold rounded-xl hover:bg-primary-700 transition-all disabled:opacity-50 shadow-lg shadow-primary-500/25"
                       >
-                        {creatingPayment ? (
-                          'Generando pago...'
-                        ) : selectedPlan === 'semester' ? (
-                          <>Suscribirme <ArrowRight size={16} /></>
-                        ) : (
-                          <>Probar gratis <ArrowRight size={16} /></>
-                        )}
+                        {creatingPayment ? 'Generando pago...' : <>Activar suscripcion $5.000/mes <ArrowRight size={16} /></>}
                       </button>
                     </>
                   )}
@@ -470,26 +482,20 @@ const ProfessionalDashboard = () => {
                         <AlertTriangle size={18} className="text-red-500" />
                         <h4 className="font-bold text-gray-900 text-sm">Suscripcion Vencida</h4>
                       </div>
-                      <p className="text-xs text-red-700 mb-4">Tu suscripcion ha expirado. Renova para seguir visible en el marketplace.</p>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
-                        <button onClick={() => { setSelectedPlan('monthly'); handleCreatePayment('monthly'); }}
-                          disabled={creatingPayment}
-                          className="flex-1 px-4 py-2.5 bg-primary-600 text-white font-bold rounded-xl hover:bg-primary-700 text-sm disabled:opacity-50"
-                        >Renovar $10.000 ARS / mes</button>
-                        <button onClick={() => { setSelectedPlan('semester'); handleCreatePayment('semester'); }}
-                          disabled={creatingPayment}
-                          className="flex-1 px-4 py-2.5 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 text-sm disabled:opacity-50"
-                        >Renovar $51.000 ARS / 6 meses</button>
-                      </div>
+                      <p className="text-xs text-red-700 mb-4">Tu suscripcion ha expirado. Reactivala para seguir visible en el marketplace.</p>
+                      <button onClick={handleCreatePayment}
+                        disabled={creatingPayment}
+                        className="w-full px-4 py-2.5 bg-primary-600 text-white font-bold rounded-xl hover:bg-primary-700 text-sm disabled:opacity-50"
+                      >Renovar $5.000 ARS / mes</button>
                     </div>
                   )}
 
                   <div className="p-5 bg-gray-50 rounded-xl border border-gray-200">
-                    <h4 className="font-bold text-gray-900 text-sm mb-2">Que incluye la suscripcion</h4>
-                    <p className="text-xs text-gray-500">Acceso completo a la plataforma: tu perfil aparece en los resultados de busqueda del marketplace y los clientes pueden contactarte directamente.</p>
+                    <h4 className="font-bold text-gray-900 text-sm mb-2">Que incluye tu suscripcion</h4>
+                    <p className="text-xs text-gray-500">30 días gratis, luego $5.000/mes. Acceso completo a la plataforma: tu perfil aparece en los resultados de busqueda del marketplace y los clientes pueden contactarte directamente. Cancelas cuando quieras.</p>
                   </div>
 
-                  {subscription.isVisible === false && (subscription.status === 'inactive' || subscription.status === 'pending_payment') && (
+                  {subscription.isVisible === false && (
                     <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3">
                       <AlertTriangle size={18} className="text-amber-600 shrink-0 mt-0.5" />
                       <div>

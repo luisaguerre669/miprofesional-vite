@@ -32,7 +32,6 @@ const Register = () => {
   const [phoneStep, setPhoneStep] = useState('none');
   const [registered, setRegistered] = useState(false);
   const [customProfession, setCustomProfession] = useState('');
-  const [selectedPlan, setSelectedPlan] = useState('monthly');
 
   const isProfessional = formData.role === 'professional';
   const licenseRequired = isProfessional && LICENSED_PROFESSIONS.includes(formData.profession);
@@ -84,15 +83,7 @@ const Register = () => {
           }).catch(() => {});
         }
         if (isProfessional) {
-          try {
-            const prefRes = await api.post('/subscription/create-preference', { plan: selectedPlan });
-            const initPoint = prefRes.data?.data?.initPoint || prefRes.data?.initPoint;
-            if (initPoint) {
-              window.location.href = initPoint;
-              return;
-            }
-          } catch {}
-          navigate('/subscriptions');
+          navigate('/dashboard?tab=suscripcion');
         } else {
           setRegistered(true);
         }
@@ -445,35 +436,31 @@ const Register = () => {
                         Despues del pago vas a poder completar tu perfil.
                       </p>
                     </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <button type="button" onClick={() => setSelectedPlan('monthly')}
-                        className={`p-3 rounded-xl border text-left transition-all ${
-                          selectedPlan === 'monthly' ? 'border-primary-500 bg-primary-50 ring-1 ring-primary-500' : 'border-gray-200 hover:border-gray-300'
-                        }`}>
-                        <p className="text-sm font-semibold text-gray-900">Plan Mensual</p>
-                        <p className="text-lg font-bold text-primary-600">$10.000</p>
-                        <p className="text-xs text-gray-500">/ mes — Probar gratis</p>
-                      </button>
-                      <button type="button" onClick={() => setSelectedPlan('semester')}
-                        className={`relative p-3 rounded-xl border text-left transition-all ${
-                          selectedPlan === 'semester' ? 'border-emerald-500 bg-emerald-50 ring-1 ring-emerald-500' : 'border-gray-200 hover:border-gray-300'
-                        }`}>
-                        <span className="absolute -top-2 -right-2 bg-emerald-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">15% OFF</span>
-                        <p className="text-sm font-semibold text-gray-900">Plan Semestral</p>
-                        <p className="text-xs text-gray-400 line-through">$60.000</p>
-                        <p className="text-lg font-bold text-emerald-600 -mt-0.5">$51.000</p>
-                        <p className="text-xs text-gray-500">/ 6 meses — Suscribirme</p>
-                      </button>
+                    <div className="p-4 rounded-xl border-2 border-primary-100 bg-primary-50/50">
+                      <div className="flex items-center justify-between mb-2">
+                        <div>
+                          <p className="text-sm font-semibold text-gray-900">Plan Mensual</p>
+                          <p className="text-xs text-gray-500">30 días gratis · Luego $5.000/mes</p>
+                        </div>
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-primary-100 text-primary-700 text-[10px] font-bold rounded-full">
+                          Recurrente
+                        </span>
+                      </div>
+                      <div className="flex items-baseline gap-1">
+                        <p className="text-lg font-bold text-gray-900">$5.000</p>
+                        <p className="text-xs text-gray-400">/ mes</p>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-2">Primer mes completamente gratis. Suscripcion recurrente automatica. Cancelas cuando quieras.</p>
                     </div>
                   </div>
                 )}
 
                 <div className="p-4 bg-blue-50 rounded-lg border border-blue-100 flex items-start gap-3">
                   <Info size={18} className="text-blue-500 shrink-0 mt-0.5" />
-                  <p className="text-xs text-blue-800">
-                    {isProfessional
-                      ? 'Despues del registro seras redirigido a Mercado Pago para completar el pago. Una vez aprobado, tu perfil se activara automaticamente y podras completar tus datos.'
-                      : 'Despues del registro, recibiras un correo de verificacion. Tu cuenta no sera visible hasta que verifiques tu correo.'}
+                    <p className="text-xs text-blue-800">
+                      {isProfessional
+                        ? 'Despues del registro disfrutaras de 30 dias gratis sin cargo. Al finalizar, se activara automaticamente la suscripcion recurrente. Sin compromiso, cancelas cuando quieras.'
+                        : 'Despues del registro, recibiras un correo de verificacion. Tu cuenta no sera visible hasta que verifiques tu correo.'}
                     {isProfessional && licenseRequired && ' Ademas, tu matricula debe ser verificada por nuestro equipo.'}
                   </p>
                 </div>

@@ -7,7 +7,7 @@ import L from 'leaflet';
 import api from '../lib/axios';
 import { getAccurateLocation } from '../utils/geolocation';
 import {
-  Search, ArrowRight, Star, MapPin,
+  Search, ArrowRight, Star, MapPin, Sparkles,
   ChevronLeft, ChevronRight, Shield, Clock,
   UserPlus, Download, Plus, Smartphone, AlertTriangle
 } from 'lucide-react';
@@ -628,6 +628,58 @@ const Home = () => {
         )}
       </section>
 
+      {/* BELLEZA Y CUIDADO BANNER */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-10 md:mb-20">
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-pink-50 via-white to-purple-50 border border-pink-200 shadow-md">
+          <div className="absolute inset-0 opacity-[0.03] pointer-events-none"
+            style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, #ec4899 0%, transparent 50%), radial-gradient(circle at 80% 50%, #a855f7 0%, transparent 50%)' }}
+          />
+          <div className="relative z-10 p-6 md:p-10 lg:p-12">
+            <div className="flex flex-col lg:flex-row items-start gap-6 lg:gap-10">
+              <div className="lg:w-[40%]">
+                <div className="flex items-center gap-2 mb-3">
+                  <Sparkles size={20} className="text-pink-500" />
+                  <span className="text-pink-600 text-xs font-bold uppercase tracking-widest">Nueva Categoria</span>
+                </div>
+                <h2 className="text-2xl md:text-3xl font-black text-gray-900 mb-3">
+                  Belleza y <span className="text-pink-500">Cuidado Personal</span>
+                </h2>
+                <p className="text-sm text-gray-600 mb-4 leading-relaxed">
+                  Encontra los mejores profesionales de estetica, peluqueria, masajes y cuidado personal cerca de tu zona. Todos verificados y listos para ayudarte.
+                </p>
+                <Link to="/categoria/belleza-y-cuidado"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-pink-500 text-white font-bold rounded-xl hover:bg-pink-600 transition-all shadow-lg shadow-pink-500/25 text-sm"
+                >
+                  Ver profesionales <ArrowRight size={16} />
+                </Link>
+              </div>
+              <div className="flex-1 w-full lg:w-[60%]">
+                <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-3">Subcategorias destacadas</p>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {[
+                    { name: 'Peluquero/a', emoji: '💇' },
+                    { name: 'Manicura / Unias', emoji: '💅' },
+                    { name: 'Masajista', emoji: '💆' },
+                    { name: 'Cosmetologo/a', emoji: '✨' },
+                    { name: 'Barbero', emoji: '💈' },
+                    { name: 'Maquillador/a', emoji: '🎨' },
+                    { name: 'Depilacion', emoji: '🪒' },
+                    { name: 'Personal Trainer', emoji: '💪' },
+                  ].map((sub) => (
+                    <Link key={sub.name} to={`/categoria/belleza-y-cuidado?subcategoria=${encodeURIComponent(sub.name.toLowerCase())}`}
+                      className="flex items-center gap-2 px-3 py-2.5 bg-white/80 backdrop-blur-sm rounded-lg border border-pink-200/50 hover:border-pink-300 hover:bg-pink-50/80 transition-all group"
+                    >
+                      <span className="text-base">{sub.emoji}</span>
+                      <span className="text-xs font-medium text-gray-700 group-hover:text-pink-600 transition-colors">{sub.name}</span>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* MAP + ADS SECTION */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-10 md:mb-20">
         <div className="mb-6">
@@ -697,25 +749,19 @@ const Home = () => {
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-6 md:mb-10">
             <h2 className="text-xl md:text-2xl font-bold text-gray-900">Planes para profesionales</h2>
-            <p className="text-gray-500 mt-1 text-xs md:text-sm">Elegi el plan que mejor se adapte a tus necesidades</p>
+            <p className="text-gray-500 mt-1 text-xs md:text-sm">Publica tu perfil y conecta con clientes</p>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-lg mx-auto">
-            <div className="bg-white rounded-2xl border border-gray-200 p-4 md:p-5 text-center">
+          <div className="max-w-sm mx-auto">
+            <div className="bg-white rounded-2xl border-2 border-primary-200 p-5 md:p-6 text-center">
+              <span className="inline-flex items-center gap-1 px-3 py-1 bg-primary-100 text-primary-700 text-[10px] font-bold rounded-full mb-2">
+                30 días gratis
+              </span>
               <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider mb-1">Plan Mensual</p>
-              <p className="text-2xl md:text-3xl font-black text-gray-900">$10.000</p>
-              <p className="text-[11px] text-gray-500 mb-3">por mes</p>
-              <Link to="/subscription" className="block w-full px-4 py-2 bg-primary-500 text-white font-bold text-xs rounded-xl hover:bg-primary-600 transition-all shadow-sm">
-                Elegir plan
-              </Link>
-            </div>
-            <div className="bg-white rounded-2xl border-2 border-primary-200 p-4 md:p-5 text-center relative">
-              <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-primary-500 text-white text-[10px] font-bold px-3 py-0.5 rounded-full">15% OFF</span>
-              <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider mb-1">Plan Semestral</p>
-              <p className="text-2xl md:text-3xl font-black text-gray-900">$51.000</p>
-              <p className="text-[11px] text-gray-400 line-through mb-1">$60.000</p>
-              <p className="text-[11px] text-gray-500 mb-3">6 meses</p>
+              <p className="text-3xl md:text-4xl font-black text-gray-900 mb-1">$5.000</p>
+              <p className="text-[11px] text-gray-400 mb-1 line-through">$5.000</p>
+              <p className="text-[11px] text-gray-500 mb-3">por mes · Recurrencia automatica · Cancelas cuando quieras</p>
               <Link to="/subscription" className="block w-full px-4 py-2 bg-primary-600 text-white font-bold text-xs rounded-xl hover:bg-primary-700 transition-all shadow-sm">
-                Elegir plan
+                Activar suscripcion
               </Link>
             </div>
           </div>

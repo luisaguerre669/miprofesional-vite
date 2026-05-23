@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react';
-import { Loader2, CheckCircle, XCircle, Sparkles, Zap, Gift, ArrowRight } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, Gift, ArrowRight, Sparkles } from 'lucide-react';
 import api from '../lib/axios';
 import { useAuth } from '../context/AuthContext';
 
 export default function SubscriptionPage() {
   const { user } = useAuth();
-  const [plans, setPlans] = useState([]);
-  const [currentPlan, setCurrentPlan] = useState(null);
+  const [plan, setPlan] = useState(null);
+  const [subscription, setSubscription] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [actionLoading, setActionLoading] = useState(null);
+  const [actionLoading, setActionLoading] = useState(false);
   const [message, setMessage] = useState(null);
 
   useEffect(() => {
@@ -17,236 +17,189 @@ export default function SubscriptionPage() {
       api.get('/subscription/status'),
     ])
       .then(([plansRes, subRes]) => {
-        setPlans(plansRes.data?.data ?? plansRes.data ?? []);
-        setCurrentPlan(subRes.data?.data ?? subRes.data ?? null);
+        setPlan(Array.isArray(plansRes.data?.data) ? plansRes.data.data[0] : null);
+        setSubscription(subRes.data?.data ?? subRes.data ?? null);
       })
-      .catch(() => setMessage({ type: 'error', text: 'Error al cargar los planes.' }))
+      .catch(() => setMessage({ type: 'error', text: 'Error al cargar los datos.' }))
       .finally(() => setLoading(false));
   }, []);
 
-  const handleUpgrade = async (planId) => {
-    setActionLoading(planId);
+  const handleUpgrade = async () => {
+    setActionLoading(true);
     setMessage(null);
     try {
-      const res = await api.post('/subscription/create-preference', { plan: planId });
+      const res = await api.post('/subscription/create-preapproval', { plan: 'monthly' });
       const initPoint = res.data?.data?.initPoint || res.data?.initPoint;
       if (initPoint) {
         window.location.href = initPoint;
       } else {
-        setMessage({ type: 'error', text: 'Error al redirigir al pago.' });
+        setMessage({ type: 'error', text: 'Error al redirigir a la autorizacion.' });
       }
     } catch {
-      setMessage({ type: 'error', text: 'Error al crear la preferencia de pago.' });
+      setMessage({ type: 'error', text: 'Error al procesar la solicitud.' });
     } finally {
       setActionLoading(null);
     }
   };
 
   const handleCancel = async () => {
-    setActionLoading('cancel');
+    setActionLoading(true);
     setMessage(null);
     try {
       await api.post('/subscription/cancel');
-      setCurrentPlan((prev) => ({ ...prev, status: 'inactive', plan: 'free' }));
+      setSubscription((prev) => ({ ...prev, status: 'inactive' }));
       setMessage({ type: 'success', text: 'Suscripción cancelada.' });
     } catch {
       setMessage({ type: 'error', text: 'Error al cancelar la suscripción.' });
     } finally {
-      setActionLoading(null);
+      setActionLoading(false);
     }
   };
 
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 py-10 px-4">
-        <div className="max-w-4xl mx-auto space-y-6">
-          <div className="h-8 w-72 bg-gray-200 rounded animate-pulse mx-auto" />
-          <div className="grid md:grid-cols-2 gap-6">
-            {[1, 2].map((i) => (
-              <div key={i} className="bg-white rounded-xl shadow-sm p-6 space-y-4">
-                <div className="h-6 w-24 bg-gray-200 rounded animate-pulse" />
-                <div className="h-8 w-28 bg-gray-200 rounded animate-pulse" />
-                <div className="h-4 w-48 bg-gray-200 rounded animate-pulse" />
-                <div className="h-10 w-full bg-gray-200 rounded-lg animate-pulse" />
-              </div>
-            ))}
+        <div className="max-w-lg mx-auto space-y-6">
+          <div className="h-8 w-64 bg-gray-200 rounded animate-pulse mx-auto" />
+          <div className="bg-white rounded-xl shadow-sm p-6 space-y-4">
+            <div className="h-6 w-32 bg-gray-200 rounded animate-pulse" />
+            <div className="h-8 w-28 bg-gray-200 rounded animate-pulse" />
+            <div className="h-4 w-48 bg-gray-200 rounded animate-pulse" />
+            <div className="h-10 w-full bg-gray-200 rounded-lg animate-pulse" />
           </div>
         </div>
       </div>
     );
   }
 
-  const currentStatus = currentPlan?.status ?? 'inactive';
-  const currentPlanId = currentPlan?.plan?.toLowerCase() ?? null;
+  const currentStatus = subscription?.status ?? 'inactive';
+  const isActive = currentStatus === 'active';
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white py-10 px-4">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-lg mx-auto">
 
-        {/* FREE MONTH BANNER */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-primary-600 via-primary-500 to-emerald-500 shadow-xl shadow-primary-500/25 mb-10 p-6 sm:p-8 text-center">
+        {/* HERO BANNER */}
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-primary-600 via-primary-500 to-emerald-500 shadow-xl shadow-primary-500/25 mb-8 p-6 sm:p-8 text-center">
           <div className="absolute inset-0 opacity-10">
             <div className="absolute -top-10 -right-10 w-40 h-40 bg-white rounded-full" />
             <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-white rounded-full" />
           </div>
           <div className="relative z-10">
-            <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-full px-4 py-1.5 text-white text-xs font-semibold mb-3">
-              <Gift size={14} /> Oferta por tiempo limitado
-            </div>
             <h2 className="text-2xl sm:text-3xl font-black text-white mb-2">
-              Primer mes GRATIS para nuevos profesionales
+              30 días gratis
             </h2>
-            <p className="text-primary-100 text-sm sm:text-base max-w-lg mx-auto">
-              Publica tu perfil, recibí consultas de clientes y hace crecer tu servicio sin riesgo.
+            <p className="text-primary-100 text-base sm:text-lg font-semibold">
+              Luego $5.000/mes
+            </p>
+            <p className="text-primary-100/80 text-sm mt-2 max-w-sm mx-auto">
+              Publica tu perfil, recibí consultas de clientes. Cancelas cuando quieras.
             </p>
           </div>
         </div>
 
+        {/* STATUS ALERTS */}
+        {currentStatus === 'trial' && subscription?.daysRemaining > 0 && (
+          <div className="mb-6 flex items-start gap-3 px-4 py-4 rounded-lg bg-primary-50 border border-primary-200">
+            <Gift size={20} className="text-primary-600 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-semibold text-primary-800">30 días gratis en curso</p>
+              <p className="text-xs text-primary-700 mt-1">
+                Te quedan <strong>{subscription.daysRemaining} dias</strong> gratuitos. Sin cargos ni compromiso.
+                Al finalizar, se activara automaticamente tu suscripcion de <strong>$5.000/mes</strong>.
+              </p>
+            </div>
+          </div>
+        )}
+        {currentStatus === 'suspended' && (
+          <div className="mb-6 flex items-start gap-3 px-4 py-4 rounded-lg bg-red-50 border border-red-200">
+            <XCircle size={20} className="text-red-600 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-semibold text-red-800">Periodo gratuito finalizado</p>
+              <p className="text-xs text-red-700 mt-1">
+                Tu perfil ya no es visible. Activa tu suscripcion de $5.000/mes para volver a aparecer en el marketplace.
+              </p>
+            </div>
+          </div>
+        )}
         {currentStatus === 'pending_payment' && (
-          <div className="max-w-xl mx-auto mb-6 flex items-start gap-3 px-4 py-4 rounded-lg bg-amber-50 border border-amber-200">
-            <Zap size={20} className="text-amber-600 shrink-0 mt-0.5" />
+          <div className="mb-6 flex items-start gap-3 px-4 py-4 rounded-lg bg-amber-50 border border-amber-200">
+            <XCircle size={20} className="text-amber-600 shrink-0 mt-0.5" />
             <div>
               <p className="text-sm font-semibold text-amber-800">Suscripcion pendiente</p>
               <p className="text-xs text-amber-700 mt-1">
-                Elegi un plan y completa el pago para activar tu perfil profesional en el marketplace.
-                Sin una suscripcion activa no apareceras en los resultados de busqueda.
+                Completa la activacion para que tu perfil sea visible en el marketplace.
               </p>
             </div>
           </div>
         )}
 
         {message && (
-          <div
-            className={`max-w-xl mx-auto mb-6 flex items-center gap-2 px-4 py-3 rounded-lg text-sm font-medium ${
-              message.type === 'success'
-                ? 'bg-green-50 text-green-700 border border-green-200'
-                : 'bg-red-50 text-red-700 border border-red-200'
-            }`}
-          >
+          <div className={`mb-6 flex items-center gap-2 px-4 py-3 rounded-lg text-sm font-medium ${
+            message.type === 'success'
+              ? 'bg-green-50 text-green-700 border border-green-200'
+              : 'bg-red-50 text-red-700 border border-red-200'
+          }`}>
             {message.type === 'success' ? <CheckCircle size={18} /> : <XCircle size={18} />}
             {message.text}
           </div>
         )}
 
-        {/* PLANS GRID */}
-        <div className="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto">
-          {plans.map((plan) => {
-            const isCurrent = currentPlanId === plan.id && currentStatus === 'active';
-            const isLoading = actionLoading === plan.id;
-            const isSemester = plan.id === 'semester';
+        {/* SINGLE PLAN CARD */}
+        {plan && (
+          <div className={`relative bg-white rounded-2xl shadow-sm border-2 ${
+            isActive ? 'border-primary-500 shadow-lg shadow-primary-500/10' : 'border-gray-200 shadow-sm'
+          }`}>
+            {isActive && (
+              <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary-600 text-white text-xs font-semibold px-3 py-1 rounded-full z-10">
+                Plan Activo
+              </span>
+            )}
 
-            return (
-              <div
-                key={plan.id}
-                className={`relative bg-white rounded-2xl shadow-sm border-2 flex flex-col transition-all ${
-                  isCurrent
-                    ? 'border-primary-500 shadow-lg shadow-primary-500/10'
-                    : isSemester
-                      ? 'border-emerald-200 hover:border-emerald-300 shadow-lg'
-                      : 'border-gray-200 hover:border-gray-300 shadow-sm'
+            <div className="p-6 sm:p-8 text-center">
+              <span className="inline-flex items-center gap-1 text-xs font-semibold text-primary-600 bg-primary-50 px-3 py-1 rounded-full mb-4">
+                <Sparkles size={12} /> Suscripcion Mensual
+              </span>
+
+              <div className="mb-2">
+                <p className="text-sm text-gray-400 mb-1 line-through">$5.000</p>
+                <div className="flex items-baseline justify-center gap-1">
+                  <span className="text-5xl font-black text-gray-900">$0</span>
+                  <span className="text-gray-500 text-sm">ARS</span>
+                </div>
+                <p className="text-sm font-semibold text-primary-600 mt-0.5">30 días gratis</p>
+                <p className="text-xs text-gray-400 mt-1">Luego $5.000/mes · Recurrencia automatica</p>
+              </div>
+
+              <ul className="text-xs text-left text-gray-600 space-y-2 my-6 bg-gray-50 rounded-xl p-4">
+                {['Primer mes completamente gratis, sin cargos', 'Suscripcion recurrente automatica', 'Cancelacion sin cargo en cualquier momento', 'Perfil visible en el marketplace', 'Sin compromiso mensual'].map((b, i) => (
+                  <li key={i} className="flex items-start gap-2">
+                    <CheckCircle size={14} className="text-green-500 shrink-0 mt-0.5" />
+                    <span>{b}</span>
+                  </li>
+                ))}
+              </ul>
+
+              <button
+                onClick={isActive ? handleCancel : handleUpgrade}
+                disabled={actionLoading}
+                className={`w-full py-3 rounded-xl text-sm font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${
+                  isActive
+                    ? 'bg-red-600 text-white hover:bg-red-700'
+                    : 'bg-primary-600 text-white hover:bg-primary-700 shadow-lg shadow-primary-500/25'
                 }`}
               >
-                {/* Badge */}
-                {plan.badge && (
-                  <div className="absolute -top-3 right-4 z-10">
-                    <span className="inline-flex items-center gap-1 bg-emerald-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">
-                      <Sparkles size={12} /> {plan.badge}
-                    </span>
-                  </div>
-                )}
-
-                {isCurrent && (
-                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary-600 text-white text-xs font-semibold px-3 py-1 rounded-full z-10">
-                    Plan Actual
+                {actionLoading ? (
+                  <span className="flex items-center gap-2">
+                    <Loader2 size={16} className="animate-spin" /> Procesando...
                   </span>
+                ) : isActive ? (
+                  'Cancelar Suscripcion'
+                ) : (
+                  <>Activar suscripcion <ArrowRight size={16} /></>
                 )}
-
-                <div className="p-6 sm:p-8 flex flex-col flex-1">
-                  {/* Header */}
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-bold text-gray-900">{plan.name}</h3>
-                    {isSemester && (
-                      <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
-                        Mejor valor
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Price */}
-                  <div className="mb-1">
-                    {plan.originalPrice && (
-                      <p className="text-sm text-gray-400 line-through mb-0.5">
-                        ${plan.originalPrice.toLocaleString()}
-                      </p>
-                    )}
-                    <div className="flex items-baseline gap-1">
-                      <span className="text-4xl font-black text-gray-900">
-                        ${plan.price.toLocaleString()}
-                      </span>
-                      <span className="text-gray-500 text-sm">ARS</span>
-                    </div>
-                    <p className="text-xs text-gray-400 mt-0.5">
-                      {plan.id === 'monthly' ? '/ mes' : '/ 6 meses'}
-                    </p>
-                  </div>
-
-                  {plan.originalPrice && (
-                    <p className="text-xs text-emerald-600 font-medium mt-1 flex items-center gap-1">
-                      <CheckCircle size={12} />
-                      Ahorro del {plan.discount}% — ${(plan.originalPrice - plan.price).toLocaleString()} ARS de descuento
-                    </p>
-                  )}
-
-                  {/* Description */}
-                  <p className="text-sm text-gray-600 mt-4 mb-6 flex-1">
-                    {plan.description}
-                  </p>
-
-                  {/* CTA */}
-                  <button
-                    onClick={() => handleUpgrade(plan.id)}
-                    disabled={isCurrent || isLoading}
-                    className={`w-full py-3 rounded-xl text-sm font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${
-                      isCurrent
-                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                        : isSemester
-                          ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-lg shadow-emerald-500/25'
-                          : 'bg-primary-600 text-white hover:bg-primary-700 shadow-lg shadow-primary-500/25'
-                    }`}
-                  >
-                    {isLoading ? (
-                      <span className="flex items-center justify-center gap-2">
-                        <Loader2 size={16} className="animate-spin" /> Procesando...
-                      </span>
-                    ) : isCurrent ? (
-                      'Plan Actual'
-                    ) : (
-                      <>
-                        {plan.cta || 'Suscribirme'} <ArrowRight size={16} />
-                      </>
-                    )}
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {currentStatus === 'active' && (
-          <div className="flex justify-center mt-8">
-            <button
-              onClick={handleCancel}
-              disabled={actionLoading === 'cancel'}
-              className="px-6 py-2.5 rounded-lg text-sm font-semibold border border-red-300 text-red-600 bg-white hover:bg-red-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {actionLoading === 'cancel' ? (
-                <span className="flex items-center gap-2">
-                  <Loader2 size={16} className="animate-spin" /> Cancelando...
-                </span>
-              ) : (
-                'Cancelar Suscripción'
-              )}
-            </button>
+              </button>
+            </div>
           </div>
         )}
       </div>
