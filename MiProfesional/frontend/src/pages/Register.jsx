@@ -160,13 +160,20 @@ const Register = () => {
     ]},
     { group: 'Belleza y Cuidado', items: [
       { value: 'peluquero', label: 'Peluquero/a' },
-      { value: 'manicura', label: 'Manicura / Unias' },
+      { value: 'manicuria', label: 'Manicuria' },
+      { value: 'unas', label: 'Unas / Esculturalas' },
       { value: 'masajista', label: 'Masajista' },
       { value: 'cosmetologo', label: 'Cosmetologo/a' },
       { value: 'barbero', label: 'Barbero' },
       { value: 'maquillador', label: 'Maquillador/a' },
       { value: 'depilacion', label: 'Depilacion' },
+    ]},
+    { group: 'Bienestar y Deporte', items: [
       { value: 'personal-trainer', label: 'Personal Trainer / Instructor' },
+      { value: 'yoga', label: 'Profesor de Yoga' },
+      { value: 'pilates', label: 'Instructor de Pilates' },
+      { value: 'entrenador', label: 'Entrenador Funcional' },
+      { value: 'coach', label: 'Coach Personal' },
     ]},
     { group: 'Gastronomia', items: [
       { value: 'chef', label: 'Chef / Cocinero/a' },

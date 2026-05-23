@@ -657,14 +657,14 @@ const Home = () => {
                 <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider mb-3">Subcategorias destacadas</p>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   {[
-                    { name: 'Peluquero/a', emoji: '💇' },
-                    { name: 'Manicura / Unias', emoji: '💅' },
+                    { name: 'Peluqueria', emoji: '💇' },
+                    { name: 'Manicuria', emoji: '💅' },
+                    { name: 'Unas', emoji: '💅' },
                     { name: 'Masajista', emoji: '💆' },
-                    { name: 'Cosmetologo/a', emoji: '✨' },
+                    { name: 'Cosmetologia', emoji: '✨' },
                     { name: 'Barbero', emoji: '💈' },
-                    { name: 'Maquillador/a', emoji: '🎨' },
+                    { name: 'Maquilladora', emoji: '💄' },
                     { name: 'Depilacion', emoji: '🪒' },
-                    { name: 'Personal Trainer', emoji: '💪' },
                   ].map((sub) => (
                     <Link key={sub.name} to={`/categoria/belleza-y-cuidado?subcategoria=${encodeURIComponent(sub.name.toLowerCase())}`}
                       className="flex items-center gap-2 px-3 py-2.5 bg-white/80 backdrop-blur-sm rounded-lg border border-pink-200/50 hover:border-pink-300 hover:bg-pink-50/80 transition-all group"
