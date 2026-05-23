@@ -275,7 +275,7 @@ const categoriesData = [
     title: 'Belleza y Cuidado',
     slug: 'belleza-y-cuidado',
     description: 'Peluqueria, manicuria, unas, masajes, cosmetologia, barberia, maquillaje profesional y depilacion. Los mejores profesionales de la belleza y el cuidado personal.',
-    image: 'https://images.unsplash.com/photo-1512290923902-8a9f81dc236c?w=800&q=80',
+    image: 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=800&q=80',
     icon: 'Sparkles',
     metadata: { color: '#c026d3', featured: true },
     sortOrder: 15,
