@@ -362,6 +362,7 @@ router.post("/reprocess-webhook/:userId", async (req, res) => {
     const professional = await Professional.findOne({ userId: user._id });
     if (professional) {
       professional.isActive = true;
+      professional.profileStatus = 'ACTIVE';
       professional.subscription = {
         ...(professional.subscription || {}),
         status: "active",

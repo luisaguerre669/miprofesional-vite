@@ -1,21 +1,15 @@
 const express = require("express");
-const { body, validationResult } = require("express-validator");
 const User = require("../models/User");
 const Professional = require("../models/Professional");
 const Payment = require("../models/Payment");
 const { authenticate } = require("../middleware/auth");
 const logger = require("../utils/logger");
 const eventBus = require("../services/eventBus");
-const { MercadoPagoConfig, Preference, Payment: MpPayment } = require("mercadopago");
+const { MercadoPagoConfig, PreApproval } = require("mercadopago");
 
 const FRONTEND_URL = process.env.FRONTEND_URL || "https://www.miprofesional.online";
-
 const router = express.Router();
-
-const MONTHLY_PRICE = 10000;
-const SEMESTER_MONTHS = 6;
-const SEMESTER_DISCOUNT = 0.15;
-const SEMESTER_PRICE = Math.round(MONTHLY_PRICE * SEMESTER_MONTHS * (1 - SEMESTER_DISCOUNT));
+const MONTHLY_PRICE = 5000;
 
 router.get("/plans", (req, res) => {
   res.json({
@@ -25,22 +19,12 @@ router.get("/plans", (req, res) => {
         id: "monthly",
         name: "Plan Mensual",
         price: MONTHLY_PRICE,
-        description: "Publicá tu perfil profesional y recibí consultas de clientes.",
-        cta: "Probar gratis",
+        description: "30 días gratis, luego $5.000/mes. Suscripcion recurrente, cancelá cuando quieras.",
+        cta: "Activar suscripcion",
         duration: "1 mes",
-        benefits: ["Acceso completo a la plataforma"],
-      },
-      {
-        id: "semester",
-        name: "Plan Semestral",
-        price: SEMESTER_PRICE,
-        originalPrice: MONTHLY_PRICE * SEMESTER_MONTHS,
-        discount: 15,
-        badge: "15% OFF",
-        description: "Ahorrá 15% pagando 6 meses juntos.",
-        cta: "Suscribirme",
-        duration: "6 meses",
-        benefits: ["Acceso completo a la plataforma", "Ahorro del 15%"],
+        recurring: true,
+        trialDays: 30,
+        benefits: ["Primer mes completamente gratis", "Suscripcion recurrente automatica", "Cancelacion sin cargo en cualquier momento", "Perfil visible en el marketplace"],
       },
     ]
   });
@@ -58,19 +42,40 @@ router.get("/status", authenticate, async (req, res) => {
     let expiresAt = membership.expiresAt;
     let daysRemaining = 0;
     let plan = "";
+    let isVisible = false;
 
-    if (membership.type === "premium" && expiresAt) {
-      if (now < new Date(expiresAt)) {
-        status = "active";
-        daysRemaining = Math.ceil((new Date(expiresAt) - now) / (1000 * 60 * 60 * 24));
-        plan = membership.plan || "monthly";
+    if (membership.type === "premium") {
+      if (membership.expiresAt) {
+        if (now < new Date(expiresAt)) {
+          status = "active";
+          daysRemaining = Math.ceil((new Date(expiresAt) - now) / (1000 * 60 * 60 * 24));
+          plan = membership.plan || "monthly";
+          isVisible = true;
+        } else {
+          status = "expired";
+        }
       } else {
-        status = "expired";
+        status = "active";
+        plan = membership.plan || "monthly";
+        isVisible = true;
+        daysRemaining = 30;
       }
     } else {
       const professional = await Professional.findOne({ userId: req.userId });
-      if (professional && professional.subscription?.status === "pending_payment") {
-        status = "pending_payment";
+      if (professional) {
+        if (professional.subscription?.status === "trial" && professional.profileStatus === "ACTIVE") {
+          status = "trial";
+          daysRemaining = Math.ceil((new Date(professional.subscription.trialEnd) - now) / (1000 * 60 * 60 * 24));
+          expiresAt = professional.subscription.trialEnd;
+          isVisible = true;
+        } else if (professional.profileStatus === "ACTIVE") {
+          status = "active";
+          isVisible = true;
+        } else if (professional.subscription?.status === "suspended") {
+          status = "suspended";
+        } else if (professional.subscription?.status === "pending_payment") {
+          status = "pending_payment";
+        }
       }
     }
 
@@ -81,9 +86,10 @@ router.get("/status", authenticate, async (req, res) => {
         plan,
         expiresAt,
         daysRemaining: Math.max(0, daysRemaining),
-        monthlyPrice: MONTHLY_PRICE,
-        semesterPrice: SEMESTER_PRICE,
-        isVisible: status === "active",
+        price: MONTHLY_PRICE,
+        trialDays: 30,
+        isVisible,
+        isRecurring: membership.type === "premium" && !membership.expiresAt,
       }
     });
   } catch (error) {
@@ -92,165 +98,161 @@ router.get("/status", authenticate, async (req, res) => {
   }
 });
 
-
-
-router.post("/create-preference", authenticate, async (req, res) => {
+router.post("/create-preapproval", authenticate, async (req, res) => {
   try {
     const user = await User.findById(req.userId);
     if (!user) return res.status(404).json({ success: false, message: "Usuario no encontrado" });
 
-    const plan = req.body.plan || "monthly";
-    const isSemester = plan === "semester";
-    const months = isSemester ? SEMESTER_MONTHS : 1;
-    const amount = isSemester ? SEMESTER_PRICE : MONTHLY_PRICE;
-    const title = isSemester
-      ? `Suscripcion Semestral MiProfesional - ${user.name || "Profesional"}`
-      : `Suscripcion Mensual MiProfesional - ${user.name || "Profesional"}`;
-    const description = isSemester
-      ? "Suscripcion semestral al marketplace de servicios profesionales (15% descuento)"
-      : "Suscripcion mensual al marketplace de servicios profesionales";
+    const professional = await Professional.findOne({ userId: req.userId });
+    const now = new Date();
+    let startDate = new Date(now);
 
-    const externalReference = `sub_${plan}_${req.userId}_${Date.now()}`;
+    if (professional && professional.subscription?.status === "trial" && professional.subscription?.trialEnd) {
+      startDate = new Date(professional.subscription.trialEnd);
+    }
+
+    const externalReference = `pre_monthly_${req.userId}_${Date.now()}`;
     const client = new MercadoPagoConfig({ accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN });
-    const preference = new Preference(client);
+    const preApproval = new PreApproval(client);
 
-    const mpResponse = await preference.create({
+    const mpResponse = await preApproval.create({
       body: {
-        items: [{
-          id: `sub_${plan}`,
-          title,
-          description,
-          quantity: 1,
+        reason: "MiProfesional - $5.000/mes",
+        external_reference: externalReference,
+        payer_email: user.email,
+        auto_recurring: {
+          frequency: 1,
+          frequency_type: "months",
+          transaction_amount: MONTHLY_PRICE,
           currency_id: "ARS",
-          unit_price: amount,
-        }],
-        payer: {
-          name: user.name || "",
-          email: user.email || "",
+          start_date: startDate.toISOString(),
         },
-        back_urls: {
+        back_url: {
           success: `${FRONTEND_URL}/payment/success`,
           failure: `${FRONTEND_URL}/payment/failure`,
           pending: `${FRONTEND_URL}/payment/pending`,
         },
-        auto_return: "approved",
-        external_reference: externalReference,
         notification_url: `${process.env.BACKEND_URL || "https://miprofesional-backend.onrender.com"}/api/subscription/webhook`,
       }
     });
 
-    const preferenceId = mpResponse.id;
+    const preapprovalId = mpResponse.id;
     const initPoint = mpResponse.init_point;
-    const sandboxInitPoint = mpResponse.sandbox_init_point;
 
     await Payment.create({
       mpPaymentId: `pending_${externalReference}`,
-      preferenceId,
+      preferenceId: preapprovalId,
       externalReference,
       userId: req.userId,
       type: "subscription",
       status: "pending",
-      amount,
-      description,
+      amount: MONTHLY_PRICE,
+      description: "Suscripcion mensual MiProfesional",
     });
 
-    const professional = await Professional.findOne({ userId: req.userId });
     if (professional) {
       professional.subscription = {
         ...(professional.subscription || {}),
-        mpPreferenceId: preferenceId,
+        mpPreferenceId: preapprovalId,
         mpInitPoint: initPoint,
-        selectedPlan: plan,
+        selectedPlan: "monthly",
+        preapproval: true,
       };
       await professional.save();
     }
 
-    logger.info("MP preference created:", { userId: req.userId, plan, preferenceId, externalReference });
+    logger.info("MP preapproval created:", { userId: req.userId, preapprovalId, externalReference, startDate });
 
     res.json({
       success: true,
       data: {
-        preferenceId,
+        preapprovalId,
         initPoint,
-        sandboxInitPoint,
         externalReference,
-        plan,
-        amount,
+        plan: "monthly",
+        amount: MONTHLY_PRICE,
+        startDate,
       }
     });
   } catch (error) {
-    logger.error("Create preference error:", error);
-    res.status(500).json({ success: false, message: "Error al crear preferencia de pago" });
+    logger.error("Create preapproval error:", error);
+    res.status(500).json({ success: false, message: "Error al crear suscripcion recurrente" });
   }
 });
 
 router.post("/webhook", async (req, res) => {
   try {
     const { type, data } = req.body;
-
     logger.info("Subscription webhook received:", { type, data });
 
-    if (type === "payment") {
-      const paymentId = data.id;
-    const client = new MercadoPagoConfig({ accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN });
-      const mpPaymentClient = new MpPayment(client);
+    if (type === "preapproval") {
+      const preapprovalId = data.id;
+      const client = new MercadoPagoConfig({ accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN });
+      const preApprovalClient = new PreApproval(client);
+      const mpPreapproval = await preApprovalClient.get({ id: preapprovalId });
+      const { status, external_reference } = mpPreapproval;
 
-      const mpPayment = await mpPaymentClient.get({ id: paymentId });
-      const { status, external_reference, payer } = mpPayment;
+      logger.info("Preapproval update:", { preapprovalId, status, external_reference });
 
-      const existingPayment = await Payment.findByMpId(paymentId);
-      if (existingPayment) {
-        await existingPayment.updateStatus(status, mpPayment);
-      } else if (external_reference) {
-        await Payment.findOneAndUpdate(
-          { externalReference: external_reference },
-          {
-            mpPaymentId: paymentId,
-            status,
-            dateApproved: status === "approved" ? new Date() : undefined,
-            payer: { id: payer?.id, email: payer?.email },
-            dateLastUpdated: new Date(),
-          }
-        );
-      }
-
-      if (status === "approved" && external_reference) {
-        const parts = external_reference.replace("sub_", "").split("_");
-        const plan = parts[0];
-        const userId = parts[1];
-        const months = plan === "semester" ? SEMESTER_MONTHS : 1;
+      if (status === "authorized" && external_reference) {
+        const userId = external_reference.replace("pre_monthly_", "").split("_")[0];
 
         const user = await User.findById(userId);
         if (user) {
-          const expiresAt = new Date();
-          expiresAt.setMonth(expiresAt.getMonth() + months);
-
-          user.membership = {
-            type: "premium",
-            plan,
-            expiresAt,
-          };
+          user.membership = { type: "premium", plan: "monthly", expiresAt: null };
           await user.save();
 
           const professional = await Professional.findOne({ userId });
           if (professional) {
             professional.isActive = true;
+            professional.profileStatus = "ACTIVE";
             professional.subscription = {
               ...(professional.subscription || {}),
               status: "active",
-              plan,
-              paymentId: String(paymentId),
+              plan: "monthly",
+              paymentId: String(preapprovalId),
+              mpPreferenceId: preapprovalId,
               lastPayment: new Date(),
-              nextBilling: expiresAt,
+              nextBilling: null,
               activatedAt: new Date(),
+              preapproval: true,
             };
             await professional.save();
           }
 
-          logger.info("Subscription payment approved:", { userId, plan, paymentId, externalReference, expiresAt, months });
-          eventBus.emit('payment:approved', { email: user.email, name: user.name || user.email, plan, amount: payment?.amount || 0, expiryDate: expiresAt.toLocaleDateString('es-AR') });
+          logger.info("Preapproval authorized - subscription active:", { userId, preapprovalId });
+          eventBus.emit("payment:approved", {
+            email: user.email,
+            name: user.name || user.email,
+            plan: "Mensual",
+            amount: MONTHLY_PRICE,
+            expiryDate: "Renovacion automatica mensual",
+          });
         }
+      } else if (status === "cancelled" && external_reference) {
+        const userId = external_reference.replace("pre_monthly_", "").split("_")[0];
+
+        const user = await User.findById(userId);
+        if (user) {
+          user.membership = { type: "free", expiresAt: null, benefits: [] };
+          await user.save();
+        }
+
+        const professional = await Professional.findOne({ userId });
+        if (professional) {
+          professional.isActive = false;
+          professional.profileStatus = "INACTIVE";
+          if (professional.subscription) {
+            professional.subscription.status = "cancelled";
+            professional.subscription.cancelledAt = new Date();
+          }
+          await professional.save();
+        }
+
+        logger.info("Preapproval cancelled - subscription deactivated:", { userId, preapprovalId });
       }
+
+      return res.status(200).json({ ok: true });
     }
 
     res.status(200).json({ ok: true });
@@ -269,6 +271,7 @@ router.post("/cancel", authenticate, async (req, res) => {
     const professional = await Professional.findOne({ userId: req.userId });
     if (professional) {
       professional.isActive = false;
+      professional.profileStatus = "INACTIVE";
       if (professional.subscription) {
         professional.subscription.status = "cancelled";
         professional.subscription.cancelledAt = new Date();

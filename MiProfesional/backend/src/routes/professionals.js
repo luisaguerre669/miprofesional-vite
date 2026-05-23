@@ -93,7 +93,7 @@ router.get('/', [
     if (sortBy === 'ranking') {
       const skip = (parseInt(page) - 1) * parseInt(limit);
       const pipe = [
-        { $match: { isActive: true, 'subscription.status': 'active' } },
+        { $match: { isActive: true, profileStatus: 'ACTIVE', 'subscription.status': 'active' } },
         {
           $addFields: {
             score: {
@@ -114,7 +114,7 @@ router.get('/', [
       ];
       if (featured === 'true') pipe[0].$match.isFeatured = true;
       const result = await Professional.aggregate(pipe);
-      const totalRank = await Professional.countDocuments({ isActive: true, 'subscription.status': 'active' });
+      const totalRank = await Professional.countDocuments({ isActive: true, profileStatus: 'ACTIVE', 'subscription.status': 'active' });
       logger.info('Ranking result', { count: result.length, sampleScore: result[0]?.score });
       return res.json({
         success: true, data: result,
@@ -134,7 +134,7 @@ router.get('/', [
     if (search || location || minRating > 0 || maxPrice || isVerified === 'true') {
       professionals = await Professional.search(search, { ...options, categoryIds: emergencyCategoryIds });
     } else {
-      let query = { isActive: true, 'subscription.status': 'active' };
+      let query = { isActive: true, profileStatus: 'ACTIVE', 'subscription.status': 'active' };
 
       if (categoryId) query.categoryId = categoryId;
       if (featured === 'true') query.isFeatured = true;
@@ -153,7 +153,7 @@ router.get('/', [
         .populate('userId', 'name email phone');
     }
 
-    const total = await Professional.countDocuments({ isActive: true, 'subscription.status': 'active' });
+    const total = await Professional.countDocuments({ isActive: true, profileStatus: 'ACTIVE', 'subscription.status': 'active' });
     const totalPages = Math.ceil(total / parseInt(limit));
 
     logger.info('Professionals retrieved', {
@@ -419,7 +419,7 @@ router.get('/ranking', async (req, res) => {
     const skip = (page - 1) * limit;
 
     const pipeline = [
-      { $match: { isActive: true, 'subscription.status': 'active' } },
+      { $match: { isActive: true, profileStatus: 'ACTIVE', 'subscription.status': 'active' } },
       {
         $addFields: {
           score: {
@@ -468,7 +468,7 @@ router.get('/ranking', async (req, res) => {
 
     const [professionals, totalResult] = await Promise.all([
       Professional.aggregate(pipeline),
-      Professional.countDocuments({ isActive: true, 'subscription.status': 'active' })
+      Professional.countDocuments({ isActive: true, profileStatus: 'ACTIVE', 'subscription.status': 'active' })
     ]);
 
     const totalPages = Math.ceil(totalResult / limit);
@@ -702,6 +702,8 @@ router.post('/', authenticate, async (req, res) => {
       return res.status(409).json({ success: false, message: 'Ya tienes un perfil profesional' });
     }
 
+    const now = new Date();
+    const trialEnd = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
     const professional = new Professional({
       userId: req.userId,
       categoryId: req.body.categoryId || null,
@@ -727,7 +729,13 @@ router.post('/', authenticate, async (req, res) => {
         hourlyRate: req.body.pricing?.hourlyRate || req.body.hourlyRate || 0,
         currency: 'ARS'
       },
-      subscription: { status: 'pending_payment' }
+      isActive: true,
+      profileStatus: 'ACTIVE',
+      subscription: {
+        status: 'trial',
+        trialStart: now,
+        trialEnd: trialEnd,
+      },
     });
 
     await professional.save();
@@ -749,6 +757,7 @@ router.get('/by-city/:city', [
     const regex = new RegExp(city, 'i');
     const professionals = await Professional.find({
       isActive: true,
+      profileStatus: 'ACTIVE',
       'subscription.status': 'active',
       'location.city': regex
     }).populate('categoryId', 'title').populate('userId', 'name email phone').limit(50);
@@ -766,6 +775,7 @@ router.get('/map', async (req, res) => {
 
     const baseFilter = {
       isActive: true,
+      profileStatus: 'ACTIVE',
       'subscription.status': 'active',
       'location.coordinates.coordinates.0': { $ne: 0 },
       'location.coordinates.coordinates.1': { $ne: 0 }

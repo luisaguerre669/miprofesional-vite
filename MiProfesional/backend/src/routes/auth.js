@@ -193,12 +193,19 @@ router.post('/register', registerLimiter, [
         { isActive: false, 'subscription.status': 'inactive' }
       );
 
-      // If re-registering as professional, set up pending payment
+      // If re-registering as professional, set up trial
       if (role === 'professional') {
+        const now = new Date();
+        const trialEnd = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
         const existingPro = await Professional.findOne({ userId: existingUser._id });
         if (existingPro) {
-          existingPro.isActive = false;
-          existingPro.subscription = { status: 'pending_payment' };
+          existingPro.isActive = true;
+          existingPro.profileStatus = 'ACTIVE';
+          existingPro.subscription = {
+            status: 'trial',
+            trialStart: now,
+            trialEnd: trialEnd,
+          };
           await existingPro.save();
         } else {
           await new Professional({
@@ -209,8 +216,13 @@ router.post('/register', registerLimiter, [
             contact: { phone: phone || '+000000000000', email: existingUser.email },
             location: { address: 'pendiente', city: 'pendiente', state: 'pendiente', country: 'Argentina', coordinates: { type: 'Point', coordinates: [0, 0] } },
             pricing: { hourlyRate: 0, currency: 'ARS' },
-            isActive: false,
-            subscription: { status: 'pending_payment' },
+            isActive: true,
+            profileStatus: 'ACTIVE',
+            subscription: {
+              status: 'trial',
+              trialStart: now,
+              trialEnd: trialEnd,
+            },
           }).save();
         }
       }
@@ -261,6 +273,8 @@ router.post('/register', registerLimiter, [
     // Create professional record if role is professional
     if (role === 'professional') {
       try {
+        const now = new Date();
+        const trialEnd = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
         const professional = new Professional({
           userId: user._id,
           businessName: name,
@@ -275,8 +289,13 @@ router.post('/register', registerLimiter, [
             coordinates: { type: 'Point', coordinates: [0, 0] }
           },
           pricing: { hourlyRate: 0, currency: 'ARS' },
-          isActive: false,
-          subscription: { status: 'pending_payment' },
+          isActive: true,
+          profileStatus: 'ACTIVE',
+          subscription: {
+            status: 'trial',
+            trialStart: now,
+            trialEnd: trialEnd,
+          },
         });
         await professional.save();
       } catch (proErr) {
