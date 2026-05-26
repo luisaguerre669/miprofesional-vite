@@ -9,9 +9,10 @@ async function runAutoSeed() {
   for (const catData of categoriesData) {
     const { subcategories, ...mainData } = catData;
 
-    let parent = await Category.findOne({ slug: mainData.slug });
+    // Look up by title first (stable key), then by slug (may have changed)
+    let parent = await Category.findOne({ title: mainData.title });
     if (!parent) {
-      parent = await Category.findOne({ title: mainData.title });
+      parent = await Category.findOne({ slug: mainData.slug });
     }
     if (parent) {
       parent.set({ ...mainData, isActive: true });
@@ -22,9 +23,10 @@ async function runAutoSeed() {
 
     const subIds = [];
     for (const subData of subcategories) {
-      let sub = await Category.findOne({ slug: subData.slug });
+      // Find subcategory by title first (stable key), then by slug
+      let sub = await Category.findOne({ title: subData.title });
       if (!sub) {
-        sub = await Category.findOne({ title: subData.title });
+        sub = await Category.findOne({ slug: subData.slug });
       }
       if (sub) {
         sub.set({ ...subData, parentCategory: parent._id, isActive: true });
@@ -41,12 +43,12 @@ async function runAutoSeed() {
     totalSubs += subIds.length;
   }
 
-  // Cleanup: deactivate old parent categories that no longer exist in seed data
-  const currentSlugs = categoriesData.map(c => c.slug);
+  // Cleanup: deactivate old parent categories whose title is no longer in seed data
+  const currentTitles = categoriesData.map(c => c.title);
   const oldParents = await Category.find({
     isActive: true,
     parentCategory: null,
-    slug: { $nin: currentSlugs }
+    title: { $nin: currentTitles }
   });
   if (oldParents.length > 0) {
     for (const old of oldParents) {

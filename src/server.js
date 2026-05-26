@@ -239,6 +239,21 @@ class Server {
     try {
       await connectDB();
 
+        // Fix legacy categories: update slug if title matches but slug changed
+        try {
+          const categoriesData = require('./scripts/categoryData');
+          for (const cat of categoriesData) {
+            const existing = await mongoose.model('Category').findOne({ title: cat.title });
+            if (existing && existing.slug !== cat.slug) {
+              existing.slug = cat.slug;
+              existing.isActive = true;
+              await existing.save();
+            }
+          }
+        } catch (migrateErr) {
+          logger.error('Category migration error (non-fatal)', { error: migrateErr.message });
+        }
+
         // Sync categories (creates missing, updates existing - idempotent)
         try {
           await require('./scripts/runAutoSeed')();
