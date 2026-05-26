@@ -88,6 +88,9 @@ Thumbs.db
 # Upload directories
 uploads/
 
+# MongoDB data
+data/
+
 # Test files
 test-*.js
 *-test.js

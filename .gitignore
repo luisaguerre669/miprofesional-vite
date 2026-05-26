@@ -25,4 +25,8 @@ pnpm-debug.log*
 # Capacitor / Android
 MiProfesional/frontend/android/
 MiProfesional/frontend/MiProfesional.apk
+
+# Backend MongoDB data
+MiProfesional/backend/data/
+
 .env*
