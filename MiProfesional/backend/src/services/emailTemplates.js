@@ -48,7 +48,7 @@ const templates = {
       <h1 style="text-align:center">Restablece tu contrasena</h1>
       <p style="text-align:center">Recibimos una solicitud para restablecer la contrasena de ${name}. Hace clic en el boton para crear una nueva.</p>
       <div style="text-align:center"><a href="${url}" class="btn">Restablecer contrasena</a></div>
-      <p style="text-align:center;color:#888;font-size:12px">Si no solicitaste este cambio, ignora este mensaje. El enlace expira en 10 minutos.</p>
+      <p style="text-align:center;color:#888;font-size:12px">Si no solicitaste este cambio, ignora este mensaje. El enlace expira en 1 hora.</p>
     `);
   },
 

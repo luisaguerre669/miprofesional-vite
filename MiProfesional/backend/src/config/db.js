@@ -1,11 +1,12 @@
 const mongoose = require("mongoose");
+const logger = require("../utils/logger");
 
 const connectDB = async () => {
   try {
     const uri = process.env.MONGODB_URI || process.env.MONGO_URI;
 
     if (!uri) {
-      console.error("ERROR: MONGODB_URI/MONGO_URI no esta definida en el entorno");
+      logger.error("MONGODB_URI/MONGO_URI no esta definida en el entorno");
       process.exit(1);
     }
 
@@ -14,7 +15,7 @@ const connectDB = async () => {
       connectTimeoutMS: Number(process.env.MONGO_CONNECT_TIMEOUT_MS || 15000)
     });
 
-    console.log("Base de datos conectada correctamente");
+    logger.info("Base de datos conectada correctamente");
 
     try {
       const db = mongoose.connection.db;
@@ -22,10 +23,10 @@ const connectDB = async () => {
       const phoneIndex = indexes.find(idx => idx.name === "phone_1");
       if (phoneIndex && phoneIndex.unique) {
         await db.collection("users").dropIndex("phone_1");
-        console.log("Dropped stale unique index on phone_1");
+        logger.info("Dropped stale unique index on phone_1");
       }
     } catch (idxErr) {
-      console.log("Index cleanup note:", idxErr.message);
+      logger.info(`Index cleanup note: ${idxErr.message}`);
     }
 
     try {
@@ -34,15 +35,15 @@ const connectDB = async () => {
       for (const idx of proIndexes) {
         if (idx.unique && idx.name !== "_id_") {
           await db.collection("professionals").dropIndex(idx.name);
-          console.log("Dropped stale unique index on professionals:", idx.name);
+          logger.info(`Dropped stale unique index on professionals: ${idx.name}`);
         }
       }
     } catch (idxErr) {
-      console.log("Professionals index cleanup note:", idxErr.message);
+      logger.info(`Professionals index cleanup note: ${idxErr.message}`);
     }
   } catch (error) {
-    console.error("Error conectando a la base de datos:");
-    console.error(error.message);
+    logger.error("Error conectando a la base de datos:");
+    logger.error(error.message);
     process.exit(1);
   }
 };

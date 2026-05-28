@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../lib/axios';
 import {
   UserPlus, Shield, ArrowRight, CheckCircle, AlertCircle,
   Phone, Mail, Lock, User, Briefcase, Upload, Gift,
-  FileText, Building2, Sparkles, Smartphone, Info, CreditCard
+  FileText, Building2, Sparkles, Smartphone, Info, CreditCard, MapPin, AlertTriangle
 } from 'lucide-react';
 
 const LICENSED_PROFESSIONS = [
@@ -24,7 +24,9 @@ const Register = () => {
     name: '', email: '', password: '', phone: '',
     role: roleParam || 'client',
     profession: '', licenseNumber: '', licenseFile: null,
-    acceptTerms: false
+    street: '', number: '', neighborhood: '', city: '', province: '',
+    acceptTerms: false,
+    available24h: false
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -33,8 +35,23 @@ const Register = () => {
   const [registered, setRegistered] = useState(false);
   const [customProfession, setCustomProfession] = useState('');
 
+  const [categories, setCategories] = useState([]);
   const isProfessional = formData.role === 'professional';
   const licenseRequired = isProfessional && LICENSED_PROFESSIONS.includes(formData.profession);
+
+  useEffect(() => {
+    api.get('/categories?limit=50').then(r => {
+      const data = r.data?.data || r.data?.categories || [];
+      setCategories(Array.isArray(data) ? data : []);
+    }).catch(e => console.error('Error al cargar categorías:', e));
+  }, []);
+
+  // Auto-set available24h when a 24-7 group profession is selected
+  useEffect(() => {
+    if (isProfessional && formData.profession && findGroupForProfession(formData.profession) === '24-7') {
+      setFormData(prev => ({ ...prev, available24h: true }));
+    }
+  }, [formData.profession, isProfessional]);
 
   const handleChange = (e) => {
     const { name, value, type, checked, files } = e.target;
@@ -69,10 +86,28 @@ const Register = () => {
       return;
     }
 
+    const address = formData.street || formData.city ? {
+      street: formData.street,
+      number: formData.number,
+      neighborhood: formData.neighborhood,
+      city: formData.city,
+      state: formData.province,
+      country: 'Argentina'
+    } : undefined;
+
+    const categoryId = isProfessional ? findCategoryId(finalProfession) : undefined;
+    const subcategoryId = isProfessional && categoryId ? findSubcategoryId(finalProfession, categoryId) : undefined;
+
+    if (isProfessional && !categoryId) {
+      setError('La profesion seleccionada no tiene una categoria asignada. Selecciona otra profesion.');
+      setLoading(false);
+      return;
+    }
+
     try {
       const result = await register(
         formData.name, formData.email, formData.password, formData.role,
-        { phone: formData.phone, profession: finalProfession }
+        { phone: formData.phone, profession: finalProfession, categoryId, subcategoryId, available24h: formData.available24h, address }
       );
       if (result.success) {
         if (isProfessional && licenseRequired && formData.licenseFile) {
@@ -80,10 +115,10 @@ const Register = () => {
           form.append('license', formData.licenseFile);
           await api.post('/upload/license', form, {
             headers: { 'Content-Type': 'multipart/form-data' }
-          }).catch(() => {});
+          }).catch(e => console.error('Error al subir licencia:', e));
         }
         if (isProfessional) {
-          navigate('/dashboard?tab=suscripcion');
+          navigate('/dashboard/professional');
         } else {
           setRegistered(true);
         }
@@ -119,6 +154,51 @@ const Register = () => {
       </div>
     );
   }
+
+  const GROUP_TO_SLUG = {
+    'Construccion': 'construccion-y-hogar',
+    'Servicios Generales': 'servicios-generales',
+    '24-7': '24-7',
+    'Hogar y Confort': 'hogar-diseno',
+    'Belleza y Cuidado': 'belleza-y-cuidado',
+    'Bienestar y Deporte': 'bienestar-y-deportes',
+    'Mascotas': 'mascotas',
+    'Tecnologia': 'tecnologia',
+    'Automotor': 'automotores',
+    'Transporte y Turismo': 'transporte',
+    'Empresas': 'legales-y-administracion',
+  };
+
+  const categoriesBySlug = {};
+  categories.forEach(c => { categoriesBySlug[c.slug] = c; });
+
+  const findGroupForProfession = (professionValue) => {
+    for (const g of PROFESSIONS) {
+      if (!g.group) continue;
+      if (g.items.some(item => item.value === professionValue)) return g.group;
+    }
+    return null;
+  };
+
+  const findCategoryId = (professionValue) => {
+    const groupName = findGroupForProfession(professionValue);
+    if (!groupName) return undefined;
+    const slug = GROUP_TO_SLUG[groupName];
+    if (!slug) return undefined;
+    const cat = categoriesBySlug[slug];
+    return cat?._id;
+  };
+
+  const findSubcategoryId = (professionValue, catId) => {
+    const cat = categories.find(c => c._id === catId);
+    if (!cat || !cat.subcategories) return undefined;
+    // Try exact slug match first
+    const exact = cat.subcategories.find(s => s.slug === professionValue);
+    if (exact) return exact._id;
+    // Try partial match (professionValue might be contained in subcategory slug)
+    const partial = cat.subcategories.find(s => s.slug.includes(professionValue) || professionValue.includes(s.slug));
+    return partial?._id;
+  };
 
   const PROFESSIONS = [
     { value: '', label: 'Selecciona tu profesion...' },
@@ -394,12 +474,72 @@ const Register = () => {
                     </div>
                   </>
                 )}
+
+                {/* Disponibilidad 24/7 */}
+                <div className="p-4 bg-white border border-gray-200 rounded-xl">
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center shrink-0">
+                      <AlertTriangle size={20} className="text-red-500" />
+                    </div>
+                    <div className="flex-1">
+                      <label className="font-semibold text-gray-900 text-sm block mb-1">
+                        ¿Brindas servicios las 24 horas?
+                      </label>
+                      <p className="text-xs text-gray-500 mb-3">
+                        Marca esta opcion si atendes urgencias fuera del horario comercial (madrugada, fines de semana, feriados).
+                        Los profesionales con esta opcion activada aparecen en la seccion "Urgencias / Disponible Ahora".
+                      </p>
+                      <div className="flex gap-3">
+                        <button type="button" onClick={() => setFormData(prev => ({ ...prev, available24h: true }))}
+                          className={`flex-1 py-2.5 rounded-xl text-sm font-medium border transition-all ${
+                            formData.available24h
+                              ? 'bg-red-50 border-red-300 text-red-700'
+                              : 'border-gray-200 text-gray-500 hover:border-gray-300'
+                          }`}
+                        ><AlertTriangle size={14} className="inline mr-1 -mt-0.5" /> Si, atiendo urgencias</button>
+                        <button type="button" onClick={() => setFormData(prev => ({ ...prev, available24h: false }))}
+                          className={`flex-1 py-2.5 rounded-xl text-sm font-medium border transition-all ${
+                            !formData.available24h
+                              ? 'bg-gray-50 border-gray-300 text-gray-700'
+                              : 'border-gray-200 text-gray-500 hover:border-gray-300'
+                          }`}
+                        >No</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </>
             )}
 
-            {/* Step 3: Legal & Finish */}
+            {/* Step 3: Address + Legal & Finish */}
             {step === 3 && (
               <div className="space-y-4">
+                <div className="p-4 bg-gray-50 rounded-xl border border-gray-200">
+                  <h3 className="font-semibold text-gray-900 text-sm mb-3 flex items-center gap-2">
+                    <MapPin size={16} className="text-primary-600" /> Tu ubicacion
+                  </h3>
+                  <div className="space-y-2">
+                    <div className="flex gap-2">
+                      <input name="street" value={formData.street} onChange={handleChange}
+                        placeholder="Calle" className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm" />
+                      <input name="number" value={formData.number} onChange={handleChange}
+                        placeholder="Numero" className="w-24 px-3 py-2 border border-gray-300 rounded-lg text-sm" />
+                    </div>
+                    <input name="neighborhood" value={formData.neighborhood} onChange={handleChange}
+                      placeholder="Barrio (opcional)" className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
+                    <div className="flex gap-2">
+                      <input name="city" value={formData.city} onChange={handleChange}
+                        placeholder="Ciudad" className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm" />
+                      <select name="province" value={formData.province} onChange={handleChange}
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white">
+                        <option value="">Provincia</option>
+                        {['CABA','Buenos Aires','Catamarca','Chaco','Chubut','Cordoba','Corrientes','Entre Rios','Formosa','Jujuy','La Pampa','La Rioja','Mendoza','Misiones','Neuquen','Rio Negro','Salta','San Juan','San Luis','Santa Cruz','Santa Fe','Santiago del Estero','Tierra del Fuego','Tucuman'].map(p => (
+                          <option key={p} value={p}>{p}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                </div>
                 <div className="p-4 bg-primary-50 rounded-xl border border-primary-100">
                   <h3 className="font-semibold text-gray-900 text-sm mb-2 flex items-center gap-2">
                     <Shield size={16} className="text-primary-600" /> Terminos Legales

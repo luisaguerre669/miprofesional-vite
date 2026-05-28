@@ -1,0 +1,9 @@
+{
+  "redirects": [
+    {
+      "source": "/",
+      "destination": "https://play.google.com/store/apps/details?id=online.miprofesional.app",
+      "permanent": true
+    }
+  ]
+}

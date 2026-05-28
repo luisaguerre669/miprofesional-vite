@@ -35,7 +35,7 @@ const ProfessionalDashboard = () => {
         api.get('/professionals'),
         api.get('/analytics/dashboard')
       ]);
-      api.get('/subscription/status').then(r => setSubscription(r.data?.data || null)).catch(() => {});
+      api.get('/subscription/status').then(r => setSubscription(r.data?.data || null)).catch(e => console.error('Error al obtener suscripción:', e));
       const pro = (profilesRes.data.data || []).find(p => p.userId?._id === user?.id || p.userId === user?.id);
       setMyProfile(pro);
       setStats(prev => ({ ...prev, ...(analyticsRes.data.data || {}) }));

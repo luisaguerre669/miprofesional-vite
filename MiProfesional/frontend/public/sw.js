@@ -35,7 +35,6 @@ self.addEventListener('fetch', (event) => {
   if (request.method !== 'GET') return;
   if (url.origin !== self.location.origin) return;
   if (url.pathname.startsWith('/api/')) return;
-  if (url.pathname.endsWith('.apk')) return;
 
   if (request.mode === 'navigate') {
     event.respondWith(

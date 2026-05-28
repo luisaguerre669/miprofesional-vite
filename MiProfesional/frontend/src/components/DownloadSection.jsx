@@ -1,43 +1,8 @@
-import { useState, useEffect } from 'react';
-import { Smartphone, Download, Apple, Monitor, QrCode, Shield, Share2, Plus } from 'lucide-react';
-import { QRCodeCanvas } from 'qrcode.react';
 import { Link } from 'react-router-dom';
 
-const APK_VERSION = 'v1.0.0';
-const APK_URL = `/downloads/miprofesional-${APK_VERSION}.apk`;
-const SITE_URL = 'https://www.miprofesional.online';
-
-function detectDevice() {
-  if (typeof navigator === 'undefined') return 'desktop';
-  const ua = navigator.userAgent;
-  if (/android/i.test(ua)) return 'android';
-  if (/iphone|ipad|ipod/i.test(ua)) return 'ios';
-  return 'desktop';
-}
-
-function isStandalone() {
-  return typeof window !== 'undefined' && 'standalone' in window.navigator && window.navigator.standalone;
-}
+const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.miprofesional.app';
 
 export default function DownloadSection() {
-  const [device, setDevice] = useState('desktop');
-  const [copied, setCopied] = useState(false);
-  const [alreadyInstalled, setAlreadyInstalled] = useState(false);
-
-  useEffect(() => {
-    setDevice(detectDevice());
-    setAlreadyInstalled(isStandalone());
-  }, []);
-
-  const copyLink = () => {
-    navigator.clipboard.writeText(SITE_URL).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
-  };
-
-  if (alreadyInstalled) return null;
-
   return (
     <section className="relative overflow-hidden bg-gradient-to-b from-gray-50 to-white py-20 md:py-24 px-4">
       <div className="absolute inset-0 opacity-[0.03]">
@@ -46,122 +11,39 @@ export default function DownloadSection() {
       </div>
       <div className="relative max-w-7xl mx-auto">
         <div className="text-center mb-10">
-          <span className="text-primary-500 text-xs font-semibold uppercase tracking-widest">App Mobile</span>
+          <span className="text-primary-500 text-xs font-semibold uppercase tracking-widest">App Android</span>
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mt-1">Descarga MiProfesional</h2>
-          <p className="text-gray-500 mt-2 max-w-xl mx-auto">Lleva tu conexion con profesionales verificados a todos lados</p>
+          <p className="text-gray-500 mt-2 max-w-xl mx-auto">Conecta con profesionales verificados desde tu celular</p>
         </div>
 
         <div className="max-w-lg mx-auto">
           <div className="bg-white/80 backdrop-blur-xl border border-gray-200 rounded-2xl shadow-sm p-8 md:p-10 text-center">
-
-            {device === 'android' && (
-              <div className="space-y-6">
-                <div className="w-16 h-16 rounded-2xl bg-primary-50 flex items-center justify-center mx-auto">
-                  <Smartphone size={32} className="text-primary-600" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold text-gray-900">Descarga la app para Android</h3>
-                  <p className="text-sm text-gray-500 mt-1">
-                    Instala MiProfesional en tu dispositivo y accede a todos los servicios
-                  </p>
-                </div>
-                <a
-                  href={APK_URL}
-                  download
-                  className="inline-flex items-center gap-2.5 px-8 py-3.5 bg-primary-600 text-white font-bold rounded-xl hover:bg-primary-700 transition-all shadow-sm shadow-primary-500/20 text-base"
-                >
-                  <Download size={18} />
-                  Descargar APK
-                </a>
-                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-left">
-                  <p className="text-xs text-amber-800 font-medium">Instrucciones:</p>
-                  <ol className="text-xs text-amber-700 mt-2 space-y-1.5 list-decimal list-inside">
-                    <li>Toca el boton <span className="font-semibold">Descargar APK</span></li>
-                    <li>Si el sistema lo solicita, habilita <span className="font-semibold">Instalar apps de fuentes desconocidas</span></li>
-                    <li>Abre el archivo descargado y toca <span className="font-semibold">Instalar</span></li>
-                    <li>Una vez instalada, abre la app y registrate</li>
-                  </ol>
-                </div>
-                <p className="text-xs text-gray-400">
-                  Version {APK_VERSION} &middot; {Math.round(12036489 / 1024 / 1024)} MB &middot; Descarga directa
+            <div className="space-y-6">
+              <div className="w-16 h-16 rounded-2xl bg-primary-50 flex items-center justify-center mx-auto">
+                <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-primary-600">
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" />
+                  <circle cx="12" cy="10" r="3" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-gray-900">Disponible en Google Play</h3>
+                <p className="text-sm text-gray-500 mt-1">
+                  Descarga la app oficial de MiProfesional desde la tienda de Android
                 </p>
               </div>
-            )}
-
-            {device === 'ios' && (
-              <div className="space-y-6">
-                <div className="w-16 h-16 rounded-2xl bg-primary-50 flex items-center justify-center mx-auto">
-                  <Plus size={32} className="text-primary-600" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold text-gray-900">Instala MiProfesional en tu iPhone</h3>
-                  <p className="text-sm text-gray-500 mt-1">
-                    Agrega MiProfesional a tu pantalla de inicio como una app
-                  </p>
-                </div>
-                <div className="bg-blue-50 border border-blue-200 rounded-xl p-5 text-left space-y-3">
-                  <p className="text-xs text-blue-800 font-medium">Pasos para instalar:</p>
-                  <div className="flex items-start gap-3">
-                    <div className="w-6 h-6 rounded-full bg-blue-600 text-white text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">1</div>
-                    <div>
-                      <p className="text-sm font-medium text-blue-800">Abre Safari</p>
-                      <p className="text-xs text-blue-600">Ingresa a <span className="font-semibold">miprofesional.online</span> desde el navegador Safari</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <div className="w-6 h-6 rounded-full bg-blue-600 text-white text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">2</div>
-                    <div>
-                      <p className="text-sm font-medium text-blue-800">Toca compartir</p>
-                      <p className="text-xs text-blue-600">Presiona el icono <span className="font-semibold">Compartir</span> en la barra inferior de Safari</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <div className="w-6 h-6 rounded-full bg-blue-600 text-white text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">3</div>
-                    <div>
-                      <p className="text-sm font-medium text-blue-800">Agregar a pantalla de inicio</p>
-                      <p className="text-xs text-blue-600">Desplazate hacia abajo y selecciona <span className="font-semibold">Agregar a pantalla de inicio</span></p>
-                    </div>
-                  </div>
-                </div>
-                <div className="inline-flex items-center gap-2 text-xs text-gray-400">
-                  <Shield size={12} />
-                  <span>No requiere App Store. Funciona como app nativa.</span>
-                </div>
-              </div>
-            )}
-
-            {device === 'desktop' && (
-              <div className="space-y-6">
-                <div className="w-16 h-16 rounded-2xl bg-primary-50 flex items-center justify-center mx-auto">
-                  <QrCode size={32} className="text-primary-600" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold text-gray-900">Escanea desde tu celular</h3>
-                  <p className="text-sm text-gray-500 mt-1">
-                    Abre la camara de tu telefono y escanea el codigo para instalar
-                  </p>
-                </div>
-                <div className="inline-block p-4 bg-white border border-gray-200 rounded-2xl shadow-sm">
-                  <QRCodeCanvas value={SITE_URL} size={160} bgColor="#ffffff" fgColor="#0f7a5a" level="M" />
-                </div>
-                <div className="text-center">
-                  <p className="text-xs text-gray-400 mb-2">O accede desde tu celular a:</p>
-                  <div className="flex items-center justify-center gap-2">
-                    <code className="text-sm bg-gray-100 px-3 py-1.5 rounded-lg text-gray-700 font-mono">{SITE_URL}</code>
-                    <button onClick={copyLink}
-                      className="px-3 py-1.5 text-xs font-medium bg-primary-50 text-primary-600 rounded-lg hover:bg-primary-100 transition-colors"
-                    >
-                      {copied ? 'Copiado' : 'Copiar'}
-                    </button>
-                  </div>
-                </div>
-                <div className="flex items-center justify-center gap-2 text-xs text-gray-400">
-                  <Shield size={12} />
-                  <span>Descarga segura y gratuita</span>
-                </div>
-              </div>
-            )}
-
+              <a
+                href={PLAY_STORE_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2.5 px-8 py-3.5 bg-primary-600 text-white font-bold rounded-xl hover:bg-primary-700 transition-all shadow-sm shadow-primary-500/20 text-base"
+              >
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M3.609 1.814L13.792 12 3.61 22.186a.996.996 0 01-.61-.92V2.734a1 1 0 01.609-.92zm10.89 10.893l2.302 2.302-10.937 6.333 8.635-8.635zm3.199-3.199l2.807 1.626a1 1 0 010 1.732l-2.807 1.626L15.206 12l2.492-2.492zM5.864 2.658L16.8 8.99l-2.302 2.302-8.634-8.634z"/></svg>
+                Ir a Google Play
+              </a>
+              <p className="text-xs text-gray-400">
+                Gratis · Sin registro · App oficial
+              </p>
+            </div>
           </div>
         </div>
 

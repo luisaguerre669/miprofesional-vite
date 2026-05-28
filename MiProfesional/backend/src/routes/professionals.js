@@ -93,21 +93,17 @@ router.get('/', [
     if (sortBy === 'ranking') {
       const skip = (parseInt(page) - 1) * parseInt(limit);
       const pipe = [
-        { $match: { isActive: true, profileStatus: 'ACTIVE', 'subscription.status': 'active' } },
+        { $match: { isActive: true, profileStatus: 'ACTIVE', $or: [ { 'subscription.status': 'active' }, { 'subscription.status': 'trial', 'subscription.trialEnd': { $gte: new Date() } } ] } },
         {
-          $addFields: {
-            score: {
-              $add: [
-                { $multiply: [{ $ifNull: ['$stats.rating', 0] }, 2] },
-                { $ifNull: ['$stats.completedBookings', 0] },
-                { $cond: [{ $eq: ['$verification.isVerified', true] }, 10, 0] },
-                { $cond: [{ $eq: ['$isFeatured', true] }, 5, 0] }
-              ]
-            }
+          $lookup: {
+            from: 'reviews',
+            localField: '_id',
+            foreignField: 'professionalId',
+            as: 'reviews'
           }
         },
-        { $sort: { score: -1, 'stats.rating': -1, 'stats.completedBookings': -1 } },
-        { $skip: skip },
+        { $addFields: { rating: { $avg: '$reviews.rating' }, reviewCount: { $size: '$reviews' } } },
+        { $sort: { rating: -1, reviewCount: -1 } },
         { $limit: parseInt(limit) },
         { $lookup: { from: 'categories', localField: 'categoryId', foreignField: '_id', as: 'category' } },
         { $unwind: { path: '$category', preserveNullAndEmptyArrays: true } }
@@ -122,24 +118,38 @@ router.get('/', [
       });
     }
 
-    let emergencyCategoryIds = null;
     if (disponibilidad === '24-7' || disponibilidad === '247') {
-      const emergencyCats = await Category.find({ 'metadata.emergency': true }).select('_id');
-      emergencyCategoryIds = emergencyCats.map(c => c._id);
-      if (emergencyCategoryIds.length === 0) {
-        return res.json({ success: true, message: 'No hay profesionales disponibles 24-7 actualmente', data: [], pagination: { page: 1, limit, total: 0, totalPages: 0, hasNext: false, hasPrev: false } });
+      if (search || location || minRating > 0 || maxPrice || isVerified === 'true') {
+        professionals = await Professional.search(search, { ...options, available24h: true });
+      } else {
+        let query = { ...Professional.activeFilter(), available24h: true };
+        if (categoryId) query.categoryId = categoryId;
+        if (featured === 'true') query.isFeatured = true;
+        if (availability !== undefined) query['availability.isAvailable'] = availability === 'true';
+        const sort = {};
+        sort[sortBy] = sortOrder === 'desc' ? -1 : 1;
+        const skip = (parseInt(page) - 1) * parseInt(limit);
+        professionals = await Professional.find(query)
+          .sort(sort)
+          .skip(skip)
+          .limit(parseInt(limit))
+          .populate('categoryId', 'title')
+          .populate('userId', 'name email phone');
       }
+      return res.json({
+        success: true, data: professionals,
+        pagination: { page: parseInt(page), limit: parseInt(limit), total: professionals.length, totalPages: Math.ceil(professionals.length / parseInt(limit)), hasNext: parseInt(page) < Math.ceil(professionals.length / parseInt(limit)), hasPrev: parseInt(page) > 1 }
+      });
     }
 
     if (search || location || minRating > 0 || maxPrice || isVerified === 'true') {
-      professionals = await Professional.search(search, { ...options, categoryIds: emergencyCategoryIds });
+      professionals = await Professional.search(search, options);
     } else {
-      let query = { isActive: true, profileStatus: 'ACTIVE', 'subscription.status': 'active' };
+      let query = { ...Professional.activeFilter() };
 
       if (categoryId) query.categoryId = categoryId;
       if (featured === 'true') query.isFeatured = true;
       if (availability !== undefined) query['availability.isAvailable'] = availability === 'true';
-      if (emergencyCategoryIds) query.categoryId = { $in: emergencyCategoryIds };
 
       const sort = {};
       sort[sortBy] = sortOrder === 'desc' ? -1 : 1;
@@ -153,7 +163,7 @@ router.get('/', [
         .populate('userId', 'name email phone');
     }
 
-    const total = await Professional.countDocuments({ isActive: true, profileStatus: 'ACTIVE', 'subscription.status': 'active' });
+    const total = await Professional.countDocuments({ isActive: true, profileStatus: 'ACTIVE', $or: [ { 'subscription.status': 'active' }, { 'subscription.status': 'trial', 'subscription.trialEnd': { $gte: new Date() } } ] });
     const totalPages = Math.ceil(total / parseInt(limit));
 
     logger.info('Professionals retrieved', {
@@ -419,7 +429,7 @@ router.get('/ranking', async (req, res) => {
     const skip = (page - 1) * limit;
 
     const pipeline = [
-      { $match: { isActive: true, profileStatus: 'ACTIVE', 'subscription.status': 'active' } },
+      { $match: { isActive: true, profileStatus: 'ACTIVE', $or: [ { 'subscription.status': 'active' }, { 'subscription.status': 'trial', 'subscription.trialEnd': { $gte: new Date() } } ] } },
       {
         $addFields: {
           score: {
@@ -468,7 +478,7 @@ router.get('/ranking', async (req, res) => {
 
     const [professionals, totalResult] = await Promise.all([
       Professional.aggregate(pipeline),
-      Professional.countDocuments({ isActive: true, profileStatus: 'ACTIVE', 'subscription.status': 'active' })
+      Professional.countDocuments({ isActive: true, profileStatus: 'ACTIVE', $or: [ { 'subscription.status': 'active' }, { 'subscription.status': 'trial', 'subscription.trialEnd': { $gte: new Date() } } ] })
     ]);
 
     const totalPages = Math.ceil(totalResult / limit);
@@ -758,7 +768,7 @@ router.get('/by-city/:city', [
     const professionals = await Professional.find({
       isActive: true,
       profileStatus: 'ACTIVE',
-      'subscription.status': 'active',
+      $or: [ { 'subscription.status': 'active' }, { 'subscription.status': 'trial', 'subscription.trialEnd': { $gte: new Date() } } ],
       'location.city': regex
     }).populate('categoryId', 'title').populate('userId', 'name email phone').limit(50);
     res.json({ success: true, count: professionals.length, data: professionals });
@@ -776,7 +786,7 @@ router.get('/map', async (req, res) => {
     const baseFilter = {
       isActive: true,
       profileStatus: 'ACTIVE',
-      'subscription.status': 'active',
+      $or: [ { 'subscription.status': 'active' }, { 'subscription.status': 'trial', 'subscription.trialEnd': { $gte: new Date() } } ],
       'location.coordinates.coordinates.0': { $ne: 0 },
       'location.coordinates.coordinates.1': { $ne: 0 }
     };
@@ -867,7 +877,7 @@ router.put('/:id', authenticate, [
     const professional = await Professional.findById(req.params.id);
     if (!professional) return res.status(404).json({ success: false, message: 'Perfil no encontrado' });
 
-    const allowedFields = ['businessName', 'profession', 'description', 'specialties', 'avatar', 'gallery', 'isFeatured'];
+    const allowedFields = ['businessName', 'profession', 'description', 'specialties', 'avatar', 'gallery', 'isFeatured', 'available24h', 'categoryId', 'subcategoryId'];
     for (const field of allowedFields) {
       if (req.body[field] !== undefined) professional[field] = req.body[field];
     }

@@ -29,6 +29,12 @@ router.put("/profile", authenticate, [
   body("name").optional().trim().isLength({ min: 2, max: 100 }),
   body("phone").optional().matches(/^\+?[\d\s-()]+$/),
   body("location").optional().trim().isLength({ min: 2, max: 200 }),
+  body("address").optional().isObject(),
+  body("address.street").optional().trim(),
+  body("address.number").optional().trim(),
+  body("address.neighborhood").optional().trim(),
+  body("address.city").optional().trim(),
+  body("address.state").optional().trim(),
   body("preferences").optional().isObject()
 ], handleValidationErrors, async (req, res) => {
   try {
@@ -36,6 +42,17 @@ router.put("/profile", authenticate, [
     const updates = {};
     for (const field of allowedFields) {
       if (req.body[field] !== undefined) updates[field] = req.body[field];
+    }
+
+    if (req.body.address) {
+      const user = await User.findById(req.userId);
+      if (!user) return res.status(404).json({ success: false, message: "Usuario no encontrado" });
+      user.address = { ...user.address.toObject(), ...req.body.address };
+      if (req.body.address.city || req.body.address.street) {
+        user.markModified('address');
+      }
+      await user.save();
+      return res.json({ success: true, message: "Perfil actualizado", data: user.toJSON() });
     }
 
     const user = await User.findByIdAndUpdate(req.userId, updates, { new: true, runValidators: true });

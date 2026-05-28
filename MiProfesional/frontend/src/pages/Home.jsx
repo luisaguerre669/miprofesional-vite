@@ -5,13 +5,13 @@ import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import api from '../lib/axios';
+import { useAuth } from '../context/AuthContext';
 import { getAccurateLocation } from '../utils/geolocation';
 import {
   Search, ArrowRight, Star, MapPin, Sparkles,
   ChevronLeft, ChevronRight, Shield, Clock,
-  UserPlus, Download, Plus, Smartphone, AlertTriangle
+  UserPlus, Plus, AlertTriangle
 } from 'lucide-react';
-import { QRCodeCanvas } from 'qrcode.react';
 import AdBanner from '../components/ads/AdBanner';
 import { resolveIcon, getInlineGradient } from '../utils/categoryIcons';
 
@@ -95,40 +95,34 @@ const benefits = [
   { icon: Clock, title: 'Rapido y simple', desc: 'Encontra al profesional que necesitas en minutos, sin vueltas ni comisiones.' },
 ];
 
-const APK_VERSION = 'v1.0.0';
-const APK_URL = `/downloads/miprofesional-${APK_VERSION}.apk`;
+const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.miprofesional.app';
 const SITE_URL = 'https://www.miprofesional.online';
 
-function detectDevice() {
-  if (typeof navigator === 'undefined') return 'desktop';
-  const ua = navigator.userAgent;
-  if (/android/i.test(ua)) return 'android';
-  if (/iphone|ipad|ipod/i.test(ua)) return 'ios';
-  return 'desktop';
-}
-
-function isStandalone() {
-  return typeof window !== 'undefined' && 'standalone' in window.navigator && window.navigator.standalone;
-}
-
-function PhoneMockup() {
+function ProfessionalsImage() {
   return (
-    <div className="relative mx-auto w-[110px] sm:w-[140px] lg:w-[200px]">
-      <div className="relative bg-gray-900 rounded-[20px] sm:rounded-[24px] p-1.5 shadow-2xl shadow-black/40 border border-gray-800">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[50px] sm:w-[70px] h-3 bg-gray-900 rounded-b-xl z-10" />
-        <div className="bg-white rounded-[16px] sm:rounded-[18px] overflow-hidden aspect-[9/19] flex flex-col items-center justify-center relative">
-          <div className="absolute inset-0 bg-gradient-to-b from-primary-600 to-primary-800 flex flex-col items-center justify-center p-3 sm:p-4">
-            <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-xl bg-white flex items-center justify-center mb-1.5 sm:mb-2 shadow-lg">
-              <span className="text-primary-600 font-black text-[10px] sm:text-xs">MP</span>
+    <div className="relative mx-auto w-[180px] sm:w-[220px] lg:w-[300px]">
+      <div className="relative overflow-hidden rounded-2xl shadow-2xl shadow-black/40 border border-gray-800">
+        <img
+          src="https://images.unsplash.com/photo-1556761175-b413da4baf72?w=600&q=80"
+          alt="Profesionales y clientes colaborando"
+          className="w-full h-full object-cover aspect-[4/3]"
+          loading="lazy"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 p-4">
+          <div className="flex items-center gap-2">
+            <div className="flex -space-x-2">
+              <div className="w-7 h-7 rounded-full bg-primary-500 border-2 border-white flex items-center justify-center text-white text-[9px] font-bold">MP</div>
             </div>
-            <p className="text-white text-[8px] sm:text-[10px] font-bold text-center leading-tight">MiProfesional</p>
-            <p className="text-white/60 text-[7px] sm:text-[8px] mt-0.5 text-center">Encuentra profesionales</p>
+            <span className="text-white text-xs font-semibold">+1,000 profesionales</span>
           </div>
         </div>
       </div>
     </div>
   );
 }
+
+const TEAM_IMAGE = 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=600&q=80';
 
 const StarRating = ({ rating = 0, size = 14 }) => (
   <div className="flex items-center gap-0.5">
@@ -157,16 +151,22 @@ const Home = () => {
 
   const [categories, setCategories] = useState([]);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
-  const [device, setDevice] = useState('desktop');
-  const [alreadyInstalled, setAlreadyInstalled] = useState(false);
-
-  useEffect(() => { setDevice(detectDevice()); setAlreadyInstalled(isStandalone()); }, []);
+  const [urgentPros, setUrgentPros] = useState([]);
+  const [urgentProsLoading, setUrgentProsLoading] = useState(true);
+  const { user } = useAuth();
 
   useEffect(() => {
     api.get('/professionals?featured=true&limit=8')
       .then(r => setFeaturedPros(r.data.data || []))
-      .catch(() => {})
+      .catch(e => console.error('Error al cargar destacados:', e))
       .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    api.get('/professionals', { params: { disponibilidad: '24-7', limit: 6 } })
+      .then(r => setUrgentPros(r.data.data || []))
+      .catch(e => console.error('Error al cargar profesionales 24-7:', e))
+      .finally(() => setUrgentProsLoading(false));
   }, []);
 
   useEffect(() => {
@@ -266,6 +266,22 @@ const Home = () => {
     setGeoLoading(false);
   }, []);
 
+  const saveAddressToProfile = useCallback(async () => {
+    if (!user || !addressForm.city) return;
+    try {
+      await api.put('/users/profile', {
+        address: {
+          street: addressForm.street,
+          number: addressForm.number,
+          neighborhood: addressForm.neighborhood,
+          city: addressForm.city,
+          state: addressForm.province,
+          country: 'Argentina'
+        }
+      });
+    } catch { /* non-critical */ }
+  }, [user, addressForm]);
+
   const getLocation = useCallback(async () => {
     setGeoLoading(true);
     setGeoError('');
@@ -289,7 +305,23 @@ const Home = () => {
     setGeoLoading(false);
   }, [reverseGeocode]);
 
-  useEffect(() => { getLocation(); }, [getLocation]);
+  // Use stored address if logged in, otherwise show address input
+  useEffect(() => {
+    const coords = user?.coordinates?.coordinates;
+    const hasCoords = coords && coords.length === 2 && (coords[0] !== 0 || coords[1] !== 0);
+    if (hasCoords) {
+      setUserLocation({ lat: coords[1], lng: coords[0] });
+      setLocationMode('city');
+      const addr = user.address || {};
+      if (addr.street || addr.city) {
+        setUserAddress([addr.street, addr.number].filter(Boolean).join(' ') + (addr.city ? `, ${addr.city}` : ''));
+      }
+      setShowCityInput(false);
+    } else {
+      setShowCityInput(true);
+      setShowFullAddress(true);
+    }
+  }, [user?.id]);
 
   useEffect(() => {
     if (featuredPros.length === 0) return;
@@ -426,9 +458,10 @@ const Home = () => {
           <Marker position={[userLocation.lat, userLocation.lng]} icon={userIcon}>
             <Popup><div className="text-center"><p className="font-semibold text-sm">Tu ubicacion</p><p className="text-xs text-gray-500">{userAddress || 'Estas aqui'}</p></div></Popup>
           </Marker>
-          {featuredPros.slice(0, 5).map((pro) => (
-            pro.location?.coordinates?.length === 2 && (
-              <Marker key={pro._id} position={[pro.location.coordinates[1], pro.location.coordinates[0]]} icon={customIcon}>
+          {featuredPros.slice(0, 5).map((pro) => {
+            const raw = pro.location?.coordinates?.coordinates || pro.location?.coordinates;
+            return raw && raw.length === 2 ? (
+              <Marker key={pro._id} position={[raw[1], raw[0]]} icon={customIcon}>
                 <Popup>
                   <div className="text-center min-w-[180px]">
                     <img src={pro.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(pro.businessName || pro.profession)}&background=0f7a5a&color=fff`}
@@ -440,17 +473,23 @@ const Home = () => {
                   </div>
                 </Popup>
               </Marker>
-            )
-          ))}
+            ) : null;
+          })}
         </MapContainer>
-        <div className="absolute bottom-3 left-3 right-3 z-[1000] flex justify-center">
+        <div className="absolute bottom-3 left-3 right-3 z-[1000] flex flex-col items-center gap-1.5">
           <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-lg px-4 py-2.5 flex items-center gap-3 text-sm">
             <MapPin size={14} className="text-primary-500 shrink-0" />
-            <span className="text-gray-600 text-xs truncate max-w-[160px]">{userAddress || 'Profesionales cerca de tu ubicacion'}</span>
+            <span className="text-gray-600 text-xs truncate max-w-[140px]">{userAddress || 'Profesionales cerca de tu ubicacion'}</span>
             {locationMode === 'gps' && <span className="text-[10px] text-primary-500 bg-primary-50 px-1.5 py-0.5 rounded font-medium">GPS</span>}
             {locationMode === 'city' && <span className="text-[10px] text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded font-medium">Ciudad</span>}
             <button onClick={() => { setShowCityInput(true); setShowFullAddress(true); }} className="text-xs text-gray-400 hover:text-gray-600 underline ml-auto">cambiar</button>
           </div>
+          {user && locationMode === 'city' && (
+            <button onClick={saveAddressToProfile}
+              className="text-[11px] bg-primary-600 hover:bg-primary-700 text-white px-3 py-1.5 rounded-lg shadow-lg transition-all flex items-center gap-1.5">
+              <MapPin size={12} /> Guardar direccion en mi perfil
+            </button>
+          )}
         </div>
       </div>
     );
@@ -479,19 +518,7 @@ const Home = () => {
         <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-5 lg:py-10">
           {/* MOBILE LAYOUT */}
           <div className="block lg:hidden space-y-2.5">
-            {!alreadyInstalled && (
               <div className="space-y-2">
-                {device === 'android' && (
-                  <a href={APK_URL} download
-                    className="w-full inline-flex items-center justify-center gap-3 px-5 py-3.5 bg-primary-500 text-white font-bold text-sm rounded-xl hover:bg-primary-600 active:bg-primary-700 transition-all shadow-lg shadow-primary-500/30"
-                  ><Download size={20} /> Descargar APK — Gratis</a>
-                )}
-                {device === 'ios' && (
-                  <div onClick={() => window.dispatchEvent(new CustomEvent('open-ios-guide'))}
-                    className="w-full flex items-center justify-center gap-3 px-5 py-3.5 bg-primary-500 text-white font-bold text-sm rounded-xl hover:bg-primary-600 active:bg-primary-700 transition-all shadow-lg shadow-primary-500/30 cursor-pointer"
-                  ><Plus size={20} /> Agregar a pantalla de inicio</div>
-                )}
-
                 <div className="flex gap-2">
                   <Link to="/register"
                     className="flex-1 inline-flex items-center justify-center gap-2 px-3 py-2.5 bg-primary-500 text-white font-bold text-xs rounded-xl hover:bg-primary-600 transition-all shadow-lg shadow-primary-500/25"
@@ -501,17 +528,6 @@ const Home = () => {
                   ><Search size={15} /> Explorar servicios</Link>
                 </div>
               </div>
-            )}
-            {alreadyInstalled && (
-              <div className="flex gap-2">
-                <Link to="/register"
-                  className="flex-1 inline-flex items-center justify-center gap-2 px-3 py-2.5 bg-primary-500 text-white font-bold text-xs rounded-xl hover:bg-primary-600 transition-all shadow-lg shadow-primary-500/25"
-                ><UserPlus size={15} /> Crear cuenta gratis</Link>
-                <Link to="/search"
-                  className="flex-1 inline-flex items-center justify-center gap-2 px-3 py-2.5 bg-white/10 text-white font-semibold text-xs rounded-xl hover:bg-white/20 transition-all border border-gray-700 backdrop-blur-sm"
-                ><Search size={15} /> Explorar servicios</Link>
-              </div>
-            )}
 
             <div className="text-center">
               <h1 className="text-base sm:text-lg font-black text-white leading-tight">
@@ -590,35 +606,15 @@ const Home = () => {
                 className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-red-600/20 to-orange-600/20 hover:from-red-600/30 hover:to-orange-600/30 border border-red-500/30 hover:border-red-500/50 rounded-xl text-xs text-red-400 hover:text-red-300 transition-all"
               ><AlertTriangle size={14} /> 24-7 — Profesionales disponibles todo el dia <ArrowRight size={14} /></Link>
             </div>
-            {!alreadyInstalled && (
-              <div className="shrink-0 flex flex-col items-center gap-3">
-                <PhoneMockup />
-                <div className="flex items-stretch gap-2">
-                  <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-2 shrink-0 flex items-center">
-                    <QRCodeCanvas value={SITE_URL} size={60} bgColor="#ffffff" fgColor="#0f7a5a" level="M" />
-                  </div>
-                  <div className="flex flex-col justify-center gap-1">
-                    {device === 'android' && (
-                      <a href={APK_URL} download
-                        className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-primary-500 text-white font-bold text-sm rounded-xl hover:bg-primary-600 transition-all shadow-xl shadow-primary-500/30"
-                      ><Download size={18} /> Descargar APK</a>
-                    )}
-                    {device === 'ios' && (
-                      <button onClick={() => window.dispatchEvent(new CustomEvent('open-ios-guide'))}
-                        className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-primary-500 text-white font-bold text-sm rounded-xl hover:bg-primary-600 transition-all shadow-xl shadow-primary-500/30"
-                      ><Plus size={18} /> Instalar en iPhone</button>
-                    )}
-                    {device === 'desktop' && (
-                      <a href={SITE_URL} target="_blank" rel="noopener noreferrer"
-                        className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-primary-500 text-white font-bold text-sm rounded-xl hover:bg-primary-600 transition-all shadow-xl shadow-primary-500/30"
-                      ><Download size={18} /> Ir a la App</a>
-                    )}
-                    <p className="text-[10px] text-gray-500 text-center">{device === 'android' ? `v${APK_VERSION} · Gratis` : 'Gratis · Sin registro'}</p>
-                  </div>
-                </div>
-              </div>
-            )}
+            <div className="shrink-0">
+              <ProfessionalsImage />
+            </div>
           </div>
+        </div>
+        <div className="absolute top-4 right-4 hidden lg:block">
+          <a href={PLAY_STORE_URL} target="_blank" rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 px-3 py-1.5 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full text-xs text-white hover:bg-white/20 transition-all"
+          ><svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M3.609 1.814L13.792 12 3.61 22.186a.996.996 0 01-.61-.92V2.734a1 1 0 01.609-.92zm10.89 10.893l2.302 2.302-10.937 6.333 8.635-8.635zm3.199-3.199l2.807 1.626a1 1 0 010 1.732l-2.807 1.626L15.206 12l2.492-2.492zM5.864 2.658L16.8 8.99l-2.302 2.302-8.634-8.634z"/></svg> Disponible en Play Store</a>
         </div>
         <div className="absolute bottom-0 left-0 right-0 h-12 md:h-24 bg-gradient-to-t from-gray-50 to-transparent" />
       </section>
@@ -666,6 +662,43 @@ const Home = () => {
                     </div>
                   </div>
                   <ArrowRight size={16} className="text-gray-300 group-hover:text-primary-500 transition-colors shrink-0 mt-2" />
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* URGENCIAS / DISPONIBLE AHORA */}
+      {!urgentProsLoading && urgentPros.length > 0 && (
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8">
+          <div className="bg-gradient-to-r from-red-600 via-red-500 to-orange-500 rounded-2xl p-5 md:p-6 shadow-lg">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
+                  <AlertTriangle size={22} className="text-white" />
+                </div>
+                <div>
+                  <h2 className="text-white font-bold text-base">Urgencias / Disponible Ahora</h2>
+                  <p className="text-white/80 text-xs">Profesionales con disponibilidad 24/7 para emergencias</p>
+                </div>
+              </div>
+              <Link to="/search?disponibilidad=24-7" className="shrink-0 px-3 py-1.5 bg-white/20 hover:bg-white/30 text-white text-xs font-semibold rounded-lg transition-all">
+                Ver todos
+              </Link>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+              {urgentPros.slice(0, 6).map((pro) => (
+                <Link key={pro._id} to={`/service/${pro._id}`}
+                  className="bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-xl p-3 text-center transition-all group"
+                >
+                  <img src={pro.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(pro.businessName || pro.profession)}&background=dc2626&color=fff`}
+                    alt="" className="w-12 h-12 rounded-full mx-auto mb-2 object-cover ring-2 ring-white/30 group-hover:ring-white/50 transition-all" />
+                  <p className="text-white text-xs font-semibold truncate">{pro.businessName || pro.profession}</p>
+                  <p className="text-white/60 text-[10px] truncate">{pro.profession}</p>
+                  {pro.available24h && (
+                    <span className="inline-block mt-1 px-1.5 py-0.5 bg-white/20 text-white text-[9px] font-bold rounded">24/7</span>
+                  )}
                 </Link>
               ))}
             </div>
@@ -836,26 +869,7 @@ const Home = () => {
         </div>
       </section>
 
-      {/* IOS BLOCK */}
-      {device === 'ios' && (
-        <section className="bg-gray-50 py-10 md:py-14 px-4">
-          <div className="max-w-5xl mx-auto">
-            <div className="bg-white rounded-2xl border border-gray-200 p-5 md:p-8 flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
-              <div className="w-12 h-12 rounded-xl bg-primary-50 flex items-center justify-center shrink-0">
-                <Smartphone size={24} className="text-primary-600" />
-              </div>
-              <div className="text-center sm:text-left">
-                <p className="text-gray-900 font-bold text-sm">Usa MiProfesional desde tu iPhone</p>
-                <p className="text-gray-500 text-xs mt-1">Safari <span className="text-gray-300 mx-1">→</span> Compartir <span className="text-gray-300 mx-1">→</span> Agregar a pantalla de inicio</p>
-              </div>
-              <button onClick={() => window.dispatchEvent(new CustomEvent('open-ios-guide'))}
-                className="shrink-0 px-5 py-2.5 bg-primary-500 text-white font-bold text-sm rounded-xl hover:bg-primary-600 transition-all shadow-lg shadow-primary-500/25 ml-auto">
-                Como hacerlo
-              </button>
-            </div>
-          </div>
-        </section>
-      )}
+
 
       {/* PRICING */}
       <section className="py-10 md:py-16 px-4">
@@ -873,7 +887,7 @@ const Home = () => {
               <p className="text-3xl md:text-4xl font-black text-gray-900 mb-1">$5.000</p>
               <p className="text-[11px] text-gray-400 mb-1 line-through">$5.000</p>
               <p className="text-[11px] text-gray-500 mb-3">por mes · Recurrencia automatica · Cancelas cuando quieras</p>
-              <Link to="/subscription" className="block w-full px-4 py-2 bg-primary-600 text-white font-bold text-xs rounded-xl hover:bg-primary-700 transition-all shadow-sm">
+              <Link to="/subscriptions" className="block w-full px-4 py-2 bg-primary-600 text-white font-bold text-xs rounded-xl hover:bg-primary-700 transition-all shadow-sm">
                 Activar suscripcion
               </Link>
             </div>

@@ -153,10 +153,18 @@ router.post('/register', registerLimiter, [
   body('name').trim().isLength({ min: 2, max: 100 }).withMessage('Name must be between 2 and 100 characters'),
   body('email').isEmail().normalizeEmail().withMessage('Please provide a valid email'),
   body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters long'),
-  body('role').optional().isIn(['client', 'professional']).withMessage('Role must be client or professional')
+  body('role').optional().isIn(['client', 'professional']).withMessage('Role must be client or professional'),
+  body('address').optional().isObject(),
+  body('address.street').optional().trim(),
+  body('address.number').optional().trim(),
+  body('address.city').optional().trim(),
+  body('address.state').optional().trim(),
+  body('categoryId').optional().isMongoId().withMessage('Invalid category ID'),
+  body('subcategoryId').optional().isMongoId().withMessage('Invalid subcategory ID'),
+  body('available24h').optional().isBoolean().withMessage('available24h must be a boolean')
 ], handleValidationErrors, async (req, res) => {
   try {
-    const { name, email, password, phone, location, role = 'client', profession, acceptMarketing } = req.body;
+    const { name, email, password, phone, location, address, role = 'client', profession, categoryId, subcategoryId, available24h, acceptMarketing } = req.body;
 
     // Check if user already exists
     const existingUser = await User.findOne({ email });
@@ -176,6 +184,7 @@ router.post('/register', registerLimiter, [
       existingUser.role = role;
       if (phone) existingUser.phone = phone;
       if (location) existingUser.location = location;
+      if (address) existingUser.address = { ...existingUser.address?.toObject?.() || existingUser.address || {}, ...address };
       existingUser.isActive = true;
       existingUser.deactivatedAt = undefined;
       existingUser.preferences = {
@@ -201,6 +210,9 @@ router.post('/register', registerLimiter, [
         if (existingPro) {
           existingPro.isActive = true;
           existingPro.profileStatus = 'ACTIVE';
+          if (categoryId) existingPro.categoryId = categoryId;
+          if (subcategoryId) existingPro.subcategoryId = subcategoryId;
+          if (available24h !== undefined) existingPro.available24h = available24h;
           existingPro.subscription = {
             status: 'trial',
             trialStart: now,
@@ -212,6 +224,9 @@ router.post('/register', registerLimiter, [
             userId: existingUser._id,
             businessName: name,
             profession: profession || 'pendiente',
+            categoryId: categoryId || undefined,
+            subcategoryId: subcategoryId || undefined,
+            available24h: available24h === true,
             description: 'Completa tu perfil profesional',
             contact: { phone: phone || '+000000000000', email: existingUser.email },
             location: { address: 'pendiente', city: 'pendiente', state: 'pendiente', country: 'Argentina', coordinates: { type: 'Point', coordinates: [0, 0] } },
@@ -265,6 +280,7 @@ router.post('/register', registerLimiter, [
     };
     if (phone) userData.phone = phone;
     if (location) userData.location = location;
+    if (address) userData.address = { ...{ street: '', number: '', neighborhood: '', city: '', state: '', country: 'Argentina' }, ...address };
     const user = new User(userData);
 
     user.generateVerificationToken();
@@ -279,6 +295,8 @@ router.post('/register', registerLimiter, [
           userId: user._id,
           businessName: name,
           profession: profession || 'pendiente',
+          categoryId: categoryId || undefined,
+          subcategoryId: subcategoryId || undefined,
           description: 'Completa tu perfil profesional',
           contact: { phone: phone || '+000000000000', email: user.email },
           location: {
@@ -291,6 +309,7 @@ router.post('/register', registerLimiter, [
           pricing: { hourlyRate: 0, currency: 'ARS' },
           isActive: true,
           profileStatus: 'ACTIVE',
+          available24h: available24h === true,
           subscription: {
             status: 'trial',
             trialStart: now,
@@ -576,10 +595,7 @@ router.post('/forgot-password', sensitiveLimiter, [
       });
     }
 
-    const resetToken = crypto.randomBytes(32).toString('hex');
-    const resetTokenHash = await bcrypt.hash(resetToken, 10);
-    user.resetPasswordToken = resetTokenHash;
-    user.resetPasswordExpires = Date.now() + 3600000;
+    const resetToken = user.generatePasswordResetToken();
     await user.save();
 
     eventBus.emit('user:password-reset-requested', { email, name: user.name, token: resetToken });
