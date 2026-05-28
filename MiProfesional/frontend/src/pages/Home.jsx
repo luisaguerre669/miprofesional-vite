@@ -611,11 +611,6 @@ const Home = () => {
             </div>
           </div>
         </div>
-        <div className="absolute top-4 right-4 hidden lg:block">
-          <a href={PLAY_STORE_URL} target="_blank" rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-3 py-1.5 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full text-xs text-white hover:bg-white/20 transition-all"
-          ><svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M3.609 1.814L13.792 12 3.61 22.186a.996.996 0 01-.61-.92V2.734a1 1 0 01.609-.92zm10.89 10.893l2.302 2.302-10.937 6.333 8.635-8.635zm3.199-3.199l2.807 1.626a1 1 0 010 1.732l-2.807 1.626L15.206 12l2.492-2.492zM5.864 2.658L16.8 8.99l-2.302 2.302-8.634-8.634z"/></svg> Disponible en Play Store</a>
-        </div>
         <div className="absolute bottom-0 left-0 right-0 h-12 md:h-24 bg-gradient-to-t from-gray-50 to-transparent" />
       </section>
 
