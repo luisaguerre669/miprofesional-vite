@@ -383,12 +383,7 @@ const Layout = ({ children }) => {
 
       <div className="lg:hidden h-16" />
 
-      <div className="text-center py-3 bg-gray-50 border-t border-gray-100">
-        <a href="https://play.google.com/store/apps/details?id=com.miprofesional.app" target="_blank" rel="noopener noreferrer"
-          className="text-xs text-gray-400 hover:text-primary-600 transition-colors">
-          📲 Disponible en Play Store
-        </a>
-      </div>
+
     </div>
   );
 };
