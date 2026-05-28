@@ -743,7 +743,7 @@ const SystemStatus = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api.get('/admin/system-status').then(r => setStatus(r.data.data)).catch(() => {}).finally(() => setLoading(false));
+    api.get('/admin/system-status').then(r => setStatus(r.data.data)).catch(e => console.error('Error al obtener estado del sistema:', e)).finally(() => setLoading(false));
   }, []);
 
   if (loading) return <div className="flex items-center gap-2 text-sm text-gray-400"><Loader2 size={14} className="animate-spin" /> Cargando...</div>;

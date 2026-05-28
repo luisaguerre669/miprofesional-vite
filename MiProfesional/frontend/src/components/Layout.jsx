@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Menu, X, User, LogOut, Home, Search, MessageSquare, LayoutDashboard, Bell, CreditCard, Settings, Shield, Plus, LogIn, Building2, Wrench, AlertTriangle, Sparkles } from 'lucide-react';
 import Logo from './Logo';
-import IOSInstallGuide from './ios/IOSInstallGuide';
+
 
 const Layout = ({ children }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
@@ -179,10 +179,8 @@ const Layout = ({ children }) => {
               {[
                 { name: 'Inicio', path: '/', icon: Home },
                 { name: 'Buscar', path: '/search', icon: Search },
-                { name: 'Mensajes', path: '/messages', icon: MessageSquare },
                 { name: '24-7', path: '/search?disponibilidad=24-7', icon: AlertTriangle },
                 { name: 'Belleza', path: '/categoria/belleza-y-cuidado', icon: Sparkles },
-                { name: 'Dashboard', path: isAuthenticated ? (isProfessional ? '/dashboard/professional' : '/dashboard/client') : '/login', icon: LayoutDashboard },
               ].map((link, idx) => {
                 const Icon = link.icon;
                 const isActive = location.pathname === link.path;
@@ -202,6 +200,18 @@ const Layout = ({ children }) => {
               <div className="border-t border-gray-100 pt-3 mt-3 space-y-2">
                 {isAuthenticated ? (
                   <>
+                    <Link to="/messages" onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50"
+                    >
+                      <MessageSquare size={18} />
+                      <span>Mensajes</span>
+                    </Link>
+                    <Link to={isProfessional ? '/dashboard/professional' : '/dashboard/client'} onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50"
+                    >
+                      <LayoutDashboard size={18} />
+                      <span>Dashboard</span>
+                    </Link>
                     <Link to="/profile" onClick={() => setMobileMenuOpen(false)}
                       className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50"
                     >
@@ -282,7 +292,7 @@ const Layout = ({ children }) => {
               <ul className="space-y-2.5">
                 <li><Link to="/search" className="text-gray-400 text-sm hover:text-white transition-colors">Buscar Servicios</Link></li>
                 <li><Link to="/register" className="text-gray-400 text-sm hover:text-white transition-colors">Crear Cuenta</Link></li>
-                <li><Link to="/subscription" className="text-gray-400 text-sm hover:text-white transition-colors">Planes de suscripcion</Link></li>
+                <li><Link to="/subscriptions" className="text-gray-400 text-sm hover:text-white transition-colors">Planes de suscripcion</Link></li>
               </ul>
             </div>
 
@@ -290,7 +300,7 @@ const Layout = ({ children }) => {
               <h3 className="text-white font-semibold text-sm mb-4">Profesionales</h3>
               <ul className="space-y-2.5">
                 <li><Link to="/register?role=professional" className="text-gray-400 text-sm hover:text-white transition-colors">Registrarse</Link></li>
-                <li><Link to="/subscription" className="text-gray-400 text-sm hover:text-white transition-colors">Planes de suscripcion</Link></li>
+                <li><Link to="/subscriptions" className="text-gray-400 text-sm hover:text-white transition-colors">Planes de suscripcion</Link></li>
                 <li><Link to="/login" className="text-gray-400 text-sm hover:text-white transition-colors">Iniciar sesion</Link></li>
               </ul>
             </div>
@@ -331,15 +341,32 @@ const Layout = ({ children }) => {
 
       <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 safe-area-bottom">
         <div className="flex items-center justify-around h-16 px-2">
-              {[
-                { name: 'Inicio', path: '/', icon: Home },
-                { name: 'Buscar', path: '/search', icon: Search },
-                { name: '24-7', path: '/search?disponibilidad=24-7', icon: AlertTriangle },
-                { name: 'Dashboard', path: isAuthenticated ? (isProfessional ? '/dashboard/professional' : '/dashboard/client') : '/login', icon: LayoutDashboard },
-                ...(user?.role === 'admin' ? [{ name: 'Admin', path: '/admin', icon: Shield }] : [{ name: isAuthenticated ? 'Perfil' : 'Ingresar', path: isAuthenticated ? '/profile' : '/login', icon: User }]),
-              ].map((link) => {
+          {(
+            !isAuthenticated
+              ? [
+                  { name: 'Inicio', path: '/', icon: Home },
+                  { name: 'Buscar', path: '/search', icon: Search },
+                  { name: '24-7', path: '/search?disponibilidad=24-7', icon: AlertTriangle },
+                  { name: 'Ingresar', path: '/login', icon: LogIn },
+                ]
+              : user?.role === 'admin'
+                ? [
+                    { name: 'Inicio', path: '/', icon: Home },
+                    { name: 'Buscar', path: '/search', icon: Search },
+                    { name: '24-7', path: '/search?disponibilidad=24-7', icon: AlertTriangle },
+                    { name: 'Dashboard', path: '/dashboard/professional', icon: LayoutDashboard },
+                    { name: 'Admin', path: '/admin', icon: Shield },
+                  ]
+                : [
+                    { name: 'Inicio', path: '/', icon: Home },
+                    { name: 'Buscar', path: '/search', icon: Search },
+                    { name: '24-7', path: '/search?disponibilidad=24-7', icon: AlertTriangle },
+                    { name: 'Dashboard', path: isProfessional ? '/dashboard/professional' : '/dashboard/client', icon: LayoutDashboard },
+                    { name: 'Perfil', path: '/profile', icon: User },
+                  ]
+          ).map((link) => {
             const Icon = link.icon;
-            const isActive = location.pathname === link.path;
+            const isActive = location.pathname === link.path || (link.path !== '/' && location.pathname.startsWith(link.path));
             return (
               <Link key={link.path} to={link.path}
                 className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all min-w-[64px] ${
@@ -356,7 +383,12 @@ const Layout = ({ children }) => {
 
       <div className="lg:hidden h-16" />
 
-      <IOSInstallGuide />
+      <div className="text-center py-3 bg-gray-50 border-t border-gray-100">
+        <a href="https://play.google.com/store/apps/details?id=com.miprofesional.app" target="_blank" rel="noopener noreferrer"
+          className="text-xs text-gray-400 hover:text-primary-600 transition-colors">
+          📲 Disponible en Play Store
+        </a>
+      </div>
     </div>
   );
 };

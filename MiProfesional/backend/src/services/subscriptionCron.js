@@ -49,11 +49,15 @@ async function processExpiredTrials() {
 }
 
 function startSubscriptionCron() {
+  // Run immediately on startup
+  processExpiredTrials();
+
+  // Then every hour
   cron.schedule('0 * * * *', () => {
     processExpiredTrials();
   });
 
-  logger.info('Subscription cron started: runs every hour');
+  logger.info('Subscription cron started: runs on startup and every hour');
 }
 
 module.exports = { startSubscriptionCron, processExpiredTrials };

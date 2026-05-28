@@ -8,6 +8,14 @@ import {
 } from 'lucide-react';
 import MapView from '../components/MapView';
 import { getAccurateLocation } from '../utils/geolocation';
+const PROVINCES = [
+  'CABA', 'Buenos Aires', 'Catamarca', 'Chaco', 'Chubut', 'Cordoba',
+  'Corrientes', 'Entre Rios', 'Formosa', 'Jujuy', 'La Pampa', 'La Rioja',
+  'Mendoza', 'Misiones', 'Neuquen', 'Rio Negro', 'Salta', 'San Juan',
+  'San Luis', 'Santa Cruz', 'Santa Fe', 'Santiago del Estero',
+  'Tierra del Fuego', 'Tucuman'
+];
+
 function StarRating({ rating, size = 14 }) {
   return (
     <div className="flex items-center gap-0.5">
@@ -31,6 +39,9 @@ const Search = () => {
   const [searchRadius, setSearchRadius] = useState(10);
   const [userLocation, setUserLocation] = useState(null);
   const [disponibilidad247, setDisponibilidad247] = useState(searchParams.get('disponibilidad') === '24-7');
+  const [geoError, setGeoError] = useState('');
+  const [showAddressForm, setShowAddressForm] = useState(false);
+  const [addressForm, setAddressForm] = useState({ street: '', number: '', city: '', province: '' });
   const [filters, setFilters] = useState({
     category: searchParams.get('category') || '',
     subcategory: '',
@@ -43,12 +54,16 @@ const Search = () => {
   });
 
   useEffect(() => {
-    api.get('/categories?limit=50').then(r => setCategories(r.data.data || [])).catch(() => {});
+    api.get('/categories?limit=50').then(r => setCategories(r.data.data || [])).catch(e => console.error('Error al cargar categorías:', e));
     
     getAccurateLocation().then(res => {
       if (!res.error && res.lat && res.lng) {
         setUserLocation({ lat: res.lat, lng: res.lng });
+      } else {
+        setGeoError('No pudimos obtener tu ubicación automática. Ingresá tu dirección manualmente para buscar profesionales cerca tuyo.');
       }
+    }).catch(() => {
+      setGeoError('No pudimos obtener tu ubicación automática. Ingresá tu dirección manualmente para buscar profesionales cerca tuyo.');
     });
 
     const q = searchParams.get('q');
@@ -335,6 +350,70 @@ const Search = () => {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* GPS Fallback */}
+      {geoError && !showAddressForm && (
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-start gap-3">
+          <MapPin size={18} className="text-amber-500 mt-0.5 shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm text-amber-800">{geoError}</p>
+            <button onClick={() => setShowAddressForm(true)}
+              className="mt-2 text-sm font-semibold text-primary-600 hover:text-primary-700 underline underline-offset-2"
+            >Ingresar dirección manualmente</button>
+          </div>
+        </div>
+      )}
+
+      {showAddressForm && (
+        <div className="bg-white border border-gray-200 rounded-2xl p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-gray-800">Ingresá tu ubicación</h3>
+            <button onClick={() => { setShowAddressForm(false); setGeoError(''); }} className="text-gray-400 hover:text-gray-600">
+              <X size={16} />
+            </button>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <input type="text" value={addressForm.street} onChange={e => setAddressForm(f => ({ ...f, street: e.target.value }))}
+              placeholder="Calle" className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+            />
+            <input type="text" value={addressForm.number} onChange={e => setAddressForm(f => ({ ...f, number: e.target.value }))}
+              placeholder="Altura" className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+            />
+            <input type="text" value={addressForm.city} onChange={e => setAddressForm(f => ({ ...f, city: e.target.value }))}
+              placeholder="Ciudad" className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+            />
+            <select value={addressForm.province} onChange={e => setAddressForm(f => ({ ...f, province: e.target.value }))}
+              className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white"
+            >
+              <option value="">Provincia</option>
+              {PROVINCES.map(p => <option key={p} value={p}>{p}</option>)}
+            </select>
+          </div>
+          <button onClick={async () => {
+            if (!addressForm.city) return;
+            try {
+              const res = await api.get('/professionals/geocode', {
+                params: {
+                  address: [addressForm.street, addressForm.number].filter(Boolean).join(' '),
+                  city: addressForm.city,
+                  state: addressForm.province,
+                  country: 'Argentina'
+                }
+              });
+              if (res.data?.success && res.data?.data) {
+                setUserLocation({ lat: res.data.data.latitude, lng: res.data.data.longitude });
+                setFilters(f => ({ ...f, location: res.data.data.displayName || addressForm.city }));
+                setShowAddressForm(false);
+                setGeoError('');
+              }
+            } catch (e) {
+              setGeoError('No encontramos esa dirección. Revisá los datos e intentá de nuevo.');
+            }
+          }}
+            className="w-full py-2.5 bg-primary-600 text-white font-semibold rounded-xl hover:bg-primary-700 transition-all text-sm"
+          >Ubicar en el mapa</button>
         </div>
       )}
 

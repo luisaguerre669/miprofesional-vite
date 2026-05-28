@@ -98,7 +98,7 @@ export const AuthProvider = ({ children }) => {
 
   const updateProfile = async (profileData) => {
     try {
-      const response = await api.put('/auth/profile', profileData);
+      const response = await api.put('/users/profile', profileData);
       setUser(response.data.data.user);
       localStorage.setItem('user', JSON.stringify(response.data.data.user));
       return { success: true };

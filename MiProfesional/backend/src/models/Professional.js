@@ -318,6 +318,10 @@ const professionalSchema = new mongoose.Schema({
     type: Date,
     default: null
   },
+  available24h: {
+    type: Boolean,
+    default: false
+  },
   lastActiveAt: {
     type: Date,
     default: null
@@ -543,11 +547,20 @@ professionalSchema.methods.getNextAvailableSlot = function() {
 };
 
 // Static methods
-professionalSchema.statics.findByLocation = function(longitude, latitude, maxDistance = 50) {
-  return this.find({
+professionalSchema.statics.activeFilter = function() {
+  return {
     isActive: true,
     profileStatus: 'ACTIVE',
-    'subscription.status': 'active',
+    $or: [
+      { 'subscription.status': 'active' },
+      { 'subscription.status': 'trial', 'subscription.trialEnd': { $gte: new Date() } }
+    ]
+  };
+};
+
+professionalSchema.statics.findByLocation = function(longitude, latitude, maxDistance = 50) {
+  return this.find({
+    ...this.activeFilter(),
     'location.coordinates': {
       $near: {
         $geometry: {
@@ -570,6 +583,7 @@ professionalSchema.statics.search = function(query, options = {}) {
     minRating = 0,
     maxPrice,
     isVerified = false,
+    available24h = false,
     limit = 20,
     skip = 0,
     sortBy = 'stats.rating',
@@ -577,9 +591,7 @@ professionalSchema.statics.search = function(query, options = {}) {
   } = options;
   
   const searchQuery = {
-    isActive: true,
-    profileStatus: 'ACTIVE',
-    'subscription.status': 'active'
+    ...this.activeFilter(),
   };
   
   // Text search
@@ -626,6 +638,11 @@ professionalSchema.statics.search = function(query, options = {}) {
     searchQuery['verification.isVerified'] = true;
   }
   
+  // Available 24-7 filter
+  if (available24h) {
+    searchQuery.available24h = true;
+  }
+  
   return this.find(searchQuery)
     .sort({ [sortBy]: sortOrder === 'desc' ? -1 : 1 })
     .skip(skip)
@@ -636,9 +653,7 @@ professionalSchema.statics.search = function(query, options = {}) {
 
 professionalSchema.statics.getTopRated = function(limit = 10, categoryId = null) {
   const query = {
-    isActive: true,
-    profileStatus: 'ACTIVE',
-    'subscription.status': 'active',
+    ...this.activeFilter(),
     'stats.rating': { $gte: 4.0 },
     'stats.reviewCount': { $gte: 5 }
   };
@@ -655,9 +670,7 @@ professionalSchema.statics.getTopRated = function(limit = 10, categoryId = null)
 
 professionalSchema.statics.getFeatured = function(limit = 6) {
   return this.find({
-    isActive: true,
-    profileStatus: 'ACTIVE',
-    'subscription.status': 'active',
+    ...this.activeFilter(),
     isFeatured: true,
     $or: [
       { featuredUntil: null },
@@ -671,9 +684,7 @@ professionalSchema.statics.getFeatured = function(limit = 6) {
 
 professionalSchema.statics.getVerified = function(limit = 20) {
   return this.find({
-    isActive: true,
-    profileStatus: 'ACTIVE',
-    'subscription.status': 'active',
+    ...this.activeFilter(),
     'verification.isVerified': true
   })
   .sort({ 'stats.rating': -1 })
@@ -682,8 +693,9 @@ professionalSchema.statics.getVerified = function(limit = 20) {
 };
 
 professionalSchema.statics.getStats = async function() {
+  const now = new Date();
   const stats = await this.aggregate([
-    { $match: { isActive: true, profileStatus: 'ACTIVE', 'subscription.status': 'active' } },
+    { $match: { isActive: true, profileStatus: 'ACTIVE', $or: [ { 'subscription.status': 'active' }, { 'subscription.status': 'trial', 'subscription.trialEnd': { $gte: now } } ] } },
     {
       $group: {
         _id: null,

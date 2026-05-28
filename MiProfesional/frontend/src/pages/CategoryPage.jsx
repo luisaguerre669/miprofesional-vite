@@ -26,13 +26,14 @@ const CategoryPage = () => {
   useEffect(() => {
     if (!slug) return;
     setLoading(true);
-    Promise.all([
-      api.get(`/categories/slug/${slug}`).then(r => r.data.data).catch(() => null),
-      api.get('/professionals/search', { params: { q: slug, limit: 12 } }).then(r => r.data.data || []).catch(() => []),
-    ]).then(([cat, pros]) => {
+    api.get(`/categories/slug/${slug}`).then(catRes => {
+      const cat = catRes.data.data;
       setCategory(cat);
-      setProfessionals(pros);
-    }).finally(() => setLoading(false));
+      if (!cat) return;
+      return api.get('/professionals/search', { params: { categoryId: cat._id, limit: 12 } }).then(r => r.data.data || []);
+    }).then(pros => setProfessionals(pros || []))
+    .catch(() => {})
+    .finally(() => setLoading(false));
   }, [slug]);
 
   if (loading) return (
