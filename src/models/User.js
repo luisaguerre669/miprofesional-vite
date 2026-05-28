@@ -70,6 +70,14 @@ const userSchema = new mongoose.Schema({
     trim: true,
     maxlength: [200, 'Location cannot exceed 200 characters']
   },
+  address: {
+    street: { type: String, trim: true, default: '' },
+    number: { type: String, trim: true, default: '' },
+    neighborhood: { type: String, trim: true, default: '' },
+    city: { type: String, trim: true, default: '' },
+    state: { type: String, trim: true, default: '' },
+    country: { type: String, default: 'Argentina' }
+  },
   coordinates: {
     type: {
       type: String,
@@ -78,7 +86,7 @@ const userSchema = new mongoose.Schema({
     },
     coordinates: {
       type: [Number],
-      default: [0, 0] // [longitude, latitude]
+      default: [0, 0]
     }
   },
   preferences: {
@@ -203,7 +211,34 @@ userSchema.pre('save', async function(next) {
   if (this.isModified && this.isActive && !this.lastLogin) {
     this.lastLogin = new Date();
   }
-  
+
+  // Auto-geocode on address change
+  if (this.isModified('address.street') || this.isModified('address.city') || this.isModified('address.state')) {
+    const addr = this.address;
+    if (addr.street || addr.city) {
+      try {
+        const { geocodeAddress } = require('../utils/geocode');
+        const result = await geocodeAddress({
+          address: `${addr.street} ${addr.number}`.trim(),
+          city: addr.city,
+          state: addr.state,
+          country: addr.country
+        });
+        if (result) {
+          this.coordinates = {
+            type: 'Point',
+            coordinates: [result.longitude, result.latitude]
+          };
+          if (!this.location) {
+            this.location = result.displayName || `${addr.street} ${addr.number}, ${addr.city}`.trim();
+          }
+        }
+      } catch (err) {
+        // non-critical
+      }
+    }
+  }
+
   next();
 });
 
@@ -221,13 +256,13 @@ userSchema.methods.generateVerificationToken = function() {
 userSchema.methods.generatePasswordResetToken = function() {
   const crypto = require('crypto');
   this.resetPasswordToken = crypto.randomBytes(32).toString('hex');
-  this.resetPasswordExpires = Date.now() + 10 * 60 * 1000; // 10 minutes
+  this.resetPasswordExpires = Date.now() + 60 * 60 * 1000; // 1 hour
   return this.resetPasswordToken;
 };
 
 userSchema.methods.clearPasswordResetFields = function() {
-  this.resetPasswordToken = undefined;
-  this.resetPasswordExpires = undefined;
+  this.resetPasswordToken = null;
+  this.resetPasswordExpires = null;
 };
 
 userSchema.methods.updateStats = async function(updates) {
@@ -278,7 +313,7 @@ userSchema.statics.findByVerificationToken = function(token) {
 userSchema.statics.findByResetToken = function(token) {
   return this.findOne({
     resetPasswordToken: token,
-    resetPasswordExpires: { $gt: Date.now() }
+    resetPasswordExpires: { $gt: new Date() }
   }).select('+password');
 };
 
