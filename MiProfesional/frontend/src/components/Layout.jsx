@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Menu, X, User, LogOut, Home, Search, MessageSquare, LayoutDashboard, Bell, CreditCard, Settings, Shield, Plus, LogIn, Building2, Wrench, AlertTriangle, Sparkles } from 'lucide-react';
+import { Menu, X, User, LogOut, Home, Search, MessageSquare, LayoutDashboard, Bell, CreditCard, Settings, Shield, Plus, LogIn, Building2, Wrench, AlertTriangle, Sparkles, FileText, UsersRound } from 'lucide-react';
 import Logo from './Logo';
 
 
@@ -10,7 +10,7 @@ const Layout = ({ children }) => {
   const [searchQuery, setSearchQuery] = React.useState('');
   const [scrolled, setScrolled] = React.useState(false);
   const [userMenuOpen, setUserMenuOpen] = React.useState(false);
-  const { user, isAuthenticated, logout, isProfessional } = useAuth();
+  const { user, isAuthenticated, logout, isProfessional, isEmployer } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -49,6 +49,7 @@ const Layout = ({ children }) => {
                 { name: 'Construcción', path: '/categoria/construccion-y-hogar', icon: Building2 },
                 { name: 'Belleza', path: '/categoria/belleza-y-cuidado', icon: Sparkles },
                 { name: 'Servicios', path: '/categoria/servicios-generales', icon: Wrench },
+                ...(user?.role === 'employer' || user?.role === 'admin' ? [{ name: 'Candidatos', path: '/candidatos', icon: UsersRound }] : []),
                 ...(user?.role === 'admin' ? [{ name: 'Admin', path: '/admin', icon: Shield }] : []),
               ].map((link, idx) => {
                 const Icon = link.icon;
@@ -109,6 +110,16 @@ const Layout = ({ children }) => {
                             className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50">
                             <User size={16} /> Mi Perfil
                           </Link>
+                          <Link to="/cv" onClick={() => setUserMenuOpen(false)}
+                            className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50">
+                            <FileText size={16} /> Mi CV
+                          </Link>
+                          {isEmployer && (
+                            <Link to="/candidatos" onClick={() => setUserMenuOpen(false)}
+                              className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50">
+                              <UsersRound size={16} /> Buscar candidatos
+                            </Link>
+                          )}
                           <Link to="/subscriptions" onClick={() => setUserMenuOpen(false)}
                             className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50">
                             <CreditCard size={16} /> Suscripcion
@@ -181,6 +192,7 @@ const Layout = ({ children }) => {
                 { name: 'Buscar', path: '/search', icon: Search },
                 { name: '24-7', path: '/search?disponibilidad=24-7', icon: AlertTriangle },
                 { name: 'Belleza', path: '/categoria/belleza-y-cuidado', icon: Sparkles },
+                ...(user?.role === 'employer' || user?.role === 'admin' ? [{ name: 'Candidatos', path: '/candidatos', icon: UsersRound }] : []),
               ].map((link, idx) => {
                 const Icon = link.icon;
                 const isActive = location.pathname === link.path;
@@ -218,6 +230,20 @@ const Layout = ({ children }) => {
                       <User size={18} />
                       <span>Mi Perfil</span>
                     </Link>
+                    <Link to="/cv" onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50"
+                    >
+                      <FileText size={18} />
+                      <span>Mi CV</span>
+                    </Link>
+                    {isEmployer && (
+                      <Link to="/candidatos" onClick={() => setMobileMenuOpen(false)}
+                        className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50"
+                      >
+                        <UsersRound size={18} />
+                        <span>Buscar candidatos</span>
+                      </Link>
+                    )}
                     <Link to="/subscriptions" onClick={() => setMobileMenuOpen(false)}
                       className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50"
                     >
@@ -361,6 +387,7 @@ const Layout = ({ children }) => {
                     { name: 'Inicio', path: '/', icon: Home },
                     { name: 'Buscar', path: '/search', icon: Search },
                     { name: '24-7', path: '/search?disponibilidad=24-7', icon: AlertTriangle },
+                    ...(isEmployer ? [{ name: 'Candidatos', path: '/candidatos', icon: UsersRound }] : [{ name: 'Mi CV', path: '/cv', icon: FileText }]),
                     { name: 'Dashboard', path: isProfessional ? '/dashboard/professional' : '/dashboard/client', icon: LayoutDashboard },
                     { name: 'Perfil', path: '/profile', icon: User },
                   ]

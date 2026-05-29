@@ -28,8 +28,10 @@ export const AuthProvider = ({ children }) => {
     if (token && storedUser) {
       try {
         const response = await api.get('/auth/me');
-        if (response.data?.data?.user) {
-          setUser(response.data.data.user);
+        const nextUser = response.data?.data?.user || response.data?.data || response.data?.user;
+        if (nextUser) {
+          setUser(nextUser);
+          localStorage.setItem('user', JSON.stringify(nextUser));
         }
       } catch (error) {
         if (error.code === 'ECONNABORTED') {
@@ -99,8 +101,9 @@ export const AuthProvider = ({ children }) => {
   const updateProfile = async (profileData) => {
     try {
       const response = await api.put('/users/profile', profileData);
-      setUser(response.data.data.user);
-      localStorage.setItem('user', JSON.stringify(response.data.data.user));
+      const nextUser = response.data?.data?.user || response.data?.data || response.data?.user;
+      setUser(nextUser);
+      localStorage.setItem('user', JSON.stringify(nextUser));
       return { success: true };
     } catch (error) {
       return { 
@@ -119,6 +122,7 @@ export const AuthProvider = ({ children }) => {
     updateProfile,
     isAuthenticated: !!user,
     isProfessional: user?.role === 'professional',
+    isEmployer: user?.role === 'employer',
     isAdmin: user?.role === 'admin'
   };
 

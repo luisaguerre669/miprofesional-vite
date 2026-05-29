@@ -4,6 +4,8 @@ import { HelmetProvider } from 'react-helmet-async';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { SocketProvider } from './context/SocketContext';
 import ErrorBoundary from './components/ErrorBoundary';
+import { requestLocationPermissions } from './utils/geolocation';
+import { isNativeAndroid } from './utils/platform';
 
 // Layout
 import Layout from './components/Layout';
@@ -31,6 +33,8 @@ import SubscriptionPage from './pages/SubscriptionPage';
 import PaymentResult from './pages/PaymentResult';
 import Settings from './pages/Settings';
 import Notifications from './pages/Notifications';
+import CVPage from './pages/CVPage';
+import CandidateSearch from './pages/CandidateSearch';
 
 // Protected Route Component
 const ProtectedRoute = ({ children, requiredRole = null }) => {
@@ -44,7 +48,8 @@ const ProtectedRoute = ({ children, requiredRole = null }) => {
     return <Navigate to="/login" />;
   }
 
-  if (requiredRole && user.role !== requiredRole && user.role !== 'admin') {
+  const allowedRoles = Array.isArray(requiredRole) ? requiredRole : [requiredRole];
+  if (requiredRole && !allowedRoles.includes(user.role) && user.role !== 'admin') {
     return <Navigate to="/" />;
   }
 
@@ -113,6 +118,22 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/cv"
+        element={
+          <ProtectedRoute>
+            <Layout><CVPage /></Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/candidatos"
+        element={
+          <ProtectedRoute requiredRole={['employer', 'admin']}>
+            <Layout><CandidateSearch /></Layout>
+          </ProtectedRoute>
+        }
+      />
 
       <Route
         path="/admin"
@@ -167,6 +188,18 @@ function AppRoutes() {
 }
 
 function App() {
+  React.useEffect(() => {
+    if (!isNativeAndroid()) return;
+
+    const storageKey = 'miprofesional_android_location_permission_requested';
+    if (localStorage.getItem(storageKey) === 'true') return;
+
+    localStorage.setItem(storageKey, 'true');
+    requestLocationPermissions().catch(() => {
+      localStorage.removeItem(storageKey);
+    });
+  }, []);
+
   return (
     <ErrorBoundary>
       <HelmetProvider>

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../lib/axios';
 import { useAuth } from '../context/AuthContext';
-import { User, Mail, Phone, MapPin, Save, Briefcase, CheckCircle, Camera } from 'lucide-react';
+import api from '../lib/axios';
+import CVForm from '../components/cv/CVForm';
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -305,6 +305,8 @@ const Profile = () => {
           </form>
         </div>
       )}
+
+      <CVForm compact />
     </div>
   );
 };

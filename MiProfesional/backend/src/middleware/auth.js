@@ -52,4 +52,18 @@ async function requireAdmin(req, res, next) {
   }
 }
 
-module.exports = { authenticate, optionalAuth, requireAdmin };
+async function requireEmployer(req, res, next) {
+  try {
+    const User = require('../models/User');
+    const user = await User.findById(req.userId).select('role isActive');
+    if (!user || !user.isActive || !['employer', 'admin'].includes(user.role)) {
+      return res.status(403).json({ success: false, message: 'Acceso denegado. Se requiere cuenta de empresa.' });
+    }
+    req.authUser = user;
+    next();
+  } catch (err) {
+    return res.status(500).json({ success: false, message: 'Error verificando permisos de empresa.' });
+  }
+}
+
+module.exports = { authenticate, optionalAuth, requireAdmin, requireEmployer };
