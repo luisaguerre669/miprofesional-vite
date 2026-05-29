@@ -7,6 +7,7 @@ import L from 'leaflet';
 import api from '../lib/axios';
 import { useAuth } from '../context/AuthContext';
 import { getAccurateLocation } from '../utils/geolocation';
+import MapRenderFix from '../components/map/MapRenderFix';
 import {
   Search, ArrowRight, Star, MapPin, Sparkles,
   ChevronLeft, ChevronRight, Shield, Clock,
@@ -46,16 +47,6 @@ const promoSlides = [
     link: '/categoria/belleza-y-cuidado',
     color: 'pink',
     subcategories: ['Peluqueria', 'Manicuria', 'Unas', 'Masajista', 'Cosmetologia', 'Barbero', 'Maquilladora', 'Depilacion'],
-  },
-  {
-    id: 'app',
-    image: 'https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=1200&q=80',
-    tag: 'Descargar App',
-    title: 'Descarga nuestra ',
-    titleAccent: 'App',
-    desc: 'Accede a todos los profesionales desde tu celular. Busca, contacta y agenda desde cualquier lugar.',
-    link: '#',
-    color: 'blue',
   },
   {
     id: 'profesional',
@@ -146,6 +137,8 @@ const Home = () => {
   const [userLocation, setUserLocation] = useState(null);
   const [bannerSide1, setBannerSide1] = useState(true);
   const [bannerSide2] = useState(true);
+  const promoSlidesForPlatform = promoSlides;
+  const activePromoIndex = promoSlidesForPlatform.length ? carouselIndex % promoSlidesForPlatform.length : 0;
 
   const [categories, setCategories] = useState([]);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
@@ -202,10 +195,10 @@ const Home = () => {
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setCarouselIndex(i => (i + 1) % promoSlides.length);
+      setCarouselIndex(i => (i + 1) % promoSlidesForPlatform.length);
     }, 5000);
     return () => clearInterval(timer);
-  }, []);
+  }, [promoSlidesForPlatform.length]);
 
   const [manualCity, setManualCity] = useState('');
   const [selectedProvince, setSelectedProvince] = useState('');
@@ -452,6 +445,7 @@ const Home = () => {
     return (
       <div className="h-full rounded-2xl overflow-hidden border border-gray-200 shadow-sm relative">
         <MapContainer key={`${userLocation.lat}-${userLocation.lng}`} center={[userLocation.lat, userLocation.lng]} zoom={13} className="h-full w-full" zoomControl={false}>
+          <MapRenderFix />
           <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
           <Marker position={[userLocation.lat, userLocation.lng]} icon={userIcon}>
             <Popup><div className="text-center"><p className="font-semibold text-sm">Tu ubicacion</p><p className="text-xs text-gray-500">{userAddress || 'Estas aqui'}</p></div></Popup>
@@ -753,11 +747,11 @@ const Home = () => {
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-10 md:mb-20">
         <div className="relative overflow-hidden rounded-2xl">
           <div className="relative">
-            {promoSlides.map((slide, i) => {
+            {promoSlidesForPlatform.map((slide, i) => {
               const cc = colorClasses[slide.color];
               return (
                 <Link key={slide.id} to={slide.link}
-                  className={`${i === carouselIndex ? 'block' : 'hidden'} group relative overflow-hidden rounded-2xl border border-gray-200 bg-white hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300`}
+                  className={`${i === activePromoIndex ? 'block' : 'hidden'} group relative overflow-hidden rounded-2xl border border-gray-200 bg-white hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300`}
                 >
                   <div className="aspect-[21/9] md:aspect-[3/1] overflow-hidden">
                     <img src={slide.image} alt={slide.title}
@@ -797,20 +791,20 @@ const Home = () => {
               );
             })}
           </div>
-          {promoSlides.length > 1 && (
+          {promoSlidesForPlatform.length > 1 && (
             <>
-              <button onClick={() => setCarouselIndex(i => (i - 1 + promoSlides.length) % promoSlides.length)}
+              <button onClick={() => setCarouselIndex(i => (i - 1 + promoSlidesForPlatform.length) % promoSlidesForPlatform.length)}
                 className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white hover:bg-white/40 transition-all z-10">
                 <ChevronLeft size={20} />
               </button>
-              <button onClick={() => setCarouselIndex(i => (i + 1) % promoSlides.length)}
+              <button onClick={() => setCarouselIndex(i => (i + 1) % promoSlidesForPlatform.length)}
                 className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white hover:bg-white/40 transition-all z-10">
                 <ChevronRight size={20} />
               </button>
               <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 z-10">
-                {promoSlides.map((_, i) => (
+                {promoSlidesForPlatform.map((_, i) => (
                   <button key={i} onClick={() => setCarouselIndex(i)}
-                    className={`w-2 h-2 rounded-full transition-all ${i === carouselIndex ? 'bg-white w-6' : 'bg-white/40 hover:bg-white/60'}`}
+                    className={`w-2 h-2 rounded-full transition-all ${i === activePromoIndex ? 'bg-white w-6' : 'bg-white/40 hover:bg-white/60'}`}
                   />
                 ))}
               </div>

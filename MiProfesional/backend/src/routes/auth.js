@@ -153,7 +153,7 @@ router.post('/register', registerLimiter, [
   body('name').trim().isLength({ min: 2, max: 100 }).withMessage('Name must be between 2 and 100 characters'),
   body('email').isEmail().normalizeEmail().withMessage('Please provide a valid email'),
   body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters long'),
-  body('role').optional().isIn(['client', 'professional']).withMessage('Role must be client or professional'),
+  body('role').optional().isIn(['client', 'professional', 'employer']).withMessage('Role must be client, professional or employer'),
   body('address').optional().isObject(),
   body('address.street').optional().trim(),
   body('address.number').optional().trim(),

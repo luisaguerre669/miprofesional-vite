@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Star, MapPin, Navigation, Layers, Award, Zap, Crosshair } from 'lucide-react';
 import api from '@/lib/axios';
 import { getAccurateLocation } from '@/utils/geolocation';
+import MapRenderFix from './MapRenderFix';
 
 function makeIcon(color) {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="44" viewBox="0 0 36 44"><path d="M18 0C9.716 0 3 6.716 3 15c0 11.25 15 29 15 29s15-17.75 15-29C33 6.716 26.284 0 18 0z" fill="${color}" stroke="white" stroke-width="2"/><circle cx="18" cy="15" r="7" fill="white"/></svg>`;
@@ -183,6 +184,7 @@ export default function ProfessionalsMap({
         style={{ height: '100%', width: '100%' }}
         className="rounded-lg"
       >
+        <MapRenderFix />
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
