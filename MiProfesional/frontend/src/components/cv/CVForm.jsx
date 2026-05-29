@@ -129,7 +129,7 @@ export default function CVForm({ compact = false }) {
           <h2 className="text-xl font-semibold flex items-center gap-2">
             <Briefcase size={20} className="text-primary-600" /> Curriculum Vitae
           </h2>
-          <p className="text-xs text-gray-500 mt-1">Disponible en la app movil para busquedas laborales.</p>
+          <p className="text-xs text-gray-500 mt-1">Dejá tu currículum y encontrá trabajo más rápido. Disponible en web y app.</p>
         </div>
         <Shield size={20} className="text-gray-300" />
       </div>

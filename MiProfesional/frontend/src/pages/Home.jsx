@@ -6,6 +6,7 @@ import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import api from '../lib/axios';
 import { useAuth } from '../context/AuthContext';
+import { isNativeAndroid } from '../utils/platform';
 import { getAccurateLocation } from '../utils/geolocation';
 import MapRenderFix from '../components/map/MapRenderFix';
 import {
@@ -605,6 +606,23 @@ const Home = () => {
         </div>
         <div className="absolute bottom-0 left-0 right-0 h-12 md:h-24 bg-gradient-to-t from-gray-50 to-transparent" />
       </section>
+
+      {/* CV CTA Banner (web only) */}
+      {!isNativeAndroid() && (
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 my-6">
+          <div className="bg-gradient-to-r from-primary-600 to-emerald-500 rounded-2xl p-6 flex flex-col sm:flex-row items-center gap-4 justify-between shadow-lg">
+            <div className="text-white">
+              <h3 className="text-lg font-bold">Dejá tu currículum y encontrá trabajo más rápido</h3>
+              <p className="text-sm opacity-90 mt-1">Completá tu CV para que empleadores te encuentren fácilmente.</p>
+            </div>
+            <div>
+              <Link to={user ? '/cv' : '/register'} className="inline-flex items-center gap-2 px-5 py-3 bg-white text-primary-700 font-semibold rounded-lg hover:opacity-95 transition-all">
+                {user ? 'Cargar CV' : 'Registrate y cargalo'}
+              </Link>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* FEATURED PROS CAROUSEL */}
       {featuredPros.length > 0 && (

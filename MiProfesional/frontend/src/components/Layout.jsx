@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Menu, X, User, LogOut, Home, Search, MessageSquare, LayoutDashboard, Bell, CreditCard, Settings, Shield, Plus, LogIn, Building2, Wrench, AlertTriangle, Sparkles, FileText, UsersRound } from 'lucide-react';
 import Logo from './Logo';
+import { isNativeAndroid } from '../utils/platform';
 
 
 const Layout = ({ children }) => {
@@ -218,12 +219,14 @@ const Layout = ({ children }) => {
                       <MessageSquare size={18} />
                       <span>Mensajes</span>
                     </Link>
-                    <Link to={isProfessional ? '/dashboard/professional' : '/dashboard/client'} onClick={() => setMobileMenuOpen(false)}
-                      className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50"
-                    >
-                      <LayoutDashboard size={18} />
-                      <span>Dashboard</span>
-                    </Link>
+                    {!isNativeAndroid() && (
+                      <Link to={isProfessional ? '/dashboard/professional' : '/dashboard/client'} onClick={() => setMobileMenuOpen(false)}
+                        className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50"
+                      >
+                        <LayoutDashboard size={18} />
+                        <span>Dashboard</span>
+                      </Link>
+                    )}
                     <Link to="/profile" onClick={() => setMobileMenuOpen(false)}
                       className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50"
                     >
@@ -367,31 +370,38 @@ const Layout = ({ children }) => {
 
       <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 safe-area-bottom">
         <div className="flex items-center justify-around h-16 px-2">
-          {(
-            !isAuthenticated
-              ? [
-                  { name: 'Inicio', path: '/', icon: Home },
-                  { name: 'Buscar', path: '/search', icon: Search },
-                  { name: '24-7', path: '/search?disponibilidad=24-7', icon: AlertTriangle },
-                  { name: 'Ingresar', path: '/login', icon: LogIn },
-                ]
-              : user?.role === 'admin'
+          {(() => {
+            const items = (
+              !isAuthenticated
                 ? [
                     { name: 'Inicio', path: '/', icon: Home },
                     { name: 'Buscar', path: '/search', icon: Search },
                     { name: '24-7', path: '/search?disponibilidad=24-7', icon: AlertTriangle },
-                    { name: 'Dashboard', path: '/dashboard/professional', icon: LayoutDashboard },
-                    { name: 'Admin', path: '/admin', icon: Shield },
+                    { name: 'Ingresar', path: '/login', icon: LogIn },
                   ]
-                : [
-                    { name: 'Inicio', path: '/', icon: Home },
-                    { name: 'Buscar', path: '/search', icon: Search },
-                    { name: '24-7', path: '/search?disponibilidad=24-7', icon: AlertTriangle },
-                    ...(isEmployer ? [{ name: 'Candidatos', path: '/candidatos', icon: UsersRound }] : [{ name: 'Mi CV', path: '/cv', icon: FileText }]),
-                    { name: 'Dashboard', path: isProfessional ? '/dashboard/professional' : '/dashboard/client', icon: LayoutDashboard },
-                    { name: 'Perfil', path: '/profile', icon: User },
-                  ]
-          ).map((link) => {
+                : user?.role === 'admin'
+                  ? [
+                      { name: 'Inicio', path: '/', icon: Home },
+                      { name: 'Buscar', path: '/search', icon: Search },
+                      { name: '24-7', path: '/search?disponibilidad=24-7', icon: AlertTriangle },
+                      { name: 'Dashboard', path: '/dashboard/professional', icon: LayoutDashboard },
+                      { name: 'Admin', path: '/admin', icon: Shield },
+                    ]
+                  : [
+                      { name: 'Inicio', path: '/', icon: Home },
+                      { name: 'Buscar', path: '/search', icon: Search },
+                      { name: '24-7', path: '/search?disponibilidad=24-7', icon: AlertTriangle },
+                      ...(isEmployer ? [{ name: 'Candidatos', path: '/candidatos', icon: UsersRound }] : [{ name: 'Mi CV', path: '/cv', icon: FileText }]),
+                      { name: 'Dashboard', path: isProfessional ? '/dashboard/professional' : '/dashboard/client', icon: LayoutDashboard },
+                      { name: 'Perfil', path: '/profile', icon: User },
+                    ]
+            );
+
+            // Remove Dashboard tab entirely for native Android builds
+            return items
+              .filter(link => !(isNativeAndroid() && link.name === 'Dashboard'))
+              .map((link) => link);
+          })().map((link) => {
             const Icon = link.icon;
             const isActive = location.pathname === link.path || (link.path !== '/' && location.pathname.startsWith(link.path));
             return (
