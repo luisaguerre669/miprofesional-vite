@@ -30,6 +30,7 @@ const chatRoutes = require("./routes/chat");
 const reviewsRoutes = require("./routes/reviews");
 const ratingsRoutes = require("./routes/ratings");
 const notificationsRoutes = require("./routes/notifications");
+const cvRoutes = require("./routes/cv");
 
 // Models
 require("./models/Payment");
@@ -38,6 +39,7 @@ require("./models/Message");
 require("./models/Conversation");
 require("./models/Review");
 require("./models/Booking");
+require("./models/CurriculumVitae");
 
 // Register event bus listeners
 require("./services/emailService");
@@ -167,6 +169,7 @@ class Server {
   this.app.use("/api/ratings", ratingsRoutes);
   this.app.use("/api/v1/mercadopago", mercadopagoRoutes);
   this.app.use("/api/notifications", notificationsRoutes);
+  this.app.use("/api/cv", cvRoutes);
 
     this.app.get("/", (req, res) => {
       res.json({
