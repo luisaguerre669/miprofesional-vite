@@ -95,8 +95,6 @@ const benefits = [
   { icon: Clock, title: 'Rapido y simple', desc: 'Encontra al profesional que necesitas en minutos, sin vueltas ni comisiones.' },
 ];
 
-const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.miprofesional.app';
-const SITE_URL = 'https://www.miprofesional.online';
 
 function ProfessionalsImage() {
   return (
