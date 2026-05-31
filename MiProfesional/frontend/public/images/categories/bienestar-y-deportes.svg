@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675">
+  <defs>
+    <linearGradient id="g" x1="0" x2="1">
+      <stop offset="0%" stop-color="#eef2ff"/>
+      <stop offset="100%" stop-color="#e0f2fe"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="675" fill="url(#g)"/>
+  <rect x="60" y="60" width="1080" height="555" rx="20" fill="#ffffff" opacity="0.04"/>
+  <circle cx="160" cy="160" r="86" fill="#0f172a"/>
+  <text x="300" y="150" font-family="Arial,Helvetica,sans-serif" font-size="44" fill="#0f172a">Bienestar y Deportes</text>
+  <text x="300" y="195" font-family="Arial,Helvetica,sans-serif" font-size="20" fill="#0f172a">Personal trainer, yoga, pilates, gimnasios, artes marciales, meditacion, coaching y rehabilitacion fisica.</text>
+</svg>

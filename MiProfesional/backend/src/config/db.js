@@ -1,18 +1,25 @@
 const mongoose = require("mongoose");
 const logger = require("../utils/logger");
+const { resolveMongoSrv } = require("../utils/srvResolver");
 
 const connectDB = async () => {
   try {
-    const uri = process.env.MONGODB_URI || process.env.MONGO_URI;
+    let uri = process.env.MONGODB_URI || process.env.MONGO_URI;
 
     if (!uri) {
       logger.error("MONGODB_URI/MONGO_URI no esta definida en el entorno");
       process.exit(1);
     }
 
+    if (uri.startsWith("mongodb+srv://")) {
+      logger.info("Resolviendo DNS SRV para URI de MongoDB Atlas...");
+      uri = await resolveMongoSrv(uri);
+    }
+
     await mongoose.connect(uri, {
       serverSelectionTimeoutMS: Number(process.env.MONGO_SERVER_SELECTION_TIMEOUT_MS || 15000),
-      connectTimeoutMS: Number(process.env.MONGO_CONNECT_TIMEOUT_MS || 15000)
+      connectTimeoutMS: Number(process.env.MONGO_CONNECT_TIMEOUT_MS || 15000),
+      tls: true
     });
 
     logger.info("Base de datos conectada correctamente");

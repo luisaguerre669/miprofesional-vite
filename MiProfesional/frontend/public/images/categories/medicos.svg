@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675">
+  <rect width="1200" height="675" fill="#f0fdf4"/>
+  <circle cx="140" cy="170" r="86" fill="#065f46"/>
+  <text x="260" y="170" font-family="Arial" font-size="44" fill="#064e3b">Médicos</text>
+  <text x="260" y="210" font-family="Arial" font-size="20" fill="#065f46">Atención clínica y especialistas</text>
+</svg>
