@@ -498,6 +498,117 @@ router.get('/ranking', async (req, res) => {
   }
 });
 
+// GET /api/v1/professionals/by-city/:city - Professionals by city name
+router.get('/by-city/:city', [
+  param('city').isString().isLength({ min: 2, max: 100 })
+], handleValidationErrors, async (req, res) => {
+  try {
+    const { city } = req.params;
+    const regex = new RegExp(city, 'i');
+    const professionals = await Professional.find({
+      isActive: true,
+      profileStatus: 'ACTIVE',
+      $or: [ { 'subscription.status': 'active' }, { 'subscription.status': 'trial', 'subscription.trialEnd': { $gte: new Date() } } ],
+      'location.city': regex
+    }).populate('categoryId', 'title').populate('userId', 'name email phone').limit(50);
+    res.json({ success: true, count: professionals.length, data: professionals });
+  } catch (error) {
+    logger.error('Get by city error:', error);
+    res.status(500).json({ success: false, message: 'Error al buscar por ciudad' });
+  }
+});
+
+// GET /api/v1/professionals/map - Map discovery with categories
+router.get('/map', async (req, res) => {
+  try {
+    const { latitude, longitude, maxDistance = 50 } = req.query;
+
+    const baseFilter = {
+      isActive: true,
+      profileStatus: 'ACTIVE',
+      $or: [ { 'subscription.status': 'active' }, { 'subscription.status': 'trial', 'subscription.trialEnd': { $gte: new Date() } } ],
+      'location.coordinates.coordinates.0': { $ne: 0 },
+      'location.coordinates.coordinates.1': { $ne: 0 }
+    };
+
+    const all = await Professional.find(baseFilter)
+      .select('businessName profession location avatar stats.rating stats.reviewCount verification.isVerified description lastActiveAt categoryId')
+      .populate('categoryId', 'title')
+      .lean();
+
+    const now = Date.now();
+    const grouped = { recommended: [], active: [], nearby: [] };
+
+    for (const pro of all) {
+      if (pro.verification?.isVerified && (pro.stats?.rating || 0) >= 4.0 &&
+          (pro.stats?.reviewCount || 0) >= 3 && pro.description?.length > 50 && pro.avatar) {
+        grouped.recommended.push(pro);
+      } else if (pro.lastActiveAt && (now - new Date(pro.lastActiveAt).getTime()) < 48 * 60 * 60 * 1000) {
+        grouped.active.push(pro);
+      } else {
+        grouped.nearby.push(pro);
+      }
+    }
+
+    if (latitude && longitude) {
+      const lat = parseFloat(latitude);
+      const lng = parseFloat(longitude);
+      const nearbyIds = grouped.nearby.map(p => p._id);
+      const nearbyWithDist = await Professional.aggregate([
+        { $geoNear: {
+            near: { type: 'Point', coordinates: [lng, lat] },
+            distanceField: 'computedDistance',
+            maxDistance: (parseFloat(maxDistance) || 50) * 1000,
+            spherical: true,
+            query: { _id: { $in: nearbyIds } }
+          }
+        },
+        { $sort: { computedDistance: 1 } },
+        { $limit: 30 },
+        { $addFields: {
+            computedDistance: { $round: [{ $divide: ['$computedDistance', 1000] }, 1] }
+          }
+        }
+      ]);
+      grouped.nearby = nearbyWithDist;
+    }
+
+    res.json({
+      success: true,
+      data: grouped,
+      meta: {
+        counts: {
+          recommended: grouped.recommended.length,
+          active: grouped.active.length,
+          nearby: grouped.nearby.length
+        }
+      }
+    });
+  } catch (error) {
+    logger.error('Get map professionals error:', error);
+    res.status(500).json({ success: false, message: 'Error al obtener profesionales para mapa' });
+  }
+});
+
+// GET /api/v1/geocode - Geocode an address
+router.get('/geocode', async (req, res) => {
+  try {
+    const { address, city, state, country } = req.query;
+    if (!address && !city) {
+      return res.status(400).json({ success: false, message: 'Direccion o ciudad requerida' });
+    }
+    const { geocodeAddress } = require('../utils/geocode');
+    const result = await geocodeAddress({ address, city, state, country });
+    if (!result) {
+      return res.json({ success: false, message: 'No se pudo encontrar la ubicacion. Verifica la direccion e intenta de nuevo.' });
+    }
+    res.json({ success: true, data: result });
+  } catch (error) {
+    logger.error('Geocode error:', error);
+    res.status(500).json({ success: false, message: 'Error al geocodificar direccion' });
+  }
+});
+
 // GET /api/v1/professionals/favorites (authenticated user's favorites)
 router.get('/favorites', authenticate, async (req, res) => {
   try {
@@ -508,6 +619,43 @@ router.get('/favorites', authenticate, async (req, res) => {
   } catch (error) {
     logger.error('Get favorites error', { error: error.message });
     res.status(500).json({ success: false, message: 'Error al obtener favoritos' });
+  }
+});
+
+// GET /api/v1/professionals/me - Get own professional profile
+router.get('/me', authenticate, async (req, res) => {
+  try {
+    const professional = await Professional.findOne({ userId: req.userId });
+    if (!professional) {
+      return res.status(404).json({ success: false, message: 'Perfil profesional no encontrado' });
+    }
+    res.json({ success: true, data: professional });
+  } catch (error) {
+    logger.error('Get my professional error:', error);
+    res.status(500).json({ success: false, message: 'Error al obtener perfil profesional' });
+  }
+});
+
+// PUT /api/v1/professionals/me - Update own professional profile
+router.put('/me', authenticate, async (req, res) => {
+  try {
+    const allowedFields = ['businessName', 'profession', 'description', 'specialties', 'avatar', 'gallery', 'isFeatured', 'available24h', 'categoryId', 'subcategoryId', 'contact', 'location', 'pricing'];
+    const update = {};
+    for (const field of allowedFields) {
+      if (req.body[field] !== undefined) update[field] = req.body[field];
+    }
+    const professional = await Professional.findOneAndUpdate(
+      { userId: req.userId },
+      { $set: update },
+      { new: true, runValidators: true }
+    );
+    if (!professional) {
+      return res.status(404).json({ success: false, message: 'Perfil profesional no encontrado' });
+    }
+    res.json({ success: true, message: 'Perfil profesional actualizado', data: professional });
+  } catch (error) {
+    logger.error('Update my professional error:', error);
+    res.status(500).json({ success: false, message: 'Error al actualizar perfil profesional' });
   }
 });
 
@@ -755,117 +903,6 @@ router.post('/', authenticate, async (req, res) => {
   } catch (error) {
     logger.error('Create professional error:', error);
     res.status(500).json({ success: false, message: 'Error al crear perfil profesional' });
-  }
-});
-
-// GET /api/v1/professionals/by-city/:city - Professionals by city name
-router.get('/by-city/:city', [
-  param('city').isString().isLength({ min: 2, max: 100 })
-], handleValidationErrors, async (req, res) => {
-  try {
-    const { city } = req.params;
-    const regex = new RegExp(city, 'i');
-    const professionals = await Professional.find({
-      isActive: true,
-      profileStatus: 'ACTIVE',
-      $or: [ { 'subscription.status': 'active' }, { 'subscription.status': 'trial', 'subscription.trialEnd': { $gte: new Date() } } ],
-      'location.city': regex
-    }).populate('categoryId', 'title').populate('userId', 'name email phone').limit(50);
-    res.json({ success: true, count: professionals.length, data: professionals });
-  } catch (error) {
-    logger.error('Get by city error:', error);
-    res.status(500).json({ success: false, message: 'Error al buscar por ciudad' });
-  }
-});
-
-// GET /api/v1/professionals/map - Map discovery with categories
-router.get('/map', async (req, res) => {
-  try {
-    const { latitude, longitude, maxDistance = 50 } = req.query;
-
-    const baseFilter = {
-      isActive: true,
-      profileStatus: 'ACTIVE',
-      $or: [ { 'subscription.status': 'active' }, { 'subscription.status': 'trial', 'subscription.trialEnd': { $gte: new Date() } } ],
-      'location.coordinates.coordinates.0': { $ne: 0 },
-      'location.coordinates.coordinates.1': { $ne: 0 }
-    };
-
-    const all = await Professional.find(baseFilter)
-      .select('businessName profession location avatar stats.rating stats.reviewCount verification.isVerified description lastActiveAt categoryId')
-      .populate('categoryId', 'title')
-      .lean();
-
-    const now = Date.now();
-    const grouped = { recommended: [], active: [], nearby: [] };
-
-    for (const pro of all) {
-      if (pro.verification?.isVerified && (pro.stats?.rating || 0) >= 4.0 &&
-          (pro.stats?.reviewCount || 0) >= 3 && pro.description?.length > 50 && pro.avatar) {
-        grouped.recommended.push(pro);
-      } else if (pro.lastActiveAt && (now - new Date(pro.lastActiveAt).getTime()) < 48 * 60 * 60 * 1000) {
-        grouped.active.push(pro);
-      } else {
-        grouped.nearby.push(pro);
-      }
-    }
-
-    if (latitude && longitude) {
-      const lat = parseFloat(latitude);
-      const lng = parseFloat(longitude);
-      const nearbyIds = grouped.nearby.map(p => p._id);
-      const nearbyWithDist = await Professional.aggregate([
-        { $geoNear: {
-            near: { type: 'Point', coordinates: [lng, lat] },
-            distanceField: 'computedDistance',
-            maxDistance: (parseFloat(maxDistance) || 50) * 1000,
-            spherical: true,
-            query: { _id: { $in: nearbyIds } }
-          }
-        },
-        { $sort: { computedDistance: 1 } },
-        { $limit: 30 },
-        { $addFields: {
-            computedDistance: { $round: [{ $divide: ['$computedDistance', 1000] }, 1] }
-          }
-        }
-      ]);
-      grouped.nearby = nearbyWithDist;
-    }
-
-    res.json({
-      success: true,
-      data: grouped,
-      meta: {
-        counts: {
-          recommended: grouped.recommended.length,
-          active: grouped.active.length,
-          nearby: grouped.nearby.length
-        }
-      }
-    });
-  } catch (error) {
-    logger.error('Get map professionals error:', error);
-    res.status(500).json({ success: false, message: 'Error al obtener profesionales para mapa' });
-  }
-});
-
-// GET /api/v1/geocode - Geocode an address
-router.get('/geocode', async (req, res) => {
-  try {
-    const { address, city, state, country } = req.query;
-    if (!address && !city) {
-      return res.status(400).json({ success: false, message: 'Direccion o ciudad requerida' });
-    }
-    const { geocodeAddress } = require('../utils/geocode');
-    const result = await geocodeAddress({ address, city, state, country });
-    if (!result) {
-      return res.json({ success: false, message: 'No se pudo encontrar la ubicacion. Verifica la direccion e intenta de nuevo.' });
-    }
-    res.json({ success: true, data: result });
-  } catch (error) {
-    logger.error('Geocode error:', error);
-    res.status(500).json({ success: false, message: 'Error al geocodificar direccion' });
   }
 });
 
