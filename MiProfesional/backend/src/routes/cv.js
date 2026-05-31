@@ -40,8 +40,16 @@ function sanitizePayload(bodyData, user) {
       name: String(skill.name || '').trim(),
       level: skill.level || 'intermedio'
     })).filter((skill) => skill.name),
-    experience: bodyData.experience || [],
-    education: bodyData.education || [],
+    experience: (bodyData.experience || []).map(e => ({
+      ...e,
+      startDate: e.startDate || null,
+      endDate: e.endDate || null
+    })),
+    education: (bodyData.education || []).map(e => ({
+      ...e,
+      startDate: e.startDate || null,
+      endDate: e.endDate || null
+    })),
     availability: {
       status: bodyData.availability?.status || 'a-convenir',
       mode: bodyData.availability?.mode || 'indistinto',
