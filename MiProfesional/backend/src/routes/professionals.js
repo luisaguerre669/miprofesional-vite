@@ -639,11 +639,30 @@ router.get('/me', authenticate, async (req, res) => {
 // PUT /api/v1/professionals/me - Update own professional profile
 router.put('/me', authenticate, async (req, res) => {
   try {
-    const allowedFields = ['businessName', 'profession', 'description', 'specialties', 'avatar', 'gallery', 'isFeatured', 'available24h', 'categoryId', 'subcategoryId', 'contact', 'location', 'pricing'];
+    const allowedFields = ['businessName', 'profession', 'description', 'specialties', 'avatar', 'gallery', 'isFeatured', 'available24h', 'categoryId', 'subcategoryId'];
     const update = {};
     for (const field of allowedFields) {
       if (req.body[field] !== undefined) update[field] = req.body[field];
     }
+    for (const nested of ['contact', 'pricing']) {
+      if (req.body[nested]) {
+        for (const [k, v] of Object.entries(req.body[nested])) {
+          if (v !== undefined) update[nested + '.' + k] = v;
+        }
+      }
+    }
+    if (req.body.location) {
+      for (const [k, v] of Object.entries(req.body.location)) {
+        if (v !== undefined) {
+          if (k === 'coordinates' && Array.isArray(v)) {
+            if (v.length >= 2) update['location.coordinates'] = { type: 'Point', coordinates: v };
+          } else {
+            update['location.' + k] = v;
+          }
+        }
+      }
+    }
+
     const professional = await Professional.findOneAndUpdate(
       { userId: req.userId },
       { $set: update },
