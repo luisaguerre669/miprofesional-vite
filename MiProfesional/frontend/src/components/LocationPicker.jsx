@@ -2,16 +2,23 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { MapPin, Search, Crosshair, Loader2 } from 'lucide-react';
+import { MapPin, Search, Crosshair, Loader2, Info } from 'lucide-react';
 import MapRenderFix from './map/MapRenderFix';
 import { getAccurateLocation } from '../utils/geolocation';
 import api from '../lib/axios';
 
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+const RED_MARKER_SVG = `
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="42" viewBox="0 0 32 42">
+  <path d="M16 0C7.164 0 0 7.164 0 16c0 10 16 26 16 26s16-16 16-26C32 7.164 24.836 0 16 0z" fill="#dc2626" stroke="#991b1b" stroke-width="1.5"/>
+  <circle cx="16" cy="16" r="7" fill="white" stroke="#fca5a5" stroke-width="0.5"/>
+</svg>`;
+
+const RED_ICON = L.divIcon({
+  html: RED_MARKER_SVG,
+  className: '',
+  iconSize: [32, 42],
+  iconAnchor: [16, 42],
+  popupAnchor: [0, -42],
 });
 
 function DraggableMarker({ position, onPositionChange }) {
@@ -31,6 +38,7 @@ function DraggableMarker({ position, onPositionChange }) {
       eventHandlers={eventHandlers}
       position={position}
       ref={markerRef}
+      icon={RED_ICON}
     />
   );
 }
@@ -47,7 +55,7 @@ function ClickHandler({ onClick }) {
 function MapBoundsUpdater({ center }) {
   const map = useMap();
   useEffect(() => {
-    if (center) map.setView(center, map.getZoom() < 14 ? 14 : map.getZoom());
+    if (center) map.setView(center, map.getZoom() < 15 ? 15 : map.getZoom());
   }, [center, map]);
   return null;
 }
@@ -70,6 +78,19 @@ export default function LocationPicker({
   const [geoError, setGeoError] = useState('');
   const [resolvedAddress, setResolvedAddress] = useState(initialAddress || '');
 
+  const notifyPosition = useCallback((lat, lng, extra = {}) => {
+    onLocationChange && onLocationChange({
+      lat: parseFloat(lat.toFixed(6)),
+      lng: parseFloat(lng.toFixed(6)),
+      address: extra.address || resolvedAddress || `${lat.toFixed(4)}, ${lng.toFixed(4)}`,
+      city: extra.city || '',
+      state: extra.state || '',
+      street: extra.street || '',
+      number: extra.number || '',
+      neighborhood: extra.neighborhood || '',
+    });
+  }, [onLocationChange, resolvedAddress]);
+
   const reverseGeocode = useCallback(async (lat, lng) => {
     setGeoLoading(true);
     setGeoError('');
@@ -77,11 +98,11 @@ export default function LocationPicker({
       const { data } = await api.get('/geocode/reverse', { params: { lat, lng } });
       if (data?.success && data?.data) {
         const result = data.data;
-        setResolvedAddress(result.displayName);
+        const display = result.displayName || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+        setResolvedAddress(display);
         setAddressInput(result.street + (result.number ? ` ${result.number}` : ''));
-        onLocationChange && onLocationChange({
-          lat, lng,
-          address: result.displayName,
+        notifyPosition(lat, lng, {
+          address: display,
           city: result.city || '',
           state: result.state || '',
           street: result.street || '',
@@ -91,17 +112,17 @@ export default function LocationPicker({
       } else {
         const fallback = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
         setResolvedAddress(fallback);
-        onLocationChange && onLocationChange({ lat, lng, address: fallback });
+        notifyPosition(lat, lng, { address: fallback });
       }
     } catch (err) {
       setGeoError('No se pudo resolver la dirección');
       const fallback = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
       setResolvedAddress(fallback);
-      onLocationChange && onLocationChange({ lat, lng, address: fallback });
+      notifyPosition(lat, lng, { address: fallback });
     } finally {
       setGeoLoading(false);
     }
-  }, [onLocationChange]);
+  }, [notifyPosition]);
 
   const geocodeAddress = useCallback(async (query) => {
     if (!query.trim()) return;
@@ -114,15 +135,16 @@ export default function LocationPicker({
         const lat = result.latitude;
         const lng = result.longitude;
         setPosition([lat, lng]);
-        setResolvedAddress(result.displayName);
+        const display = result.displayName || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+        setResolvedAddress(display);
         setAddressInput(result.street + (result.number ? ` ${result.number}` : ''));
-        onLocationChange && onLocationChange({
-          lat, lng,
-          address: result.displayName,
+        notifyPosition(lat, lng, {
+          address: display,
           city: result.city || '',
           state: result.state || '',
           street: result.street || '',
           number: result.number || '',
+          neighborhood: result.neighborhood || '',
         });
       } else {
         setGeoError('No se encontró la dirección');
@@ -132,7 +154,7 @@ export default function LocationPicker({
     } finally {
       setGeoLoading(false);
     }
-  }, [onLocationChange]);
+  }, [notifyPosition]);
 
   const handleMarkerDrag = useCallback(async ({ lat, lng }) => {
     setPosition([lat, lng]);
@@ -159,8 +181,13 @@ export default function LocationPicker({
     geocodeAddress(addressInput);
   };
 
+  const currentLat = position[0];
+  const currentLng = position[1];
+  const isDefault = currentLat === DEFAULT_CENTER[0] && currentLng === DEFAULT_CENTER[1];
+
   return (
     <div className={`space-y-3 ${compact ? 'text-sm' : ''}`}>
+      {/* Search bar + GPS button */}
       <div className="flex gap-2">
         <form onSubmit={handleAddressSearch} className="flex-1 flex gap-2">
           <div className="relative flex-1">
@@ -169,7 +196,7 @@ export default function LocationPicker({
               type="text"
               value={addressInput}
               onChange={(e) => setAddressInput(e.target.value)}
-              placeholder="Ej: Pampa 1375, Bella Vista..."
+              placeholder="Calle y número, ciudad..."
               className="w-full pl-9 pr-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
           </div>
@@ -186,7 +213,7 @@ export default function LocationPicker({
           onClick={handleMyLocation}
           disabled={geoLoading}
           className="px-3 py-2.5 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 disabled:opacity-50 transition-all"
-          title="Usar mi ubicación"
+          title="Usar mi ubicación actual"
         >
           <Crosshair size={16} />
         </button>
@@ -198,6 +225,18 @@ export default function LocationPicker({
         </p>
       )}
 
+      {/* Instructional banner */}
+      {!isDefault && (
+        <div className="flex items-start gap-2 px-3 py-2.5 bg-amber-50 border border-amber-200 rounded-lg">
+          <Info size={16} className="text-amber-600 shrink-0 mt-0.5" />
+          <p className="text-xs text-amber-800 leading-relaxed">
+            Arrastrá el <strong>pin rojo</strong> hasta la ubicación exacta de tu domicilio o zona de trabajo.
+            Esa ubicación será utilizada para mostrarte en búsquedas cercanas.
+          </p>
+        </div>
+      )}
+
+      {/* Map */}
       <div
         style={{ height, width: '100%' }}
         className="rounded-xl overflow-hidden border border-gray-200 relative"
@@ -222,16 +261,32 @@ export default function LocationPicker({
         )}
       </div>
 
-      {resolvedAddress && (
-        <div className="flex items-start gap-2 text-xs text-gray-500 bg-gray-50 rounded-lg p-2.5">
-          <MapPin size={14} className="text-primary-600 shrink-0 mt-0.5" />
-          <span>{resolvedAddress}</span>
+      {/* Coordinates + Address panel */}
+      {!isDefault && (
+        <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 space-y-2">
+          <div className="flex items-center gap-2 text-xs text-gray-500">
+            <MapPin size={14} className="text-red-500 shrink-0" />
+            <span className="font-medium text-gray-700">Coordenadas seleccionadas:</span>
+            <code className="bg-white px-2 py-0.5 rounded border border-gray-200 text-gray-600">
+              {currentLat.toFixed(6)}, {currentLng.toFixed(6)}
+            </code>
+          </div>
+          {resolvedAddress && (
+            <div className="flex items-start gap-2 text-xs text-gray-500">
+              <span className="font-medium text-gray-700 shrink-0">Dirección:</span>
+              <span>{resolvedAddress}</span>
+            </div>
+          )}
         </div>
       )}
 
-      <p className="text-[11px] text-gray-400">
-        Arrastrá el marcador para ajustar la ubicación exacta, o hacé clic en cualquier lugar del mapa.
-      </p>
+      {/* Hint text */}
+      {isDefault && (
+        <p className="text-xs text-gray-400 flex items-center gap-1.5">
+          <MapPin size={12} className="text-gray-300" />
+          Buscá una dirección o usá el botón de ubicación para comenzar.
+        </p>
+      )}
     </div>
   );
 }
