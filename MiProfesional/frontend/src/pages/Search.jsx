@@ -39,6 +39,11 @@ const Search = () => {
   const [searchRadius, setSearchRadius] = useState(10);
   const [userLocation, setUserLocation] = useState(null);
   const [disponibilidad247, setDisponibilidad247] = useState(searchParams.get('disponibilidad') === '24-7');
+  const [filterDisponible24hs, setFilterDisponible24hs] = useState(false);
+  const [filterAtencionInmediata, setFilterAtencionInmediata] = useState(false);
+  const [filterServicioADomicilio, setFilterServicioADomicilio] = useState(false);
+  const [filterDisponibleFinesDeSemana, setFilterDisponibleFinesDeSemana] = useState(false);
+  const [filterDisponibleFeriados, setFilterDisponibleFeriados] = useState(false);
   const [geoError, setGeoError] = useState('');
   const [showAddressForm, setShowAddressForm] = useState(false);
   const [addressForm, setAddressForm] = useState({ street: '', number: '', city: '', province: '' });
@@ -105,6 +110,11 @@ const Search = () => {
       if (filterOpts.featured) params.featured = true;
       if (filterOpts.sortBy) params.sortBy = filterOpts.sortBy;
       if (disp247 || disponibilidad247) params.disponibilidad = '24-7';
+      if (filterDisponible24hs) params.disponible24hs = true;
+      if (filterAtencionInmediata) params.atencionInmediata = true;
+      if (filterServicioADomicilio) params.servicioADomicilio = true;
+      if (filterDisponibleFinesDeSemana) params.disponibleFinesDeSemana = true;
+      if (filterDisponibleFeriados) params.disponibleFeriados = true;
       params.limit = 20;
 
       // Geocodificar siempre, asegurando coordenadas reales
@@ -331,6 +341,37 @@ const Search = () => {
               </label>
             </div>
 
+            <div className="md:col-span-2 lg:col-span-4 pt-3 border-t border-gray-100">
+              <p className="text-sm font-semibold text-gray-700 mb-2">Disponibilidad</p>
+              <div className="flex flex-wrap gap-3">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked={filterDisponible24hs} onChange={e => setFilterDisponible24hs(e.target.checked)}
+                    className="w-4 h-4 rounded border-gray-300 text-red-500 focus:ring-red-400" />
+                  <span className="text-sm text-gray-700">Disponible 24 hs</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked={filterAtencionInmediata} onChange={e => setFilterAtencionInmediata(e.target.checked)}
+                    className="w-4 h-4 rounded border-gray-300 text-red-500 focus:ring-red-400" />
+                  <span className="text-sm text-gray-700">Atencion inmediata</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked={filterServicioADomicilio} onChange={e => setFilterServicioADomicilio(e.target.checked)}
+                    className="w-4 h-4 rounded border-gray-300 text-blue-500 focus:ring-blue-400" />
+                  <span className="text-sm text-gray-700">Servicio a domicilio</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked={filterDisponibleFinesDeSemana} onChange={e => setFilterDisponibleFinesDeSemana(e.target.checked)}
+                    className="w-4 h-4 rounded border-gray-300 text-purple-500 focus:ring-purple-400" />
+                  <span className="text-sm text-gray-700">Fines de semana</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked={filterDisponibleFeriados} onChange={e => setFilterDisponibleFeriados(e.target.checked)}
+                    className="w-4 h-4 rounded border-gray-300 text-amber-500 focus:ring-amber-400" />
+                  <span className="text-sm text-gray-700">Feriados</span>
+                </label>
+              </div>
+            </div>
+
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1.5">Radio de busqueda</label>
               <div className="flex gap-1.5">
@@ -485,7 +526,14 @@ const Search = () => {
                   <span className="text-sm font-semibold text-gray-800">{(pro.stats?.rating || 0).toFixed(1)}</span>
                   <span className="text-xs text-gray-400">({pro.stats?.reviewCount || 0})</span>
                 </div>
-                <p className="text-sm text-gray-600 line-clamp-2 mb-3">{pro.description}</p>
+                <p className="text-sm text-gray-600 line-clamp-2 mb-2">{pro.description}</p>
+                {(pro.disponible24hs || pro.atencionInmediata || pro.servicioADomicilio) && (
+                  <div className="flex flex-wrap gap-1 mb-2">
+                    {pro.disponible24hs && <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded text-[10px] font-semibold">24 hs</span>}
+                    {pro.atencionInmediata && <span className="px-2 py-0.5 bg-red-100 text-red-700 rounded text-[10px] font-semibold">Inmediata</span>}
+                    {pro.servicioADomicilio && <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-[10px] font-semibold">A domicilio</span>}
+                  </div>
+                )}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1 text-xs text-gray-500">
                     <MapPin size={12} />

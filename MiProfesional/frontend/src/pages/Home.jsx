@@ -550,7 +550,7 @@ const Home = () => {
                 >{cat}</Link>
               ))}
             </div>
-            <Link to="/search?disponibilidad=24-7"
+            <Link to="/categoria/servicios-24-7"
               className="flex items-center justify-center gap-2 px-3 py-1.5 bg-gradient-to-r from-red-600/20 to-orange-600/20 hover:from-red-600/30 hover:to-orange-600/30 border border-red-500/30 hover:border-red-500/50 rounded-xl text-[11px] text-red-400 hover:text-red-300 transition-all"
             ><AlertTriangle size={12} /> 24-7 — Profesionales disponibles todo el dia <ArrowRight size={12} /></Link>
           </div>
@@ -596,7 +596,7 @@ const Home = () => {
                   >{cat}</Link>
                 ))}
               </div>
-              <Link to="/search?disponibilidad=24-7"
+              <Link to="/categoria/servicios-24-7"
                 className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-red-600/20 to-orange-600/20 hover:from-red-600/30 hover:to-orange-600/30 border border-red-500/30 hover:border-red-500/50 rounded-xl text-xs text-red-400 hover:text-red-300 transition-all"
               ><AlertTriangle size={14} /> 24-7 — Profesionales disponibles todo el dia <ArrowRight size={14} /></Link>
             </div>
@@ -606,6 +606,29 @@ const Home = () => {
           </div>
         </div>
         <div className="absolute bottom-0 left-0 right-0 h-12 md:h-24 bg-gradient-to-t from-gray-50 to-transparent" />
+      </section>
+
+      {/* Urgent Banner */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6 md:mt-8 mb-4">
+        <Link to="/categoria/servicios-24-7"
+          className="block relative overflow-hidden rounded-2xl bg-gradient-to-r from-red-600 via-red-500 to-orange-500 shadow-lg shadow-red-500/20 hover:shadow-red-500/30 transition-all group"
+        >
+          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iLjA1Ij48cGF0aCBkPSJNMzYgMzR2LTJIMjR2MmgxMnpNMzYgMjh2LTJIMjR2MmgxMnoiLz48L2c+PC9nPjwvc3ZnPg==')] opacity-30" />
+          <div className="relative px-5 md:px-8 py-5 md:py-7 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 md:w-14 md:h-14 rounded-xl bg-white/20 flex items-center justify-center shrink-0 backdrop-blur-sm">
+                <AlertTriangle size={28} className="text-white" />
+              </div>
+              <div>
+                <h2 className="text-white font-black text-lg md:text-xl leading-tight">¿Necesitas ayuda ahora?</h2>
+                <p className="text-white/80 text-sm mt-1">Encontra profesionales disponibles las 24 horas, los 7 dias de la semana.</p>
+              </div>
+            </div>
+            <span className="inline-flex items-center gap-2 px-5 py-2.5 bg-white text-red-600 font-bold text-sm rounded-xl hover:bg-red-50 transition-all shadow-lg group-hover:translate-x-0.5 transition-transform">
+              Ver Servicios 24/7 <ArrowRight size={16} />
+            </span>
+          </div>
+        </Link>
       </section>
 
       {/* 3 ENTRY POINTS */}
@@ -758,7 +781,7 @@ const Home = () => {
                   <p className="text-white/80 text-xs">Profesionales con disponibilidad 24/7 para emergencias</p>
                 </div>
               </div>
-              <Link to="/search?disponibilidad=24-7" className="shrink-0 px-3 py-1.5 bg-white/20 hover:bg-white/30 text-white text-xs font-semibold rounded-lg transition-all">
+              <Link to="/categoria/servicios-24-7" className="shrink-0 px-3 py-1.5 bg-white/20 hover:bg-white/30 text-white text-xs font-semibold rounded-lg transition-all">
                 Ver todos
               </Link>
             </div>

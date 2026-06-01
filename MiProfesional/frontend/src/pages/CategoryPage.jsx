@@ -65,7 +65,7 @@ const CategoryPage = () => {
       {/* Hero Banner */}
       <section className="relative rounded-2xl overflow-hidden min-h-[280px] flex items-center">
         <img src={category.image} alt={category.title} className="absolute inset-0 w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/70 to-transparent" />
+        <div className={`absolute inset-0 ${category.metadata?.emergency ? 'bg-gradient-to-r from-red-900/95 via-red-800/80 to-transparent' : 'bg-gradient-to-r from-black/90 via-black/70 to-transparent'}`} />
         <div className="relative z-10 p-8 md:p-12 max-w-2xl">
           <div className="flex items-center gap-3 mb-3">
             <div className="w-14 h-14 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center text-white border border-white/10">
@@ -94,22 +94,58 @@ const CategoryPage = () => {
       {category.subcategories?.length > 0 && (
         <section>
           <h2 className="text-2xl font-bold text-gray-900 mb-6">Subcategorías</h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-            {category.subcategories.map((sub, idx) => (
-              <Link key={sub._id || idx} to={`/search?subcategory=${sub._id}`}
-                className="group relative rounded-xl overflow-hidden aspect-[4/3] border border-gray-200 hover-lift"
-              >
-                <img src={sub.image} alt={sub.title}
-                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                  loading="lazy"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                <div className="absolute bottom-0 left-0 right-0 p-4">
-                  <h3 className="text-white font-bold text-sm">{sub.title}</h3>
+          {(() => {
+            const groups = {};
+            category.subcategories.forEach(sub => {
+              const g = sub.metadata?.group || 'general';
+              if (!groups[g]) groups[g] = [];
+              groups[g].push(sub);
+            });
+            const groupLabels = {
+              salud: 'Salud',
+              automotor: 'Automotor',
+              hogar: 'Hogar',
+              seguridad: 'Seguridad',
+              mascotas: 'Mascotas',
+              otros: 'Otros',
+              general: 'General'
+            };
+            const groupIcons = {
+              salud: 'Stethoscope',
+              automotor: 'Car',
+              hogar: 'Home',
+              seguridad: 'Shield',
+              mascotas: 'Dog',
+              otros: 'Package',
+              general: 'Grid'
+            };
+            return Object.entries(groups).map(([group, subs]) => (
+              <div key={group} className="mb-8 last:mb-0">
+                <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-lg bg-red-100 flex items-center justify-center text-red-600 text-xs font-bold">
+                    {groupLabels[group]?.charAt(0) || '?'}
+                  </span>
+                  {groupLabels[group] || group}
+                </h3>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+                  {subs.map((sub, idx) => (
+                    <Link key={sub._id || idx} to={`/search?subcategory=${sub._id}`}
+                      className="group relative rounded-xl overflow-hidden aspect-[4/3] border border-gray-200 hover-lift"
+                    >
+                      <img src={sub.image} alt={sub.title}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                        loading="lazy"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                      <div className="absolute bottom-0 left-0 right-0 p-3">
+                        <h4 className="text-white font-bold text-xs">{sub.title}</h4>
+                      </div>
+                    </Link>
+                  ))}
                 </div>
-              </Link>
-            ))}
-          </div>
+              </div>
+            ));
+          })()}
         </section>
       )}
 

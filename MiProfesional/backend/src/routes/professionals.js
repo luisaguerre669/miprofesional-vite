@@ -49,6 +49,11 @@ router.get('/', [
   query('isVerified').optional().isBoolean().withMessage('isVerified must be a boolean'),
   query('availability').optional().isBoolean().withMessage('availability must be a boolean'),
   query('disponibilidad').optional().isIn(['24-7', '247']).withMessage('Invalid disponibilidad value'),
+  query('disponible24hs').optional().isBoolean().withMessage('disponible24hs must be a boolean'),
+  query('disponibleFinesDeSemana').optional().isBoolean().withMessage('disponibleFinesDeSemana must be a boolean'),
+  query('disponibleFeriados').optional().isBoolean().withMessage('disponibleFeriados must be a boolean'),
+  query('atencionInmediata').optional().isBoolean().withMessage('atencionInmediata must be a boolean'),
+  query('servicioADomicilio').optional().isBoolean().withMessage('servicioADomicilio must be a boolean'),
   query('sortBy').optional().isIn(['rating', 'price', 'responseTime', 'reviewCount', 'createdAt', 'ranking']).withMessage('Invalid sort field'),
   query('sort').optional().isIn(['rating', 'price', 'responseTime', 'reviewCount', 'createdAt', 'ranking']).withMessage('Invalid sort field'),
   query('sortOrder').optional().isIn(['asc', 'desc']).withMessage('Sort order must be asc or desc'),
@@ -67,6 +72,11 @@ router.get('/', [
       isVerified = false,
       availability,
       disponibilidad,
+      disponible24hs,
+      disponibleFinesDeSemana,
+      disponibleFeriados,
+      atencionInmediata,
+      servicioADomicilio,
       sort: sortAlias,
       sortBy = sortAlias || 'stats.rating',
       sortOrder = 'desc',
@@ -81,6 +91,11 @@ router.get('/', [
       minRating: parseFloat(minRating),
       maxPrice: maxPrice ? parseFloat(maxPrice) : undefined,
       isVerified: isVerified === 'true',
+      disponible24hs: disponible24hs === 'true',
+      disponibleFinesDeSemana: disponibleFinesDeSemana === 'true',
+      disponibleFeriados: disponibleFeriados === 'true',
+      atencionInmediata: atencionInmediata === 'true',
+      servicioADomicilio: servicioADomicilio === 'true',
       limit: parseInt(limit),
       page: parseInt(page),
       sortBy,
@@ -639,7 +654,8 @@ router.get('/me', authenticate, async (req, res) => {
 // PUT /api/v1/professionals/me - Update own professional profile
 router.put('/me', authenticate, async (req, res) => {
   try {
-    const allowedFields = ['businessName', 'profession', 'description', 'specialties', 'avatar', 'gallery', 'isFeatured', 'available24h', 'categoryId', 'subcategoryId'];
+    const allowedFields = ['businessName', 'profession', 'description', 'specialties', 'avatar', 'gallery', 'isFeatured', 'available24h', 'disponible24hs', 'disponibleFinesDeSemana', 'disponibleFeriados', 'atencionInmediata', 'servicioADomicilio', 'categoryId', 'subcategoryId'];
+
     const update = {};
     for (const field of allowedFields) {
       if (req.body[field] !== undefined) update[field] = req.body[field];

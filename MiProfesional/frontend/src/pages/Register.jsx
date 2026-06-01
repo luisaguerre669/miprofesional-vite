@@ -10,8 +10,9 @@ import {
 import LocationPicker from '../components/LocationPicker';
 
 const LICENSED_PROFESSIONS = [
-  'medico-domicilio', 'medico', 'enfermero', 'terapeuta', 'psicologo-247',
-  'electricista', 'gasista', 'cerrajero-urgente', 'cerrajero'
+  'medicos-247', 'medico-domicilio', 'medico', 'enfermeros-247', 'enfermero', 'terapeuta', 'terapeutas-247', 'psicologos-guardia', 'psicologo-247',
+  'electricistas-247', 'electricista', 'gasistas-247', 'gasista', 'cerrajeros-247', 'cerrajero-urgente', 'cerrajero',
+  'paramedicos', 'veterinarios-urgencia'
 ];
 
 const Register = () => {
@@ -28,7 +29,12 @@ const Register = () => {
     street: '', number: '', neighborhood: '', city: '', province: '',
     latitude: '', longitude: '',
     acceptTerms: false,
-    available24h: false
+    available24h: false,
+    disponible24hs: false,
+    disponibleFinesDeSemana: false,
+    disponibleFeriados: false,
+    atencionInmediata: false,
+    servicioADomicilio: false
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -113,7 +119,7 @@ const Register = () => {
     try {
       const result = await register(
         formData.name, formData.email, formData.password, formData.role,
-        { phone: formData.phone, profession: finalProfession, categoryId, subcategoryId, available24h: formData.available24h, address, termsAccepted: formData.acceptTerms }
+        { phone: formData.phone, profession: finalProfession, categoryId, subcategoryId, available24h: formData.available24h, disponible24hs: formData.disponible24hs, disponibleFinesDeSemana: formData.disponibleFinesDeSemana, disponibleFeriados: formData.disponibleFeriados, atencionInmediata: formData.atencionInmediata, servicioADomicilio: formData.servicioADomicilio, address, termsAccepted: formData.acceptTerms }
       );
       if (result.success) {
         if (isProfessional && licenseRequired && formData.licenseFile) {
@@ -166,7 +172,7 @@ const Register = () => {
   const GROUP_TO_SLUG = {
     'Construccion': 'construccion-y-hogar',
     'Servicios Generales': 'servicios-generales',
-    '24-7': '24-7',
+    '24-7': 'servicios-24-7',
     'Hogar y Confort': 'hogar-diseno',
     'Belleza y Cuidado': 'belleza-y-cuidado',
     'Bienestar y Deporte': 'bienestar-y-deportes',
@@ -233,11 +239,28 @@ const Register = () => {
       { value: 'cerrajero', label: 'Cerrajero' },
     ]},
     { group: '24-7', items: [
-      { value: 'medico-domicilio', label: 'Medico a Domicilio' },
-      { value: 'enfermero', label: 'Enfermero/a' },
-      { value: 'psicologo-247', label: 'Psicologo 24-7' },
-      { value: 'ambulancia', label: 'Servicio de Ambulancia' },
-      { value: 'vigilancia', label: 'Vigilancia Privada' },
+      { value: 'medicos-247', label: 'Medicos 24/7' },
+      { value: 'enfermeros-247', label: 'Enfermeros 24/7' },
+      { value: 'paramedicos', label: 'Paramedicos' },
+      { value: 'cuidadores-adultos-mayores', label: 'Cuidadores de Adultos Mayores' },
+      { value: 'acompanantes-terapeuticos-247', label: 'Acompanantes Terapeuticos' },
+      { value: 'psicologos-guardia', label: 'Psicologos de Guardia' },
+      { value: 'terapeutas-247', label: 'Terapeutas 24/7' },
+      { value: 'mecanicos-emergencia', label: 'Mecanicos de Emergencia' },
+      { value: 'auxilio-mecanico-247', label: 'Auxilio Mecanico' },
+      { value: 'gruas-remolques', label: 'Gruas y Remolques' },
+      { value: 'cerrajeros-247', label: 'Cerrajeros 24/7' },
+      { value: 'electricistas-247', label: 'Electricistas 24/7' },
+      { value: 'plomeros-247', label: 'Plomeros 24/7' },
+      { value: 'gasistas-247', label: 'Gasistas 24/7' },
+      { value: 'vidrieros-247', label: 'Vidrieros 24/7' },
+      { value: 'destapaciones', label: 'Destapaciones' },
+      { value: 'vigiladores', label: 'Vigiladores' },
+      { value: 'veterinarios-urgencia', label: 'Veterinarios de Urgencia' },
+      { value: 'traslado-mascotas', label: 'Traslado de Mascotas' },
+      { value: 'transporte-urgente', label: 'Transporte Urgente' },
+      { value: 'mensajeria-cadeteria', label: 'Mensajeria y Cadeteria' },
+      { value: 'fletes-emergencia', label: 'Fletes de Emergencia' },
     ]},
     { group: 'Hogar y Confort', items: [
       { value: 'decorador', label: 'Decorador de Interiores' },
@@ -488,35 +511,47 @@ const Register = () => {
                   </>
                 )}
 
-                {/* Disponibilidad 24/7 */}
-                <div className="p-4 bg-white border border-gray-200 rounded-xl">
+                {/* Disponibilidad y Servicios */}
+                <div className="p-4 bg-white border border-gray-200 rounded-xl space-y-3">
                   <div className="flex items-start gap-3">
                     <div className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center shrink-0">
                       <AlertTriangle size={20} className="text-red-500" />
                     </div>
                     <div className="flex-1">
                       <label className="font-semibold text-gray-900 text-sm block mb-1">
-                        ¿Brindas servicios las 24 horas?
+                        ¿Brindas servicios de urgencia o emergencia?
                       </label>
                       <p className="text-xs text-gray-500 mb-3">
-                        Marca esta opcion si atendes urgencias fuera del horario comercial (madrugada, fines de semana, feriados).
-                        Los profesionales con esta opcion activada aparecen en la seccion "Urgencias / Disponible Ahora".
+                        Marcá las opciones que correspondan para aparecer en la seccion "Servicios 24/7".
                       </p>
-                      <div className="flex gap-3">
-                        <button type="button" onClick={() => setFormData(prev => ({ ...prev, available24h: true }))}
-                          className={`flex-1 py-2.5 rounded-xl text-sm font-medium border transition-all ${
-                            formData.available24h
-                              ? 'bg-red-50 border-red-300 text-red-700'
-                              : 'border-gray-200 text-gray-500 hover:border-gray-300'
-                          }`}
-                        ><AlertTriangle size={14} className="inline mr-1 -mt-0.5" /> Si, atiendo urgencias</button>
-                        <button type="button" onClick={() => setFormData(prev => ({ ...prev, available24h: false }))}
-                          className={`flex-1 py-2.5 rounded-xl text-sm font-medium border transition-all ${
-                            !formData.available24h
-                              ? 'bg-gray-50 border-gray-300 text-gray-700'
-                              : 'border-gray-200 text-gray-500 hover:border-gray-300'
-                          }`}
-                        >No</button>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        {[
+                          { key: 'disponible24hs', label: 'Disponible 24 hs', desc: 'Todos los dias, toda la noche' },
+                          { key: 'atencionInmediata', label: 'Atencion inmediata', desc: 'Disponible para ir ahora mismo' },
+                          { key: 'servicioADomicilio', label: 'Servicio a domicilio', desc: 'Voy al lugar del cliente' },
+                          { key: 'disponibleFinesDeSemana', label: 'Fines de semana', desc: 'Sabados y domingos' },
+                          { key: 'disponibleFeriados', label: 'Feriados', desc: 'Dias no laborables' },
+                        ].map(opt => (
+                          <label
+                            key={opt.key}
+                            className={`flex items-start gap-2.5 p-2.5 rounded-lg border cursor-pointer transition-all ${
+                              formData[opt.key]
+                                ? 'bg-red-50 border-red-300'
+                                : 'border-gray-200 hover:border-gray-300'
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={formData[opt.key]}
+                              onChange={() => setFormData(prev => ({ ...prev, [opt.key]: !prev[opt.key] }))}
+                              className="mt-0.5 rounded border-gray-300 text-red-500 focus:ring-red-400"
+                            />
+                            <div>
+                              <span className="text-sm font-medium text-gray-900">{opt.label}</span>
+                              <p className="text-[11px] text-gray-400">{opt.desc}</p>
+                            </div>
+                          </label>
+                        ))}
                       </div>
                     </div>
                   </div>

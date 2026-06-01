@@ -164,13 +164,18 @@ router.post('/register', registerLimiter, [
   body('categoryId').optional().isMongoId().withMessage('Invalid category ID'),
   body('subcategoryId').optional().isMongoId().withMessage('Invalid subcategory ID'),
   body('available24h').optional().isBoolean().withMessage('available24h must be a boolean'),
+  body('disponible24hs').optional().isBoolean().withMessage('disponible24hs must be a boolean'),
+  body('disponibleFinesDeSemana').optional().isBoolean().withMessage('disponibleFinesDeSemana must be a boolean'),
+  body('disponibleFeriados').optional().isBoolean().withMessage('disponibleFeriados must be a boolean'),
+  body('atencionInmediata').optional().isBoolean().withMessage('atencionInmediata must be a boolean'),
+  body('servicioADomicilio').optional().isBoolean().withMessage('servicioADomicilio must be a boolean'),
   body('termsAccepted').isBoolean().withMessage('Debe aceptar los Términos y Condiciones').custom(value => {
     if (value !== true) throw new Error('Debe aceptar los Términos y Condiciones para registrarse');
     return true;
   })
 ], handleValidationErrors, async (req, res) => {
   try {
-    const { name, email, password, phone, location, address, role = 'client', profession, categoryId, subcategoryId, available24h, acceptMarketing, termsAccepted } = req.body;
+    const { name, email, password, phone, location, address, role = 'client', profession, categoryId, subcategoryId, available24h, disponible24hs, disponibleFinesDeSemana, disponibleFeriados, atencionInmediata, servicioADomicilio, acceptMarketing, termsAccepted } = req.body;
 
     // Check if user already exists
     const existingUser = await User.findOne({ email });
@@ -221,6 +226,11 @@ router.post('/register', registerLimiter, [
           if (categoryId) existingPro.categoryId = categoryId;
           if (subcategoryId) existingPro.subcategoryId = subcategoryId;
           if (available24h !== undefined) existingPro.available24h = available24h;
+          if (disponible24hs !== undefined) existingPro.disponible24hs = disponible24hs;
+          if (disponibleFinesDeSemana !== undefined) existingPro.disponibleFinesDeSemana = disponibleFinesDeSemana;
+          if (disponibleFeriados !== undefined) existingPro.disponibleFeriados = disponibleFeriados;
+          if (atencionInmediata !== undefined) existingPro.atencionInmediata = atencionInmediata;
+          if (servicioADomicilio !== undefined) existingPro.servicioADomicilio = servicioADomicilio;
           existingPro.subscription = {
             status: 'trial',
             trialStart: now,
@@ -235,6 +245,11 @@ router.post('/register', registerLimiter, [
             categoryId: categoryId || undefined,
             subcategoryId: subcategoryId || undefined,
             available24h: available24h === true,
+            disponible24hs: disponible24hs === true,
+            disponibleFinesDeSemana: disponibleFinesDeSemana === true,
+            disponibleFeriados: disponibleFeriados === true,
+            atencionInmediata: atencionInmediata === true,
+            servicioADomicilio: servicioADomicilio === true,
             description: 'Completa tu perfil profesional',
             contact: { phone: phone || '+000000000000', email: existingUser.email },
             location: { address: 'pendiente', city: 'pendiente', state: 'pendiente', country: 'Argentina', coordinates: { type: 'Point', coordinates: [0, 0] } },
@@ -320,6 +335,11 @@ router.post('/register', registerLimiter, [
           isActive: true,
           profileStatus: 'ACTIVE',
           available24h: available24h === true,
+          disponible24hs: disponible24hs === true,
+          disponibleFinesDeSemana: disponibleFinesDeSemana === true,
+          disponibleFeriados: disponibleFeriados === true,
+          atencionInmediata: atencionInmediata === true,
+          servicioADomicilio: servicioADomicilio === true,
           subscription: {
             status: 'trial',
             trialStart: now,

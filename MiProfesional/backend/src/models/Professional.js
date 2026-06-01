@@ -322,6 +322,26 @@ const professionalSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  disponible24hs: {
+    type: Boolean,
+    default: false
+  },
+  disponibleFinesDeSemana: {
+    type: Boolean,
+    default: false
+  },
+  disponibleFeriados: {
+    type: Boolean,
+    default: false
+  },
+  atencionInmediata: {
+    type: Boolean,
+    default: false
+  },
+  servicioADomicilio: {
+    type: Boolean,
+    default: false
+  },
   lastActiveAt: {
     type: Date,
     default: null
@@ -584,6 +604,11 @@ professionalSchema.statics.search = function(query, options = {}) {
     maxPrice,
     isVerified = false,
     available24h = false,
+    disponible24hs,
+    disponibleFinesDeSemana,
+    disponibleFeriados,
+    atencionInmediata,
+    servicioADomicilio,
     limit = 20,
     skip = 0,
     sortBy = 'stats.rating',
@@ -641,6 +666,23 @@ professionalSchema.statics.search = function(query, options = {}) {
   // Available 24-7 filter
   if (available24h) {
     searchQuery.available24h = true;
+  }
+
+  // New availability filters
+  if (disponible24hs) {
+    searchQuery.disponible24hs = true;
+  }
+  if (disponibleFinesDeSemana) {
+    searchQuery.disponibleFinesDeSemana = true;
+  }
+  if (disponibleFeriados) {
+    searchQuery.disponibleFeriados = true;
+  }
+  if (atencionInmediata) {
+    searchQuery.atencionInmediata = true;
+  }
+  if (servicioADomicilio) {
+    searchQuery.servicioADomicilio = true;
   }
   
   return this.find(searchQuery)

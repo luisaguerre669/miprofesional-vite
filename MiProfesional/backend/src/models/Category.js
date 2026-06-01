@@ -67,6 +67,10 @@ const categorySchema = new mongoose.Schema({
     emergency: {
       type: Boolean,
       default: false
+    },
+    group: {
+      type: String,
+      default: null
     }
   },
   stats: {

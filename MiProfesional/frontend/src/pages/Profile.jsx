@@ -34,6 +34,13 @@ const Profile = () => {
     state: ''
   });
   const [available24h, setAvailable24h] = useState(false);
+  const [availabilityFlags, setAvailabilityFlags] = useState({
+    disponible24hs: false,
+    disponibleFinesDeSemana: false,
+    disponibleFeriados: false,
+    atencionInmediata: false,
+    servicioADomicilio: false,
+  });
 
   useEffect(() => {
     if (user) {
@@ -61,6 +68,13 @@ const Profile = () => {
       if (pro) {
         setProfessional(pro);
         setAvailable24h(pro.available24h || false);
+        setAvailabilityFlags({
+          disponible24hs: pro.disponible24hs || false,
+          disponibleFinesDeSemana: pro.disponibleFinesDeSemana || false,
+          disponibleFeriados: pro.disponibleFeriados || false,
+          atencionInmediata: pro.atencionInmediata || false,
+          servicioADomicilio: pro.servicioADomicilio || false,
+        });
         setProForm({
           businessName: pro.businessName || '',
           profession: pro.profession || '',
@@ -124,6 +138,7 @@ const Profile = () => {
         description: proForm.description,
         specialties: proForm.specialties.split(',').map(s => s.trim()).filter(Boolean),
         available24h,
+        ...availabilityFlags,
         pricing: { hourlyRate: Number(proForm.hourlyRate) },
         contact: { phone: proForm.phone },
         location: {
@@ -288,15 +303,32 @@ const Profile = () => {
                 </select>
               </div>
             </div>
-            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
+            <div className="p-4 bg-red-50 border border-red-200 rounded-lg space-y-3">
               <div>
-                <label className="font-medium text-gray-900 text-sm">Disponible 24/7</label>
-                <p className="text-xs text-gray-500">Marcá si atendés urgencias fuera del horario comercial</p>
+                <p className="font-medium text-gray-900 text-sm">Servicios 24/7</p>
+                <p className="text-xs text-gray-500">Marcá las opciones para aparecer en la seccion de emergencias y urgencias</p>
               </div>
-              <button type="button" onClick={() => setAvailable24h(!available24h)}
-                className={`relative w-12 h-6 rounded-full transition-colors ${available24h ? 'bg-primary-600' : 'bg-gray-300'}`}>
-                <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${available24h ? 'translate-x-6' : 'translate-x-0'}`} />
-              </button>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {[
+                  { key: 'disponible24hs', label: 'Disponible 24 hs' },
+                  { key: 'atencionInmediata', label: 'Atencion inmediata' },
+                  { key: 'servicioADomicilio', label: 'Servicio a domicilio' },
+                  { key: 'disponibleFinesDeSemana', label: 'Fines de semana' },
+                  { key: 'disponibleFeriados', label: 'Feriados' },
+                ].map(opt => (
+                  <label key={opt.key} className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition-all ${
+                    availabilityFlags[opt.key] ? 'bg-white border-red-300' : 'bg-white/50 border-red-100'
+                  }`}>
+                    <input
+                      type="checkbox"
+                      checked={availabilityFlags[opt.key]}
+                      onChange={() => setAvailabilityFlags(prev => ({ ...prev, [opt.key]: !prev[opt.key] }))}
+                      className="rounded border-gray-300 text-red-500 focus:ring-red-400"
+                    />
+                    <span className="text-sm font-medium text-gray-900">{opt.label}</span>
+                  </label>
+                ))}
+              </div>
             </div>
             <button type="submit" disabled={saving}
               className="px-6 py-3 bg-primary-600 text-white font-semibold rounded-lg hover:bg-primary-700 disabled:opacity-50 flex items-center">

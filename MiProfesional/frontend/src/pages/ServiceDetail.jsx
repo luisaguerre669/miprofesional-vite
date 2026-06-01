@@ -189,6 +189,20 @@ const ServiceDetail = () => {
             <h2 className="text-xl font-bold text-gray-900 mb-4">Acerca de</h2>
             <p className="text-gray-600 leading-relaxed">{p.description || 'Sin descripción disponible.'}</p>
 
+            {/* Availability Badges */}
+            {(p.disponible24hs || p.atencionInmediata || p.servicioADomicilio || p.disponibleFinesDeSemana || p.disponibleFeriados) && (
+              <div className="mt-6">
+                <h3 className="text-sm font-semibold text-gray-900 mb-3">Disponibilidad</h3>
+                <div className="flex flex-wrap gap-2">
+                  {p.disponible24hs && <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-green-100 text-green-800 rounded-lg text-xs font-semibold"><span className="w-2 h-2 rounded-full bg-green-500" /> Disponible 24 hs</span>}
+                  {p.atencionInmediata && <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-red-100 text-red-800 rounded-lg text-xs font-semibold"><span className="w-2 h-2 rounded-full bg-red-500" /> Atencion inmediata</span>}
+                  {p.servicioADomicilio && <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-100 text-blue-800 rounded-lg text-xs font-semibold"><span className="w-2 h-2 rounded-full bg-blue-500" /> Servicio a domicilio</span>}
+                  {p.disponibleFinesDeSemana && <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-purple-100 text-purple-800 rounded-lg text-xs font-semibold"><span className="w-2 h-2 rounded-full bg-purple-500" /> Fines de semana</span>}
+                  {p.disponibleFeriados && <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-amber-100 text-amber-800 rounded-lg text-xs font-semibold"><span className="w-2 h-2 rounded-full bg-amber-500" /> Feriados</span>}
+                </div>
+              </div>
+            )}
+
             {/* Specialties */}
             {p.specialties?.length > 0 && (
               <div className="mt-6">
