@@ -21,6 +21,9 @@ import CategoriesPage from './pages/CategoriesPage';
 import VerifyEmail from './pages/VerifyEmail';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
+import TermsPage from './pages/TermsPage';
+import EmpresasPage from './pages/EmpresasPage';
+import CompanyDashboard from './pages/CompanyDashboard';
 
 // Protected pages
 import ClientDashboard from './pages/ClientDashboard';
@@ -34,7 +37,9 @@ import PaymentResult from './pages/PaymentResult';
 import Settings from './pages/Settings';
 import Notifications from './pages/Notifications';
 import CVPage from './pages/CVPage';
+import CVSearchPage from './pages/CVSearchPage';
 import CandidateSearch from './pages/CandidateSearch';
+import SubscriptionGuard from './components/SubscriptionGuard';
 
 // Protected Route Component
 const ProtectedRoute = ({ children, requiredRole = null }) => {
@@ -72,6 +77,8 @@ function AppRoutes() {
       <Route path="/verify-email" element={<Layout><VerifyEmail /></Layout>} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path="/terms" element={<Layout><TermsPage /></Layout>} />
+      <Route path="/empresas" element={<Layout><EmpresasPage /></Layout>} />
 
       {/* Client Routes */}
       <Route
@@ -89,6 +96,16 @@ function AppRoutes() {
         element={
           <ProtectedRoute requiredRole="professional">
             <Layout><ProfessionalDashboard /></Layout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Company Routes */}
+      <Route
+        path="/dashboard/company"
+        element={
+          <ProtectedRoute requiredRole={['company', 'employer', 'admin']}>
+            <Layout><CompanyDashboard /></Layout>
           </ProtectedRoute>
         }
       />
@@ -129,8 +146,24 @@ function AppRoutes() {
       <Route
         path="/candidatos"
         element={
-          <ProtectedRoute requiredRole={['employer', 'admin']}>
-            <Layout><CandidateSearch /></Layout>
+          <ProtectedRoute requiredRole={['company', 'employer', 'admin']}>
+            <Layout>
+              <SubscriptionGuard>
+                <CandidateSearch />
+              </SubscriptionGuard>
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/cv-search"
+        element={
+          <ProtectedRoute requiredRole={['company', 'employer', 'admin']}>
+            <Layout>
+              <SubscriptionGuard>
+                <CVSearchPage />
+              </SubscriptionGuard>
+            </Layout>
           </ProtectedRoute>
         }
       />

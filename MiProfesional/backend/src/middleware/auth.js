@@ -56,7 +56,7 @@ async function requireEmployer(req, res, next) {
   try {
     const User = require('../models/User');
     const user = await User.findById(req.userId).select('role isActive');
-    if (!user || !user.isActive || !['employer', 'admin'].includes(user.role)) {
+    if (!user || !user.isActive || !['employer', 'company', 'admin'].includes(user.role)) {
       return res.status(403).json({ success: false, message: 'Acceso denegado. Se requiere cuenta de empresa.' });
     }
     req.authUser = user;

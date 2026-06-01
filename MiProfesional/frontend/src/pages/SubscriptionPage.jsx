@@ -1,15 +1,17 @@
 import { useState, useEffect } from 'react';
-import { Loader2, CheckCircle, XCircle, Gift, ArrowRight, Sparkles } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, ArrowRight, Crown, Building2, Briefcase, Sparkles, CreditCard } from 'lucide-react';
 import api from '../lib/axios';
 import { useAuth } from '../context/AuthContext';
 
 export default function SubscriptionPage() {
   const { user } = useAuth();
-  const [plan, setPlan] = useState(null);
+  const [plans, setPlans] = useState([]);
   const [subscription, setSubscription] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [actionLoading, setActionLoading] = useState(false);
+  const [actionLoading, setActionLoading] = useState(null);
   const [message, setMessage] = useState(null);
+
+  const isCompany = user?.role === 'company' || user?.role === 'employer';
 
   useEffect(() => {
     Promise.all([
@@ -17,23 +19,23 @@ export default function SubscriptionPage() {
       api.get('/subscription/status'),
     ])
       .then(([plansRes, subRes]) => {
-        setPlan(Array.isArray(plansRes.data?.data) ? plansRes.data.data[0] : null);
+        setPlans(Array.isArray(plansRes.data?.data) ? plansRes.data.data : []);
         setSubscription(subRes.data?.data ?? subRes.data ?? null);
       })
       .catch(() => setMessage({ type: 'error', text: 'Error al cargar los datos.' }))
       .finally(() => setLoading(false));
   }, []);
 
-  const handleUpgrade = async () => {
-    setActionLoading(true);
+  const handlePurchase = async (planId) => {
+    setActionLoading(planId);
     setMessage(null);
     try {
-      const res = await api.post('/subscription/create-preapproval', { plan: 'monthly' });
+      const res = await api.post('/subscription/create-preference', { plan: planId });
       const initPoint = res.data?.data?.initPoint || res.data?.initPoint;
       if (initPoint) {
         window.location.href = initPoint;
       } else {
-        setMessage({ type: 'error', text: 'Error al redirigir a la autorizacion.' });
+        setMessage({ type: 'error', text: 'Error al redirigir al pago.' });
       }
     } catch {
       setMessage({ type: 'error', text: 'Error al procesar la solicitud.' });
@@ -43,7 +45,7 @@ export default function SubscriptionPage() {
   };
 
   const handleCancel = async () => {
-    setActionLoading(true);
+    setActionLoading('cancel');
     setMessage(null);
     try {
       await api.post('/subscription/cancel');
@@ -52,7 +54,7 @@ export default function SubscriptionPage() {
     } catch {
       setMessage({ type: 'error', text: 'Error al cancelar la suscripción.' });
     } finally {
-      setActionLoading(false);
+      setActionLoading(null);
     }
   };
 
@@ -73,66 +75,20 @@ export default function SubscriptionPage() {
   }
 
   const currentStatus = subscription?.status ?? 'inactive';
-  const isActive = currentStatus === 'active';
+  const isActive = currentStatus === 'active' || currentStatus === 'trial';
+  const currentPlan = subscription?.plan || 'free';
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white py-10 px-4">
-      <div className="max-w-lg mx-auto">
-
-        {/* HERO BANNER */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-primary-600 via-primary-500 to-emerald-500 shadow-xl shadow-primary-500/25 mb-8 p-6 sm:p-8 text-center">
-          <div className="absolute inset-0 opacity-10">
-            <div className="absolute -top-10 -right-10 w-40 h-40 bg-white rounded-full" />
-            <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-white rounded-full" />
-          </div>
-          <div className="relative z-10">
-            <h2 className="text-2xl sm:text-3xl font-black text-white mb-2">
-              30 días gratis
-            </h2>
-            <p className="text-primary-100 text-base sm:text-lg font-semibold">
-              Luego $5.000/mes
-            </p>
-            <p className="text-primary-100/80 text-sm mt-2 max-w-sm mx-auto">
-              Publica tu perfil, recibí consultas de clientes. Cancelas cuando quieras.
-            </p>
-          </div>
+      <div className="max-w-4xl mx-auto">
+        <div className="text-center mb-10">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Planes MiProfesional</h1>
+          <p className="text-gray-500">
+            {isCompany
+              ? 'Elegí el plan ideal para encontrar los mejores talentos'
+              : 'Elegí el plan ideal para potenciar tu presencia profesional'}
+          </p>
         </div>
-
-        {/* STATUS ALERTS */}
-        {currentStatus === 'trial' && subscription?.daysRemaining > 0 && (
-          <div className="mb-6 flex items-start gap-3 px-4 py-4 rounded-lg bg-primary-50 border border-primary-200">
-            <Gift size={20} className="text-primary-600 shrink-0 mt-0.5" />
-            <div>
-              <p className="text-sm font-semibold text-primary-800">30 días gratis en curso</p>
-              <p className="text-xs text-primary-700 mt-1">
-                Te quedan <strong>{subscription.daysRemaining} dias</strong> gratuitos. Sin cargos ni compromiso.
-                Al finalizar, se activara automaticamente tu suscripcion de <strong>$5.000/mes</strong>.
-              </p>
-            </div>
-          </div>
-        )}
-        {currentStatus === 'suspended' && (
-          <div className="mb-6 flex items-start gap-3 px-4 py-4 rounded-lg bg-red-50 border border-red-200">
-            <XCircle size={20} className="text-red-600 shrink-0 mt-0.5" />
-            <div>
-              <p className="text-sm font-semibold text-red-800">Periodo gratuito finalizado</p>
-              <p className="text-xs text-red-700 mt-1">
-                Tu perfil ya no es visible. Activa tu suscripcion de $5.000/mes para volver a aparecer en el marketplace.
-              </p>
-            </div>
-          </div>
-        )}
-        {currentStatus === 'pending_payment' && (
-          <div className="mb-6 flex items-start gap-3 px-4 py-4 rounded-lg bg-amber-50 border border-amber-200">
-            <XCircle size={20} className="text-amber-600 shrink-0 mt-0.5" />
-            <div>
-              <p className="text-sm font-semibold text-amber-800">Suscripcion pendiente</p>
-              <p className="text-xs text-amber-700 mt-1">
-                Completa la activacion para que tu perfil sea visible en el marketplace.
-              </p>
-            </div>
-          </div>
-        )}
 
         {message && (
           <div className={`mb-6 flex items-center gap-2 px-4 py-3 rounded-lg text-sm font-medium ${
@@ -145,63 +101,121 @@ export default function SubscriptionPage() {
           </div>
         )}
 
-        {/* SINGLE PLAN CARD */}
-        {plan && (
-          <div className={`relative bg-white rounded-2xl shadow-sm border-2 ${
-            isActive ? 'border-primary-500 shadow-lg shadow-primary-500/10' : 'border-gray-200 shadow-sm'
-          }`}>
-            {isActive && (
-              <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary-600 text-white text-xs font-semibold px-3 py-1 rounded-full z-10">
-                Plan Activo
-              </span>
-            )}
-
-            <div className="p-6 sm:p-8 text-center">
-              <span className="inline-flex items-center gap-1 text-xs font-semibold text-primary-600 bg-primary-50 px-3 py-1 rounded-full mb-4">
-                <Sparkles size={12} /> Suscripcion Mensual
-              </span>
-
-              <div className="mb-2">
-                <p className="text-sm text-gray-400 mb-1 line-through">$5.000</p>
-                <div className="flex items-baseline justify-center gap-1">
-                  <span className="text-5xl font-black text-gray-900">$0</span>
-                  <span className="text-gray-500 text-sm">ARS</span>
-                </div>
-                <p className="text-sm font-semibold text-primary-600 mt-0.5">30 días gratis</p>
-                <p className="text-xs text-gray-400 mt-1">Luego $5.000/mes · Recurrencia automatica</p>
-              </div>
-
-              <ul className="text-xs text-left text-gray-600 space-y-2 my-6 bg-gray-50 rounded-xl p-4">
-                {['Primer mes completamente gratis, sin cargos', 'Suscripcion recurrente automatica', 'Cancelacion sin cargo en cualquier momento', 'Perfil visible en el marketplace', 'Sin compromiso mensual'].map((b, i) => (
-                  <li key={i} className="flex items-start gap-2">
-                    <CheckCircle size={14} className="text-green-500 shrink-0 mt-0.5" />
-                    <span>{b}</span>
-                  </li>
-                ))}
-              </ul>
-
-              <button
-                onClick={isActive ? handleCancel : handleUpgrade}
-                disabled={actionLoading}
-                className={`w-full py-3 rounded-xl text-sm font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${
-                  isActive
-                    ? 'bg-red-600 text-white hover:bg-red-700'
-                    : 'bg-primary-600 text-white hover:bg-primary-700 shadow-lg shadow-primary-500/25'
-                }`}
-              >
-                {actionLoading ? (
-                  <span className="flex items-center gap-2">
-                    <Loader2 size={16} className="animate-spin" /> Procesando...
-                  </span>
-                ) : isActive ? (
-                  'Cancelar Suscripcion'
-                ) : (
-                  <>Activar suscripcion <ArrowRight size={16} /></>
-                )}
-              </button>
+        {isActive && (
+          <div className="mb-8 bg-primary-50 border border-primary-200 rounded-xl p-4 flex items-start gap-3">
+            <CheckCircle size={20} className="text-primary-600 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-semibold text-primary-800">
+                {currentStatus === 'trial' ? 'Período de prueba activo' : 'Suscripción activa'}
+              </p>
+              <p className="text-xs text-primary-700 mt-0.5">
+                Plan {currentPlan === 'company' ? 'Empresa' : currentPlan === 'professional' ? 'Profesional' : 'Mensual'}
+                {subscription?.endDate && ` · Vence el ${new Date(subscription.endDate).toLocaleDateString('es-AR')}`}
+                {subscription?.daysRemaining > 0 && ` · ${subscription.daysRemaining} días restantes`}
+              </p>
             </div>
           </div>
         )}
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {plans.map(plan => {
+            const isCurrentPlan = currentPlan === plan.id && isActive;
+            const Icon = plan.id === 'company' ? Building2 : Briefcase;
+            return (
+              <div
+                key={plan.id}
+                className={`relative bg-white rounded-2xl border-2 transition-all ${
+                  plan.highlighted
+                    ? 'border-amber-400 shadow-xl shadow-amber-500/10'
+                    : isCurrentPlan
+                      ? 'border-primary-500 shadow-lg'
+                      : 'border-gray-200 shadow-sm hover:shadow-md'
+                }`}
+              >
+                {plan.highlighted && (
+                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-amber-500 to-amber-600 text-white text-xs font-bold px-4 py-1 rounded-full z-10 shadow-lg flex items-center gap-1">
+                    <Crown size={12} /> Recomendado
+                  </span>
+                )}
+                {isCurrentPlan && (
+                  <span className="absolute -top-3 right-4 bg-primary-600 text-white text-xs font-semibold px-3 py-1 rounded-full z-10">
+                    Plan actual
+                  </span>
+                )}
+
+                <div className="p-6 sm:p-8">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                      plan.id === 'company' ? 'bg-amber-100' : 'bg-primary-50'
+                    }`}>
+                      <Icon size={24} className={plan.id === 'company' ? 'text-amber-600' : 'text-primary-600'} />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-gray-900">{plan.name}</h3>
+                      <p className="text-xs text-gray-500">{plan.forRole === 'company' ? 'Para empresas' : 'Para profesionales'}</p>
+                    </div>
+                  </div>
+
+                  <div className="mb-4">
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-4xl font-black text-gray-900">${plan.price.toLocaleString('es-AR')}</span>
+                      <span className="text-gray-500 text-sm">ARS</span>
+                    </div>
+                    <p className="text-xs text-gray-400">/{plan.durationDays} días</p>
+                  </div>
+
+                  <p className="text-sm text-gray-600 mb-4">{plan.description}</p>
+
+                  <ul className="text-sm space-y-2.5 mb-6">
+                    {plan.benefits.map((b, i) => (
+                      <li key={i} className="flex items-start gap-2">
+                        <CheckCircle size={16} className="text-green-500 shrink-0 mt-0.5" />
+                        <span className="text-gray-700">{b}</span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  {isCurrentPlan ? (
+                    <button
+                      onClick={handleCancel}
+                      disabled={actionLoading === 'cancel'}
+                      className="w-full py-3 rounded-xl text-sm font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-2 bg-red-600 text-white hover:bg-red-700"
+                    >
+                      {actionLoading === 'cancel' ? (
+                        <span className="flex items-center gap-2"><Loader2 size={16} className="animate-spin" /> Cancelando...</span>
+                      ) : 'Cancelar Suscripción'}
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handlePurchase(plan.id)}
+                      disabled={actionLoading === plan.id}
+                      className={`w-full py-3 rounded-xl text-sm font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-2 ${
+                        plan.highlighted
+                          ? 'bg-amber-600 text-white hover:bg-amber-700 shadow-lg shadow-amber-500/25'
+                          : 'bg-primary-600 text-white hover:bg-primary-700 shadow-lg shadow-primary-500/25'
+                      }`}
+                    >
+                      {actionLoading === plan.id ? (
+                        <span className="flex items-center gap-2"><Loader2 size={16} className="animate-spin" /> Procesando...</span>
+                      ) : (
+                        <>{plan.cta} <ArrowRight size={16} /></>
+                      )}
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="mt-8 bg-gray-50 rounded-xl border border-gray-200 p-5 text-center">
+          <p className="text-sm text-gray-600">
+            ¿Necesitás factura? Contactanos a <strong className="text-gray-900">facturacion@miprofesional.online</strong>
+          </p>
+          <p className="text-xs text-gray-400 mt-1">
+            Los pagos son procesados de forma segura por Mercado Pago.
+          </p>
+        </div>
       </div>
     </div>
   );

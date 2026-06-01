@@ -7,6 +7,7 @@ import {
   Phone, Mail, Lock, User, Briefcase, Upload, Gift,
   FileText, Building2, Sparkles, Smartphone, Info, CreditCard, MapPin, AlertTriangle
 } from 'lucide-react';
+import LocationPicker from '../components/LocationPicker';
 
 const LICENSED_PROFESSIONS = [
   'medico-domicilio', 'medico', 'enfermero', 'terapeuta', 'psicologo-247',
@@ -25,6 +26,7 @@ const Register = () => {
     role: roleParam || 'client',
     profession: '', licenseNumber: '', licenseFile: null,
     street: '', number: '', neighborhood: '', city: '', province: '',
+    latitude: '', longitude: '',
     acceptTerms: false,
     available24h: false
   });
@@ -92,7 +94,11 @@ const Register = () => {
       neighborhood: formData.neighborhood,
       city: formData.city,
       state: formData.province,
-      country: 'Argentina'
+      country: 'Argentina',
+      coordinates: formData.latitude && formData.longitude ? {
+        type: 'Point',
+        coordinates: [parseFloat(formData.longitude), parseFloat(formData.latitude)]
+      } : undefined
     } : undefined;
 
     const categoryId = isProfessional ? findCategoryId(finalProfession) : undefined;
@@ -107,7 +113,7 @@ const Register = () => {
     try {
       const result = await register(
         formData.name, formData.email, formData.password, formData.role,
-        { phone: formData.phone, profession: finalProfession, categoryId, subcategoryId, available24h: formData.available24h, address }
+        { phone: formData.phone, profession: finalProfession, categoryId, subcategoryId, available24h: formData.available24h, address, termsAccepted: formData.acceptTerms }
       );
       if (result.success) {
         if (isProfessional && licenseRequired && formData.licenseFile) {
@@ -119,6 +125,8 @@ const Register = () => {
         }
         if (isProfessional) {
           navigate('/dashboard/professional');
+        } else if (formData.role === 'company') {
+          navigate('/dashboard/company');
         } else {
           setRegistered(true);
         }
@@ -314,7 +322,7 @@ const Register = () => {
             </div>
             <h1 className="text-2xl font-bold text-gray-900">Crear Cuenta</h1>
             <p className="text-gray-500 mt-1 text-sm">
-              {isProfessional ? 'Registrate como profesional' : 'Registrate como cliente'}
+              {formData.role === 'company' ? 'Registrate como empresa' : isProfessional ? 'Registrate como profesional' : 'Registrate como cliente'}
             </p>
           </div>
 
@@ -352,6 +360,11 @@ const Register = () => {
                       formData.role === 'professional' ? 'border-primary-500 bg-primary-50 text-primary-700' : 'border-gray-200 text-gray-600 hover:border-gray-300'
                     }`}
                   ><Briefcase size={16} className="inline mr-1.5 -mt-0.5" /> Profesional</button>
+                  <button type="button" onClick={() => { setFormData(prev => ({ ...prev, role: 'company' })); }}
+                    className={`flex-1 py-2.5 rounded-xl text-sm font-medium border transition-all ${
+                      formData.role === 'company' ? 'border-primary-500 bg-primary-50 text-primary-700' : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                    }`}
+                  ><Building2 size={16} className="inline mr-1.5 -mt-0.5" /> Empresa</button>
                 </div>
 
                 <div>
@@ -511,14 +524,32 @@ const Register = () => {
               </>
             )}
 
-            {/* Step 3: Address + Legal & Finish */}
+            {/* Step 3: Address (with map) + Legal & Finish */}
             {step === 3 && (
               <div className="space-y-4">
-                <div className="p-4 bg-gray-50 rounded-xl border border-gray-200">
-                  <h3 className="font-semibold text-gray-900 text-sm mb-3 flex items-center gap-2">
-                    <MapPin size={16} className="text-primary-600" /> Tu ubicacion
-                  </h3>
-                  <div className="space-y-2">
+                <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                  <div className="p-4 border-b border-gray-100">
+                    <h3 className="font-semibold text-gray-900 text-sm flex items-center gap-2">
+                      <MapPin size={16} className="text-primary-600" /> Tu ubicacion exacta
+                    </h3>
+                    <p className="text-xs text-gray-400 mt-0.5">Arrastrá el marcador en el mapa o buscá tu dirección</p>
+                  </div>
+                  <div className="p-4">
+                    <LocationPicker
+                      onLocationChange={({ lat, lng, address, city, state }) => {
+                        setFormData(prev => ({
+                          ...prev,
+                          latitude: lat,
+                          longitude: lng,
+                          city: city || prev.city,
+                          province: state || prev.province,
+                        }));
+                      }}
+                      height="280px"
+                      compact
+                    />
+                  </div>
+                  <div className="px-4 pb-4 space-y-2">
                     <div className="flex gap-2">
                       <input name="street" value={formData.street} onChange={handleChange}
                         placeholder="Calle" className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm" />
@@ -616,7 +647,11 @@ const Register = () => {
                   <input type="checkbox" name="acceptTerms" checked={formData.acceptTerms} onChange={handleChange}
                     className="mt-0.5 w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500" />
                   <span className="text-sm text-gray-600">
-                    Acepto los terminos y condiciones. Entiendo que MiProfesional es solo una plataforma de conexion y no garantiza trabajo, no gestiona pagos ni interviene en transacciones.
+                    He leído y acepto los{' '}
+                    <Link to="/terms" target="_blank" className="text-primary-600 hover:text-primary-700 font-medium underline">
+                      Términos y Condiciones
+                    </Link>{' '}
+                    de MiProfesional. Entiendo que MiProfesional es solo una plataforma de conexión y no garantiza trabajo, no gestiona pagos ni interviene en transacciones.
                   </span>
                 </label>
               </div>
@@ -625,12 +660,12 @@ const Register = () => {
             {/* Navigation buttons */}
             <div className="flex gap-3 pt-2">
               {step > 1 && (
-                <button type="button" onClick={() => setStep(step - 1)}
+                <button type="button" onClick={() => setStep(isProfessional ? step - 1 : 1)}
                   className="px-6 py-2.5 border border-gray-300 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-50 transition-all"
                 >Atras</button>
               )}
               {step < 3 ? (
-                <button type="button" onClick={() => setStep(step + 1)}
+                <button type="button" onClick={() => setStep(isProfessional ? step + 1 : 3)}
                   className="flex-1 py-2.5 bg-primary-600 text-white font-semibold rounded-xl hover:bg-primary-700 transition-all text-sm"
                 >Continuar</button>
               ) : (

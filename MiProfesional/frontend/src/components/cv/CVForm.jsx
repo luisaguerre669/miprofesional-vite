@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Briefcase, Camera, GraduationCap, MapPin, Save, Shield, Sparkles, User } from 'lucide-react';
 import api from '../../lib/axios';
 import { useAuth } from '../../context/AuthContext';
+import LocationPicker from '../LocationPicker';
 
 const emptyCv = {
   visibility: 'private',
@@ -12,7 +13,7 @@ const emptyCv = {
   experience: [],
   education: [],
   availability: { status: 'a-convenir', mode: 'indistinto', hours: 'full-time' },
-  location: { city: '', state: '', country: 'Argentina' },
+  location: { city: '', state: '', country: 'Argentina', coordinates: { type: 'Point', coordinates: [0, 0] } },
   experienceLevel: 'entry'
 };
 
@@ -234,6 +235,25 @@ export default function CVForm({ compact = false }) {
             <span className="text-xs font-medium text-gray-600">Provincia</span>
             <input value={cv.location?.state || ''} onChange={(e) => setLocation('state', e.target.value)} className="w-full p-3 border border-gray-300 rounded-lg text-sm" />
           </label>
+          <div className="space-y-2">
+            <span className="text-xs font-medium text-gray-600 flex items-center gap-1"><MapPin size={14} /> Ubicación exacta en mapa</span>
+            <LocationPicker
+              initialAddress={`${cv.location?.city || ''}, ${cv.location?.state || ''}`}
+              onLocationChange={({ lat, lng, city, state }) => {
+                setCv(current => ({
+                  ...current,
+                  location: {
+                    ...current.location,
+                    city: city || current.location.city,
+                    state: state || current.location.state,
+                    coordinates: { type: 'Point', coordinates: [lng || 0, lat || 0] }
+                  }
+                }));
+              }}
+              height="250px"
+              compact
+            />
+          </div>
         </div>
 
         <label className="space-y-1 block">

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../lib/axios';
-import { LogIn, Mail, Lock, AlertCircle, Chrome, Smartphone, ArrowLeft, CheckCircle } from 'lucide-react';
+import { LogIn, Mail, Lock, AlertCircle, Chrome, Smartphone, ArrowLeft, CheckCircle, Building2, Briefcase, User } from 'lucide-react';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -14,6 +14,7 @@ const Login = () => {
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const [codeSent, setCodeSent] = useState(false);
+  const [accountType, setAccountType] = useState('client');
 
   useEffect(() => {
     fetch(`${import.meta.env.VITE_API_URL?.replace('/api', '') || 'https://miprofesional-backend.onrender.com'}/health`).catch(() => {});
@@ -52,8 +53,12 @@ const Login = () => {
     if (mode === 'email') {
       const result = await login(formData.email, formData.password);
       clearTimeout(safetyTimer);
-      if (result.success) navigate('/');
-      else setError(result.error);
+      if (result.success) {
+        const role = result.role;
+        if (role === 'company' || role === 'employer') navigate('/dashboard/company');
+        else if (role === 'professional') navigate('/dashboard/professional');
+        else navigate('/');
+      } else setError(result.error);
     }
     setLoading(false);
   };
@@ -109,6 +114,43 @@ const Login = () => {
             <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg flex items-start gap-3">
               <CheckCircle className="text-green-600 shrink-0 mt-0.5" size={18} />
               <p className="text-green-800 text-sm">{success}</p>
+            </div>
+          )}
+
+          {/* Account type selector */}
+          <div className="flex gap-1.5 mb-5 p-1 bg-gray-50 rounded-xl border border-gray-100">
+            <button type="button" onClick={() => setAccountType('client')}
+              className={`flex-1 py-2 rounded-lg text-xs font-medium transition-all ${
+                accountType === 'client' ? 'bg-white text-primary-700 shadow-sm border border-gray-200' : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              <User size={14} className="inline mr-1 -mt-0.5" /> Cliente
+            </button>
+            <button type="button" onClick={() => setAccountType('professional')}
+              className={`flex-1 py-2 rounded-lg text-xs font-medium transition-all ${
+                accountType === 'professional' ? 'bg-white text-primary-700 shadow-sm border border-gray-200' : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              <Briefcase size={14} className="inline mr-1 -mt-0.5" /> Profesional
+            </button>
+            <button type="button" onClick={() => setAccountType('company')}
+              className={`flex-1 py-2 rounded-lg text-xs font-medium transition-all ${
+                accountType === 'company' ? 'bg-amber-50 text-amber-700 shadow-sm border border-amber-200' : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              <Building2 size={14} className="inline mr-1 -mt-0.5" /> Empresa
+            </button>
+          </div>
+
+          {accountType === 'company' && (
+            <div className="mb-5 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+              <div className="flex items-start gap-2">
+                <Building2 size={16} className="text-amber-600 shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-semibold text-amber-900">Acceso para empresas</p>
+                  <p className="text-xs text-amber-700 mt-0.5">Ingresá con tu cuenta empresa para buscar candidatos y gestionar tu equipo.</p>
+                </div>
+              </div>
             </div>
           )}
 
@@ -200,11 +242,16 @@ const Login = () => {
             <Chrome size={18} /> Continuar con Google
           </button>
 
-          <div className="mt-5 text-center">
+          <div className="mt-5 text-center space-y-2">
             <p className="text-sm text-gray-500">
               No tenes una cuenta?{' '}
-              <Link to="/register" className="text-primary-600 hover:text-primary-700 font-medium">Registrate</Link>
+              <Link to={accountType === 'company' ? '/register?role=company' : '/register'} className="text-primary-600 hover:text-primary-700 font-medium">Registrate</Link>
             </p>
+            {accountType !== 'company' && (
+              <p className="text-xs text-gray-400">
+                <Link to="/register?role=company" className="hover:text-primary-600 transition-colors">Soy empresa &rarr;</Link>
+              </p>
+            )}
           </div>
         </div>
       </div>

@@ -63,7 +63,7 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem('user', JSON.stringify(user));
       setUser(user);
       setLoginAttempts(0);
-      return { success: true };
+      return { success: true, role: user?.role };
     } catch (error) {
       const elapsed = Date.now() - startTime;
       console.warn('[Auth] Login failed:', { status: error.response?.status, message: error.response?.data?.message || error.message, timeMs: elapsed });
@@ -123,6 +123,7 @@ export const AuthProvider = ({ children }) => {
     isAuthenticated: !!user,
     isProfessional: user?.role === 'professional',
     isEmployer: user?.role === 'employer',
+    isCompany: user?.role === 'company',
     isAdmin: user?.role === 'admin'
   };
 

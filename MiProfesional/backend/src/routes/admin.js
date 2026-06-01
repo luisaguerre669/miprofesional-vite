@@ -5,6 +5,9 @@ const Professional = require("../models/Professional");
 const Category = require("../models/Category");
 const Booking = require("../models/Booking");
 const Payment = require("../models/Payment");
+const CurriculumVitae = require("../models/CurriculumVitae");
+const AnalyticsEvent = require("../models/AnalyticsEvent");
+const AuditLog = require("../models/AuditLog");
 const { authenticate, requireAdmin } = require("../middleware/auth");
 const logger = require("../utils/logger");
 
@@ -62,11 +65,19 @@ router.post("/seed-categories", async (req, res) => {
 
 router.get("/dashboard", async (req, res) => {
   try {
-    const [totalUsers, totalProfessionals, totalBookings, totalRevenue, recentUsers, recentBookings] = await Promise.all([
+    const [
+      totalUsers, totalProfessionals, totalBookings, totalRevenue,
+      totalCompanies, totalActiveCompanies, totalCVs, totalPayments,
+      recentUsers, recentBookings
+    ] = await Promise.all([
       User.countDocuments(),
       Professional.countDocuments(),
       Booking.countDocuments(),
       Payment.aggregate([{ $match: { status: "approved" } }, { $group: { _id: null, total: { $sum: "$amount" } } }]),
+      User.countDocuments({ role: 'company' }),
+      User.countDocuments({ role: 'company', 'subscription.status': 'active' }),
+      CurriculumVitae.countDocuments({ isActive: true }),
+      Payment.countDocuments({ status: 'approved' }),
       User.find().sort({ createdAt: -1 }).limit(5).select('name email role isActive createdAt'),
       Booking.find().populate("userId", "name").sort({ createdAt: -1 }).limit(5)
     ]);
@@ -74,7 +85,11 @@ router.get("/dashboard", async (req, res) => {
     res.json({
       success: true,
       data: {
-        stats: { totalUsers, totalProfessionals, totalBookings, totalRevenue: totalRevenue[0]?.total || 0 },
+        stats: {
+          totalUsers, totalProfessionals, totalBookings,
+          totalRevenue: totalRevenue[0]?.total || 0,
+          totalCompanies, totalActiveCompanies, totalCVs, totalPayments
+        },
         recentUsers, recentBookings
       }
     });
@@ -115,7 +130,7 @@ router.patch("/users/:id/status", async (req, res) => {
 });
 
 router.patch("/users/:id/role", [
-  body("role").isIn(["client", "professional", "admin"])
+  body("role").isIn(["client", "professional", "company", "employer", "admin"])
 ], handleValidationErrors, async (req, res) => {
   try {
     const user = await User.findByIdAndUpdate(req.params.id, { role: req.body.role }, { new: true }).select('-password');
@@ -269,6 +284,165 @@ router.get("/stats", async (req, res) => {
   }
 });
 
+// ── Company Management ──────────────────────────────────────
+
+router.get("/companies", async (req, res) => {
+  try {
+    const { page = 1, limit = 20, search, subscriptionStatus } = req.query;
+    const query = { role: 'company' };
+    if (search) query.$or = [
+      { name: { $regex: search, $options: 'i' } },
+      { email: { $regex: search, $options: 'i' } }
+    ];
+    if (subscriptionStatus) query['subscription.status'] = subscriptionStatus;
+
+    const companies = await User.find(query)
+      .sort({ createdAt: -1 })
+      .limit(parseInt(limit))
+      .skip((parseInt(page) - 1) * parseInt(limit))
+      .select('name email phone role isActive createdAt subscription');
+
+    const total = await User.countDocuments(query);
+
+    res.json({
+      success: true,
+      data: companies,
+      pagination: { page: parseInt(page), limit: parseInt(limit), total, pages: Math.ceil(total / parseInt(limit)) }
+    });
+  } catch (error) {
+    logger.error("Admin companies error:", error);
+    res.status(500).json({ success: false, message: "Error al obtener empresas" });
+  }
+});
+
+router.get("/companies/stats", async (req, res) => {
+  try {
+    const [totalCompanies, activeSubscriptions, suspendedCompanies, planBreakdown] = await Promise.all([
+      User.countDocuments({ role: 'company' }),
+      User.countDocuments({ role: 'company', 'subscription.status': 'active' }),
+      User.countDocuments({ role: 'company', 'subscription.status': 'suspended' }),
+      User.aggregate([
+        { $match: { role: 'company', 'subscription.plan': { $ne: 'free' } } },
+        { $group: { _id: '$subscription.plan', count: { $sum: 1 } } }
+      ])
+    ]);
+
+    res.json({
+      success: true,
+      data: { totalCompanies, activeSubscriptions, suspendedCompanies, planBreakdown }
+    });
+  } catch (error) {
+    logger.error("Admin companies stats error:", error);
+    res.status(500).json({ success: false, message: "Error al obtener estadísticas de empresas" });
+  }
+});
+
+// ── Payments by user type ───────────────────────────────────
+
+router.get("/payments/companies", async (req, res) => {
+  try {
+    const { page = 1, limit = 20, status } = req.query;
+    const companyIds = await User.find({ role: 'company' }).distinct('_id');
+    const query = { userId: { $in: companyIds } };
+    if (status) query.status = status;
+
+    const payments = await Payment.find(query)
+      .sort({ createdAt: -1 })
+      .limit(parseInt(limit))
+      .skip((parseInt(page) - 1) * parseInt(limit))
+      .populate('userId', 'name email');
+
+    const total = await Payment.countDocuments(query);
+
+    res.json({
+      success: true,
+      data: payments,
+      pagination: { page: parseInt(page), limit: parseInt(limit), total, pages: Math.ceil(total / parseInt(limit)) }
+    });
+  } catch (error) {
+    logger.error("Admin company payments error:", error);
+    res.status(500).json({ success: false, message: "Error al obtener pagos de empresas" });
+  }
+});
+
+router.get("/payments/professionals", async (req, res) => {
+  try {
+    const { page = 1, limit = 20, status } = req.query;
+    const proIds = await User.find({ role: 'professional' }).distinct('_id');
+    const query = { userId: { $in: proIds } };
+    if (status) query.status = status;
+
+    const payments = await Payment.find(query)
+      .sort({ createdAt: -1 })
+      .limit(parseInt(limit))
+      .skip((parseInt(page) - 1) * parseInt(limit))
+      .populate('userId', 'name email');
+
+    const total = await Payment.countDocuments(query);
+
+    res.json({
+      success: true,
+      data: payments,
+      pagination: { page: parseInt(page), limit: parseInt(limit), total, pages: Math.ceil(total / parseInt(limit)) }
+    });
+  } catch (error) {
+    logger.error("Admin professional payments error:", error);
+    res.status(500).json({ success: false, message: "Error al obtener pagos de profesionales" });
+  }
+});
+
+// ── Business Metrics ────────────────────────────────────────
+
+router.get("/business-metrics", async (req, res) => {
+  try {
+    const { days = 30 } = req.query;
+    const since = new Date(Date.now() - parseInt(days) * 24 * 60 * 60 * 1000);
+
+    const [
+      totalUsers, activeUsers, companiesActive, professionalsActive,
+      totalCVs, totalBookings, totalPayments,
+      conversionRate, payByPlan, recentSearches, topCVs,
+      dailyActiveUsers, dailyActiveCompanies
+    ] = await Promise.all([
+      User.countDocuments(),
+      User.countDocuments({ isActive: true }),
+      User.countDocuments({ role: 'company', 'subscription.status': 'active' }),
+      Professional.countDocuments({ isActive: true, profileStatus: 'ACTIVE' }),
+      CurriculumVitae.countDocuments({ isActive: true }),
+      Booking.countDocuments({ createdAt: { $gte: since } }),
+      Payment.countDocuments({ status: 'approved', createdAt: { $gte: since } }),
+      (async () => {
+        const total = await User.countDocuments({ role: { $in: ['company', 'professional'] } });
+        const withSub = await User.countDocuments({ role: { $in: ['company', 'professional'] }, 'subscription.status': 'active' });
+        return total > 0 ? ((withSub / total) * 100).toFixed(1) : 0;
+      })(),
+      User.aggregate([
+        { $match: { 'subscription.status': 'active', 'subscription.plan': { $ne: 'free' } } },
+        { $group: { _id: '$subscription.plan', count: { $sum: 1 } } }
+      ]),
+      AnalyticsEvent.topSearches(since, 10),
+      AnalyticsEvent.mostViewedCVs(since, 10),
+      AnalyticsEvent.countByEvent('daily_active_user', since),
+      AnalyticsEvent.countByEvent('daily_active_company', since)
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        period: { days: parseInt(days), since },
+        totals: { users: totalUsers, activeUsers, companiesActive, professionalsActive, cvs: totalCVs },
+        activity: { bookings: totalBookings, payments: totalPayments, dailyActiveUsers, dailyActiveCompanies },
+        conversion: { rate: conversionRate, payByPlan },
+        topSearches: recentSearches,
+        topCVs
+      }
+    });
+  } catch (error) {
+    logger.error("Business metrics error:", error);
+    res.status(500).json({ success: false, message: "Error al obtener métricas de negocio" });
+  }
+});
+
 // ── Observability ──────────────────────────────────────────
 
 router.get("/system-status", async (req, res) => {
@@ -347,16 +521,27 @@ router.post("/reprocess-webhook/:userId", async (req, res) => {
     const payment = await Payment.findOne({ userId: user._id, status: 'approved' }).sort({ createdAt: -1 });
     if (!payment) return res.status(404).json({ success: false, message: "No hay pagos aprobados para este usuario" });
 
-    const months = payment.plan === 'semester' ? 6 : 1;
-    const expiresAt = new Date();
-    expiresAt.setMonth(expiresAt.getMonth() + months);
+    const plan = payment.metadata?.plan || payment.plan || 'professional';
+    const durationDays = payment.metadata?.durationDays || 30;
+    const now = new Date();
+    const endDate = new Date(now);
+    endDate.setDate(endDate.getDate() + durationDays);
 
-    user.membership = {
-      type: "premium", plan: payment.plan, expiresAt,
-      benefits: payment.plan === 'semester'
-        ? ["Acceso completo a la plataforma", "Ahorro del 15%"]
-        : ["Acceso completo a la plataforma"]
-    };
+    if (user.role === 'company' || user.role === 'employer') {
+      user.subscription = {
+        plan: plan,
+        status: 'active',
+        startDate: now,
+        endDate: endDate,
+        lastPaymentId: String(payment.mpPaymentId || payment._id),
+        autoRenew: false,
+      };
+    } else {
+      user.membership = {
+        type: "premium", plan: plan, expiresAt: endDate,
+        benefits: ["Acceso completo a la plataforma"]
+      };
+    }
     await user.save();
 
     const professional = await Professional.findOne({ userId: user._id });
@@ -366,16 +551,16 @@ router.post("/reprocess-webhook/:userId", async (req, res) => {
       professional.subscription = {
         ...(professional.subscription || {}),
         status: "active",
-        plan: payment.plan,
+        plan: plan,
         paymentId: String(payment.mpPaymentId || payment._id),
         lastPayment: new Date(),
-        nextBilling: expiresAt,
+        nextBilling: endDate,
         activatedAt: new Date(),
       };
       await professional.save();
     }
 
-    logger.info("Webhook reprocessed by admin", { userId: user._id, plan: payment.plan, paymentId: payment._id });
+    logger.info("Webhook reprocessed by admin", { userId: user._id, plan, role: user.role, paymentId: payment._id });
     res.json({ success: true, message: "Suscripcion reactivada manualmente" });
   } catch (error) {
     logger.error("Reprocess webhook error:", error);
@@ -410,6 +595,22 @@ router.post("/clean-test-data", async (req, res) => {
   } catch (error) {
     logger.error("Clean test data error:", error);
     res.status(500).json({ success: false, message: "Error al limpiar datos de prueba" });
+  }
+});
+
+// ── Backup ──────────────────────────────────────────────────
+
+router.post("/backup", async (req, res) => {
+  try {
+    const { runBackup } = require('../scripts/backup');
+    const result = await runBackup();
+    logger.info("Backup completed by admin", { filename: result.filename, sizeMB: result.sizeMB });
+    await AuditLog.log({ event: 'backup_run', userId: req.userId, metadata: { filename: result.filename, sizeMB: result.sizeMB }, success: true });
+    res.json({ success: true, message: 'Backup completado', data: result });
+  } catch (error) {
+    logger.error("Backup error:", error);
+    await AuditLog.log({ event: 'backup_run', userId: req.userId, metadata: { error: error.message }, success: false });
+    res.status(500).json({ success: false, message: 'Error al ejecutar backup' });
   }
 });
 

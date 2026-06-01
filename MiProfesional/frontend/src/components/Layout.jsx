@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Menu, X, User, LogOut, Home, Search, MessageSquare, LayoutDashboard, Bell, CreditCard, Settings, Shield, Plus, LogIn, Building2, Wrench, AlertTriangle, Sparkles, FileText, UsersRound } from 'lucide-react';
+import { Menu, X, User, LogOut, Home, Search, MessageSquare, LayoutDashboard, Bell, CreditCard, Settings, Shield, Plus, LogIn, Building2, Briefcase, AlertTriangle, Sparkles, FileText, UsersRound } from 'lucide-react';
 import Logo from './Logo';
 import { isNativeAndroid } from '../utils/platform';
 
@@ -11,7 +11,7 @@ const Layout = ({ children }) => {
   const [searchQuery, setSearchQuery] = React.useState('');
   const [scrolled, setScrolled] = React.useState(false);
   const [userMenuOpen, setUserMenuOpen] = React.useState(false);
-  const { user, isAuthenticated, logout, isProfessional, isEmployer } = useAuth();
+  const { user, isAuthenticated, logout, isProfessional, isEmployer, isCompany } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -45,12 +45,9 @@ const Layout = ({ children }) => {
             <nav className="hidden lg:flex items-center space-x-1">
               {[
                 { name: 'Inicio', path: '/', icon: Home },
-                { name: 'Buscar', path: '/search', icon: Search },
-                { name: '24-7', path: '/search?disponibilidad=24-7', icon: AlertTriangle },
-                { name: 'Construcción', path: '/categoria/construccion-y-hogar', icon: Building2 },
-                { name: 'Belleza', path: '/categoria/belleza-y-cuidado', icon: Sparkles },
-                { name: 'Servicios', path: '/categoria/servicios-generales', icon: Wrench },
-                ...(user?.role === 'employer' || user?.role === 'admin' ? [{ name: 'Candidatos', path: '/candidatos', icon: UsersRound }] : []),
+                { name: 'Profesionales', path: '/search', icon: Briefcase },
+                { name: 'Empresas', path: '/empresas', icon: Building2 },
+                ...(isEmployer || isCompany || user?.role === 'admin' ? [{ name: 'Currículums', path: '/cv-search', icon: UsersRound }] : []),
                 ...(user?.role === 'admin' ? [{ name: 'Admin', path: '/admin', icon: Shield }] : []),
               ].map((link, idx) => {
                 const Icon = link.icon;
@@ -103,7 +100,7 @@ const Layout = ({ children }) => {
                       <>
                         <div className="fixed inset-0 z-10" onClick={() => setUserMenuOpen(false)} />
                         <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-200 py-2 z-20 animate-fade-in-down">
-                          <Link to={isProfessional ? "/dashboard/professional" : "/dashboard/client"} onClick={() => setUserMenuOpen(false)}
+                          <Link to={isProfessional ? "/dashboard/professional" : isCompany ? "/dashboard/company" : "/dashboard/client"} onClick={() => setUserMenuOpen(false)}
                             className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50">
                             <LayoutDashboard size={16} /> Dashboard
                           </Link>
@@ -115,12 +112,12 @@ const Layout = ({ children }) => {
                             className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50">
                             <FileText size={16} /> Mi CV
                           </Link>
-                          {isEmployer && (
-                            <Link to="/candidatos" onClick={() => setUserMenuOpen(false)}
-                              className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50">
-                              <UsersRound size={16} /> Buscar candidatos
-                            </Link>
-                          )}
+          {(isEmployer || isCompany) && (
+            <Link to="/cv-search" onClick={() => setUserMenuOpen(false)}
+              className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50">
+              <UsersRound size={16} /> Buscar candidatos
+            </Link>
+          )}
                           <Link to="/subscriptions" onClick={() => setUserMenuOpen(false)}
                             className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50">
                             <CreditCard size={16} /> Suscripcion
@@ -157,10 +154,10 @@ const Layout = ({ children }) => {
                   >
                     Registrarse
                   </Link>
-                  <Link to="/register?role=professional"
-                    className="px-5 py-2.5 border-2 border-primary-600 text-primary-600 rounded-xl text-sm font-semibold hover:bg-primary-50 transition-all"
+                  <Link to="/register?role=company"
+                    className="px-4 py-2.5 border-2 border-amber-500 text-amber-600 rounded-xl text-sm font-semibold hover:bg-amber-50 transition-all"
                   >
-                    Soy Profesional
+                    Soy Empresa
                   </Link>
                 </>
               )}
@@ -190,10 +187,9 @@ const Layout = ({ children }) => {
 
               {[
                 { name: 'Inicio', path: '/', icon: Home },
-                { name: 'Buscar', path: '/search', icon: Search },
-                { name: '24-7', path: '/search?disponibilidad=24-7', icon: AlertTriangle },
-                { name: 'Belleza', path: '/categoria/belleza-y-cuidado', icon: Sparkles },
-                ...(user?.role === 'employer' || user?.role === 'admin' ? [{ name: 'Candidatos', path: '/candidatos', icon: UsersRound }] : []),
+                { name: 'Profesionales', path: '/search', icon: Briefcase },
+                { name: 'Empresas', path: '/empresas', icon: Building2 },
+                ...(isEmployer || isCompany || user?.role === 'admin' ? [{ name: 'Currículums', path: '/cv-search', icon: UsersRound }] : []),
               ].map((link, idx) => {
                 const Icon = link.icon;
                 const isActive = location.pathname === link.path;
@@ -220,7 +216,7 @@ const Layout = ({ children }) => {
                       <span>Mensajes</span>
                     </Link>
                     {!isNativeAndroid() && (
-                      <Link to={isProfessional ? '/dashboard/professional' : '/dashboard/client'} onClick={() => setMobileMenuOpen(false)}
+                      <Link to={isProfessional ? '/dashboard/professional' : isCompany ? '/dashboard/company' : '/dashboard/client'} onClick={() => setMobileMenuOpen(false)}
                         className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50"
                       >
                         <LayoutDashboard size={18} />
@@ -239,12 +235,12 @@ const Layout = ({ children }) => {
                       <FileText size={18} />
                       <span>Mi CV</span>
                     </Link>
-                    {isEmployer && (
-                      <Link to="/candidatos" onClick={() => setMobileMenuOpen(false)}
+                    {(isEmployer || isCompany) && (
+                      <Link to="/cv-search" onClick={() => setMobileMenuOpen(false)}
                         className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50"
                       >
                         <UsersRound size={18} />
-                        <span>Buscar candidatos</span>
+                        <span>Buscar currículums</span>
                       </Link>
                     )}
                     <Link to="/subscriptions" onClick={() => setMobileMenuOpen(false)}
@@ -329,8 +325,18 @@ const Layout = ({ children }) => {
               <h3 className="text-white font-semibold text-sm mb-4">Profesionales</h3>
               <ul className="space-y-2.5">
                 <li><Link to="/register?role=professional" className="text-gray-400 text-sm hover:text-white transition-colors">Registrarse</Link></li>
-                <li><Link to="/subscriptions" className="text-gray-400 text-sm hover:text-white transition-colors">Planes de suscripcion</Link></li>
+                <li><Link to="/subscriptions" className="text-gray-400 text-sm hover:text-white transition-colors">Planes</Link></li>
                 <li><Link to="/login" className="text-gray-400 text-sm hover:text-white transition-colors">Iniciar sesion</Link></li>
+                <li><Link to="/cv-search" className="text-gray-400 text-sm hover:text-white transition-colors">Buscar candidatos</Link></li>
+              </ul>
+            </div>
+            <div>
+              <h3 className="text-white font-semibold text-sm mb-4">Empresas</h3>
+              <ul className="space-y-2.5">
+                <li><Link to="/empresas" className="text-gray-400 text-sm hover:text-white transition-colors">Plan Empresa</Link></li>
+                <li><Link to="/register?role=company" className="text-gray-400 text-sm hover:text-white transition-colors">Registrar empresa</Link></li>
+                <li><Link to="/subscriptions" className="text-gray-400 text-sm hover:text-white transition-colors">Planes y precios</Link></li>
+                <li><Link to="/login" className="text-gray-400 text-sm hover:text-white transition-colors">Acceder</Link></li>
               </ul>
             </div>
 
@@ -349,7 +355,7 @@ const Layout = ({ children }) => {
                 MiProfesional.com &mdash; Plataforma de conexion entre clientes y profesionales
               </p>
               <p className="text-gray-500 text-xs">
-                30 días gratis · $5.000/mes ARS / mes
+                Plan Profesional $5.000/mes · Plan Empresa $20.000/mes
               </p>
             </div>
             <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-4 border-t border-gray-800/50">
@@ -391,8 +397,8 @@ const Layout = ({ children }) => {
                       { name: 'Inicio', path: '/', icon: Home },
                       { name: 'Buscar', path: '/search', icon: Search },
                       { name: '24-7', path: '/search?disponibilidad=24-7', icon: AlertTriangle },
-                      ...(isEmployer ? [{ name: 'Candidatos', path: '/candidatos', icon: UsersRound }] : [{ name: 'Mi CV', path: '/cv', icon: FileText }]),
-                      { name: 'Dashboard', path: isProfessional ? '/dashboard/professional' : '/dashboard/client', icon: LayoutDashboard },
+                      ...(isEmployer || isCompany ? [{ name: 'CVs', path: '/cv-search', icon: UsersRound }] : [{ name: 'Mi CV', path: '/cv', icon: FileText }]),
+                      { name: 'Dashboard', path: isProfessional ? '/dashboard/professional' : isCompany ? '/dashboard/company' : '/dashboard/client', icon: LayoutDashboard },
                       { name: 'Perfil', path: '/profile', icon: User },
                     ]
             );

@@ -12,6 +12,8 @@ const mongoose = require("mongoose");
 const connectDB = require("./config/db");
 const logger = require("./utils/logger");
 const requestId = require("./middleware/requestId");
+const { validateEnvironment: validateEnvConfig } = require("./config/environment");
+const { searchRateLimiter, authRateLimiter, registerRateLimiter } = require("./middleware/rateLimiter");
 
 // Routes
 const authRoutes = require("./routes/auth");
@@ -31,6 +33,9 @@ const reviewsRoutes = require("./routes/reviews");
 const ratingsRoutes = require("./routes/ratings");
 const notificationsRoutes = require("./routes/notifications");
 const cvRoutes = require("./routes/cv");
+const paymentRoutes = require("./routes/payments");
+const auditRoutes = require("./routes/audit");
+const geocodeRoutes = require("./routes/geocode");
 
 // Models
 require("./models/Payment");
@@ -40,27 +45,18 @@ require("./models/Conversation");
 require("./models/Review");
 require("./models/Booking");
 require("./models/CurriculumVitae");
+require("./models/AuditLog");
+require("./models/AnalyticsEvent");
 
 // Register event bus listeners
 require("./services/emailService");
 
-// Subscription cron (auto-expire trials)
-const { startSubscriptionCron } = require("./services/subscriptionCron");
+// Subscription crons
+const { startSubscriptionCron: legacySubscriptionCron } = require("./services/subscriptionCron");
+const { startSubscriptionCron: subscriptionCronJob } = require("./jobs/subscriptionCron");
 
-const REQUIRED_ENV_VARS = ["JWT_SECRET", "JWT_REFRESH_SECRET", "NODE_ENV"];
-
-function validateEnvironment() {
-  const missing = REQUIRED_ENV_VARS.filter((key) => !process.env[key]);
-  const mongoUri = process.env.MONGODB_URI || process.env.MONGO_URI;
-  if (!mongoUri) missing.push("MONGODB_URI or MONGO_URI");
-  if (process.env.NODE_ENV === "production" && !process.env.CORS_ORIGIN && !process.env.CORS_ORIGINS) {
-    missing.push("CORS_ORIGIN or CORS_ORIGINS");
-  }
-  if (missing.length > 0) {
-    console.error(`Missing required environment variables: ${missing.join(", ")}`);
-    process.exit(1);
-  }
-}
+// Subscription reminders cron
+const { checkSubscriptionReminders } = require("./services/reminderService");
 
 function getAllowedOrigins() {
   const configured = process.env.CORS_ORIGINS || process.env.CORS_ORIGIN || "";
@@ -87,7 +83,7 @@ function isAllowedOrigin(origin, allowedOrigins) {
 
 class Server {
   constructor() {
-    validateEnvironment();
+    validateEnvConfig();
     this.app = express();
     this.port = process.env.PORT || 10000;
     this.allowedOrigins = getAllowedOrigins();
@@ -129,6 +125,11 @@ class Server {
     });
     this.app.use("/api/", limiter);
 
+    this.app.use("/api/auth/login", authRateLimiter);
+    this.app.use("/api/auth/register", registerRateLimiter);
+    this.app.use("/auth/login", authRateLimiter);
+    this.app.use("/auth/register", registerRateLimiter);
+
     const corsOptions = {
       origin: (origin, callback) => {
         if (isAllowedOrigin(origin, this.allowedOrigins)) return callback(null, true);
@@ -169,7 +170,10 @@ class Server {
   this.app.use("/api/ratings", ratingsRoutes);
   this.app.use("/api/v1/mercadopago", mercadopagoRoutes);
   this.app.use("/api/notifications", notificationsRoutes);
-  this.app.use("/api/cv", cvRoutes);
+    this.app.use("/api/cv", cvRoutes);
+    this.app.use("/api/payments", paymentRoutes);
+    this.app.use("/api/audit", auditRoutes);
+    this.app.use("/api/geocode", geocodeRoutes);
 
     this.app.get("/", (req, res) => {
       res.json({
@@ -197,7 +201,17 @@ class Server {
             payment: "/api/v1/mercadopago/payment/:id",
             paymentsByUser: "/api/v1/mercadopago/payments/user/:userId",
             stats: "/api/v1/mercadopago/payments/stats"
-          }
+          },
+          payments: {
+            create: "/api/payments/create",
+            webhook: "/api/payments/webhook"
+          },
+          cv: {
+            search: "/api/cv/search",
+            me: "/api/cv/me",
+            byId: "/api/cv/:id"
+          },
+          audit: "/api/audit"
         }
       });
     });
@@ -223,7 +237,11 @@ class Server {
       }
       const errData = { method: req.method, url: req.originalUrl, ip: req.ip, requestId: req.requestId, statusCode: err.statusCode || 500, message: err.message, stack: err.stack };
       logger.error("Server error:", errData);
-      res.status(500).json({ ok: false, message: "Error interno del servidor", requestId: req.requestId });
+      try {
+        const AuditLog = require('./models/AuditLog');
+        AuditLog.log({ event: 'admin_action', metadata: { action: 'server_error', error: err.message, stack: err.stack, url: req.originalUrl }, success: false });
+      } catch (_) {}
+      res.status(err.statusCode || 500).json({ ok: false, message: "Error interno del servidor", requestId: req.requestId });
     });
   }
 
@@ -271,7 +289,10 @@ class Server {
         });
       });
 
-      startSubscriptionCron();
+      legacySubscriptionCron();
+      subscriptionCronJob();
+      setInterval(checkSubscriptionReminders, 12 * 60 * 60 * 1000);
+      checkSubscriptionReminders();
       this.server.on("error", (error) => {
         logger.error("Server error:", error);
         process.exit(1);

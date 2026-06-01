@@ -69,6 +69,9 @@ const cvSchema = new mongoose.Schema({
     default: 'entry',
     index: true
   },
+  experienceYears: { type: Number, default: 0, min: 0 },
+  expectedSalary: { type: Number, default: null, min: 0 },
+  dateOfBirth: { type: Date, default: null },
   isActive: { type: Boolean, default: true, index: true }
 }, {
   timestamps: true,
@@ -81,6 +84,10 @@ cvSchema.index({ 'skills.name': 1 });
 cvSchema.index({ jobTitles: 1 });
 cvSchema.index({ updatedAt: -1 });
 cvSchema.index({ 'location.coordinates': '2dsphere' });
+cvSchema.index({ experienceYears: 1 });
+cvSchema.index({ expectedSalary: 1 });
+cvSchema.index({ 'availability.hours': 1 });
+cvSchema.index({ dateOfBirth: 1 });
 cvSchema.index({
   'personalData.fullName': 'text',
   'personalData.headline': 'text',
@@ -102,6 +109,13 @@ cvSchema.statics.searchForEmployers = function(filters = {}) {
     skills = [],
     location,
     experienceLevel,
+    experienceYearsMin,
+    experienceYearsMax,
+    availability,
+    salaryMin,
+    salaryMax,
+    ageMin,
+    ageMax,
     limit = 20,
     page = 1
   } = filters;
@@ -121,6 +135,32 @@ cvSchema.statics.searchForEmployers = function(filters = {}) {
     ];
   }
   if (experienceLevel) query.experienceLevel = experienceLevel;
+  if (experienceYearsMin || experienceYearsMax) {
+    query.experienceYears = {};
+    if (experienceYearsMin) query.experienceYears.$gte = Number(experienceYearsMin);
+    if (experienceYearsMax) query.experienceYears.$lte = Number(experienceYearsMax);
+  }
+  if (availability) query['availability.hours'] = availability;
+  if (salaryMin || salaryMax) {
+    query.expectedSalary = {};
+    if (salaryMin) query.expectedSalary.$gte = Number(salaryMin);
+    if (salaryMax) query.expectedSalary.$lte = Number(salaryMax);
+  }
+  if (ageMin || ageMax) {
+    query.dateOfBirth = {};
+    if (ageMax) {
+      const upperBound = new Date();
+      upperBound.setFullYear(upperBound.getFullYear() - Number(ageMax));
+      upperBound.setHours(23, 59, 59, 999);
+      query.dateOfBirth.$gte = upperBound;
+    }
+    if (ageMin) {
+      const lowerBound = new Date();
+      lowerBound.setFullYear(lowerBound.getFullYear() - Number(ageMin));
+      lowerBound.setHours(0, 0, 0, 0);
+      query.dateOfBirth.$lte = lowerBound;
+    }
+  }
 
   const skip = (page - 1) * limit;
   return this.find(query)
@@ -130,7 +170,69 @@ cvSchema.statics.searchForEmployers = function(filters = {}) {
     .populate('userId', 'name email phone avatar role');
 };
 
+cvSchema.methods.toPublicView = function() {
+  return {
+    _id: this._id,
+    userId: this.userId ? { _id: this.userId._id, name: this.userId.name } : this.userId,
+    visibility: this.visibility,
+    personalData: {
+      fullName: this.personalData?.fullName,
+      headline: this.personalData?.headline
+    },
+    photo: this.photo,
+    jobTitles: this.jobTitles,
+    skills: this.skills?.map(s => ({ name: s.name, level: s.level })),
+    experience: this.experience?.map(e => ({
+      jobTitle: e.jobTitle,
+      company: e.company,
+      startDate: e.startDate,
+      endDate: e.endDate,
+      current: e.current
+    })),
+    education: this.education?.map(e => ({
+      degree: e.degree,
+      institution: e.institution,
+      field: e.field
+    })),
+    experienceLevel: this.experienceLevel,
+    experienceYears: this.experienceYears,
+    availability: this.availability,
+    location: this.location,
+    updatedAt: this.updatedAt
+  };
+};
+
+cvSchema.methods.toFullView = function() {
+  const age = this.dateOfBirth
+    ? Math.floor((Date.now() - new Date(this.dateOfBirth).getTime()) / (365.25 * 86400000))
+    : null;
+  return {
+    _id: this._id,
+    userId: this.userId,
+    visibility: this.visibility,
+    personalData: this.personalData,
+    photo: this.photo,
+    jobTitles: this.jobTitles,
+    skills: this.skills,
+    experience: this.experience,
+    education: this.education,
+    availability: this.availability,
+    location: this.location,
+    experienceLevel: this.experienceLevel,
+    experienceYears: this.experienceYears,
+    expectedSalary: this.expectedSalary,
+    age,
+    dateOfBirth: this.dateOfBirth,
+    isActive: this.isActive,
+    createdAt: this.createdAt,
+    updatedAt: this.updatedAt
+  };
+};
+
 cvSchema.methods.toEmployerSummary = function() {
+  const age = this.dateOfBirth
+    ? Math.floor((Date.now() - new Date(this.dateOfBirth).getTime()) / (365.25 * 86400000))
+    : null;
   return {
     _id: this._id,
     userId: this.userId,
@@ -144,6 +246,9 @@ cvSchema.methods.toEmployerSummary = function() {
     jobTitles: this.jobTitles,
     skills: this.skills,
     experienceLevel: this.experienceLevel,
+    experienceYears: this.experienceYears,
+    expectedSalary: this.expectedSalary,
+    age,
     availability: this.availability,
     location: this.location,
     updatedAt: this.updatedAt

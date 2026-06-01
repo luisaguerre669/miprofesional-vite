@@ -6,7 +6,7 @@ const bcrypt = require('bcryptjs');
 const userSchema = new mongoose.Schema({
   role: {
     type: String,
-    enum: ['client', 'professional', 'employer', 'admin'],
+    enum: ['client', 'professional', 'employer', 'company', 'admin'],
     default: 'client'
   },
   name: {
@@ -168,6 +168,47 @@ const userSchema = new mongoose.Schema({
   isActive: {
     type: Boolean,
     default: true
+  },
+  termsAccepted: {
+    type: Boolean,
+    default: false
+  },
+  termsAcceptedAt: {
+    type: Date,
+    default: null
+  },
+  subscription: {
+    plan: {
+      type: String,
+      enum: ['free', 'professional', 'company'],
+      default: 'free'
+    },
+    status: {
+      type: String,
+      enum: ['active', 'suspended'],
+      default: 'active'
+    },
+    startDate: {
+      type: Date,
+      default: null
+    },
+    endDate: {
+      type: Date,
+      default: null
+    },
+    lastPaymentId: {
+      type: String,
+      default: null
+    },
+    autoRenew: {
+      type: Boolean,
+      default: false
+    },
+    lastReminderSent: {
+      type: String,
+      enum: ['7d', '1d', 'expired'],
+      default: null
+    }
   }
 }, {
   timestamps: true,

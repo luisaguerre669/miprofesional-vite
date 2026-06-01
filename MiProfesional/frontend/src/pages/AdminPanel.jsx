@@ -8,13 +8,15 @@ import {
   ChevronDown, Search, CheckCircle, XCircle, AlertTriangle, Clock,
   Shield, Star, Mail, Phone, MapPin, Trash2, ExternalLink, Edit3,
   UserPlus, DollarSign, Calendar, Filter, ArrowUpRight, TrendingUp,
-  Activity, Loader2, ChevronLeft, ChevronRight, MoreHorizontal, RefreshCw, Wifi, Database, Server, Terminal
+  Activity, Loader2, ChevronLeft, ChevronRight, MoreHorizontal, RefreshCw, Wifi, Database, Server, Terminal,
+  Building2, Crown, Zap
 } from 'lucide-react';
 
 const sidebar = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { id: 'users', label: 'Usuarios', icon: Users },
   { id: 'professionals', label: 'Profesionales', icon: Briefcase },
+  { id: 'companies', label: 'Empresas', icon: Building2 },
   { id: 'payments', label: 'Pagos', icon: CreditCard },
   { id: 'stats', label: 'Estadisticas', icon: BarChart3 },
   { id: 'settings', label: 'Configuracion', icon: Settings },
@@ -24,6 +26,7 @@ const roleColors = {
   admin: 'bg-purple-100 text-purple-700',
   professional: 'bg-blue-100 text-blue-700',
   client: 'bg-gray-100 text-gray-700',
+  company: 'bg-amber-100 text-amber-700',
 };
 
 const statusColors = {
@@ -59,12 +62,26 @@ const AdminPanel = () => {
 
   const [detailedStats, setDetailedStats] = useState(null);
 
+  const [companies, setCompanies] = useState([]);
+  const [companiesPage, setCompaniesPage] = useState(1);
+  const [companiesTotal, setCompaniesTotal] = useState(0);
+  const [companiesSearch, setCompaniesSearch] = useState('');
+  const [companiesSubFilter, setCompaniesSubFilter] = useState('');
+  const [companiesStats, setCompaniesStats] = useState(null);
+
+  const [companyPayments, setCompanyPayments] = useState([]);
+  const [companyPaymentsPage, setCompanyPaymentsPage] = useState(1);
+  const [companyPaymentsTotal, setCompanyPaymentsTotal] = useState(0);
+
   useEffect(() => {
     fetchDashboard();
     fetchUsers();
     fetchProfessionals();
     fetchPayments();
     fetchStats();
+    fetchCompanies();
+    fetchCompaniesStats();
+    fetchCompanyPayments();
   }, []);
 
   const fetchDashboard = async () => {
@@ -114,10 +131,44 @@ const AdminPanel = () => {
     setLoading(false);
   };
 
+  const fetchCompanies = async (page = 1, search = '', subFilter = '') => {
+    try {
+      const params = { page, limit: 15 };
+      if (search) params.search = search;
+      if (subFilter) params.subscriptionStatus = subFilter;
+      const { data } = await api.get('/admin/companies', { params });
+      setCompanies(data.data || []);
+      setCompaniesTotal(data.pagination?.total || 0);
+      setCompaniesPage(page);
+    } catch (e) { console.error(e); }
+  };
+
+  const fetchCompaniesStats = async () => {
+    try {
+      const { data } = await api.get('/admin/companies/stats');
+      setCompaniesStats(data.data);
+    } catch (e) { console.error(e); }
+  };
+
+  const fetchCompanyPayments = async (page = 1) => {
+    try {
+      const { data } = await api.get('/admin/payments/companies', { params: { page, limit: 15 } });
+      setCompanyPayments(data.data || []);
+      setCompanyPaymentsTotal(data.pagination?.total || 0);
+      setCompanyPaymentsPage(page);
+    } catch (e) { console.error(e); }
+  };
+
+  const handleCompanySearch = (e) => {
+    e.preventDefault();
+    fetchCompanies(1, companiesSearch, companiesSubFilter);
+  };
+
   const toggleUserStatus = async (id, current) => {
     try {
       await api.patch(`/admin/users/${id}/status`, { isActive: !current });
       fetchUsers(usersPage, usersSearch);
+      fetchCompanies(companiesPage, companiesSearch, companiesSubFilter);
     } catch (e) { console.error(e); }
   };
 
@@ -156,6 +207,8 @@ const AdminPanel = () => {
       const { data } = await api.post(`/admin/reprocess-webhook/${userId}`);
       alert(data.message || 'Suscripcion reactivada');
       fetchPayments(paymentsPage);
+      fetchCompanies(companiesPage, companiesSearch, companiesSubFilter);
+      fetchCompanyPayments(companyPaymentsPage);
     } catch (e) { alert(e.response?.data?.message || 'Error al reprocesar'); }
   };
 
@@ -164,7 +217,7 @@ const AdminPanel = () => {
     try {
       const { data } = await api.post('/admin/clean-test-data');
       alert(data.message);
-      fetchDashboard(); fetchUsers(); fetchProfessionals(); fetchPayments(); fetchStats();
+      fetchDashboard(); fetchUsers(); fetchProfessionals(); fetchPayments(); fetchStats(); fetchCompanies(); fetchCompaniesStats(); fetchCompanyPayments();
     } catch (e) { alert('Error al limpiar datos'); }
   };
 
@@ -187,7 +240,7 @@ const AdminPanel = () => {
   const stats = dashboard?.stats ? [
     { label: 'Usuarios', value: dashboard.stats.totalUsers.toLocaleString(), icon: Users, color: 'from-blue-500 to-blue-600', bg: 'bg-blue-50' },
     { label: 'Profesionales', value: dashboard.stats.totalProfessionals.toLocaleString(), icon: Briefcase, color: 'from-indigo-500 to-indigo-600', bg: 'bg-indigo-50' },
-    { label: 'Reservas', value: dashboard.stats.totalBookings.toLocaleString(), icon: Calendar, color: 'from-amber-500 to-amber-600', bg: 'bg-amber-50' },
+    { label: 'Empresas', value: (dashboard.stats.totalCompanies || 0).toLocaleString(), icon: Building2, color: 'from-amber-500 to-amber-600', bg: 'bg-amber-50' },
     { label: 'Ingresos', value: `$${(dashboard.stats.totalRevenue || 0).toLocaleString()}`, icon: DollarSign, color: 'from-emerald-500 to-emerald-600', bg: 'bg-emerald-50' },
   ] : [];
 
@@ -357,13 +410,14 @@ const AdminPanel = () => {
                         </td>
                         <td className="py-3 px-4 text-gray-500">{u.email}</td>
                         <td className="py-3 px-4">
-                          <select value={u.role} onChange={e => changeUserRole(u._id, e.target.value)}
-                            className={`px-2 py-0.5 rounded-md text-[10px] font-medium border-0 cursor-pointer ${roleColors[u.role] || 'bg-gray-100 text-gray-600'}`}
-                          >
-                            <option value="client">client</option>
-                            <option value="professional">professional</option>
-                            <option value="admin">admin</option>
-                          </select>
+                            <select value={u.role} onChange={e => changeUserRole(u._id, e.target.value)}
+                              className={`px-2 py-0.5 rounded-md text-[10px] font-medium border-0 cursor-pointer ${roleColors[u.role] || 'bg-gray-100 text-gray-600'}`}
+                            >
+                              <option value="client">client</option>
+                              <option value="professional">professional</option>
+                              <option value="company">company</option>
+                              <option value="admin">admin</option>
+                            </select>
                         </td>
                         <td className="py-3 px-4">
                           <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium ${u.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
@@ -513,6 +567,240 @@ const AdminPanel = () => {
                     className="px-3 py-1.5 border border-gray-200 rounded-lg text-xs disabled:opacity-40 hover:border-gray-300">Anterior</button>
                   <button disabled={prosPage >= Math.ceil(prosTotal / 15)} onClick={() => fetchProfessionals(prosPage + 1, prosFilter, prosSearch)}
                     className="px-3 py-1.5 border border-gray-200 rounded-lg text-xs disabled:opacity-40 hover:border-gray-300">Siguiente</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ===== COMPANIES ===== */}
+          {activeSection === 'companies' && (
+            <div className="space-y-6">
+              {/* Companies stats cards */}
+              {companiesStats && (
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="bg-white rounded-xl border border-gray-200 p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <Building2 size={18} className="text-amber-500" />
+                      <ArrowUpRight size={14} className="text-gray-300" />
+                    </div>
+                    <p className="text-xl font-bold text-gray-900">{companiesStats.totalCompanies}</p>
+                    <p className="text-[10px] text-gray-500 font-medium">Total empresas</p>
+                  </div>
+                  <div className="bg-white rounded-xl border border-gray-200 p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <Crown size={18} className="text-emerald-500" />
+                      <ArrowUpRight size={14} className="text-gray-300" />
+                    </div>
+                    <p className="text-xl font-bold text-gray-900">{companiesStats.activeSubscriptions}</p>
+                    <p className="text-[10px] text-gray-500 font-medium">Suscripciones activas</p>
+                  </div>
+                  <div className="bg-white rounded-xl border border-gray-200 p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <XCircle size={18} className="text-red-500" />
+                      <ArrowUpRight size={14} className="text-gray-300" />
+                    </div>
+                    <p className="text-xl font-bold text-gray-900">{companiesStats.suspendedCompanies}</p>
+                    <p className="text-[10px] text-gray-500 font-medium">Suspendidas</p>
+                  </div>
+                  <div className="bg-white rounded-xl border border-gray-200 p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <Zap size={18} className="text-primary-500" />
+                      <ArrowUpRight size={14} className="text-gray-300" />
+                    </div>
+                    <p className="text-xl font-bold text-gray-900">
+                      {companiesStats.totalCompanies > 0
+                        ? Math.round((companiesStats.activeSubscriptions / companiesStats.totalCompanies) * 100) + '%'
+                        : '0%'}
+                    </p>
+                    <p className="text-[10px] text-gray-500 font-medium">Tasa de conversion</p>
+                  </div>
+                </div>
+              )}
+
+              <div className="bg-white rounded-xl border border-gray-200">
+                <div className="p-5 border-b border-gray-100 flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
+                  <div>
+                    <h2 className="font-bold text-gray-900">Empresas</h2>
+                    <p className="text-xs text-gray-500">{companiesTotal} registradas</p>
+                  </div>
+                  <div className="flex gap-2 w-full sm:w-auto">
+                    <select value={companiesSubFilter} onChange={e => { setCompaniesSubFilter(e.target.value); fetchCompanies(1, companiesSearch, e.target.value); }}
+                      className="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-primary-500"
+                    >
+                      <option value="">Todas</option>
+                      <option value="active">Activas</option>
+                      <option value="suspended">Suspendidas</option>
+                    </select>
+                    <form onSubmit={handleCompanySearch} className="flex gap-2">
+                      <div className="relative w-48">
+                        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                        <input value={companiesSearch} onChange={e => setCompaniesSearch(e.target.value)}
+                          placeholder="Buscar empresa..."
+                          className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-primary-500"
+                        />
+                      </div>
+                      <button type="submit" className="px-4 py-2 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-gray-800">Buscar</button>
+                    </form>
+                  </div>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-gray-100 bg-gray-50/50">
+                        <th className="text-left py-3 px-4 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Empresa</th>
+                        <th className="text-left py-3 px-4 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Email</th>
+                        <th className="text-left py-3 px-4 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Plan</th>
+                        <th className="text-left py-3 px-4 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Suscripcion</th>
+                        <th className="text-left py-3 px-4 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Estado</th>
+                        <th className="text-left py-3 px-4 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Vencimiento</th>
+                        <th className="text-right py-3 px-4 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {companies.length === 0 && (
+                        <tr><td colSpan={7} className="text-center py-10 text-gray-400">No hay empresas registradas</td></tr>
+                      )}
+                      {companies.map(c => (
+                        <tr key={c._id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
+                          <td className="py-3 px-4">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center text-xs font-bold text-amber-700">
+                                {c.name?.charAt(0)?.toUpperCase() || '?'}
+                              </div>
+                              <span className="font-medium text-gray-900">{c.name}</span>
+                            </div>
+                          </td>
+                          <td className="py-3 px-4 text-gray-500 text-xs">{c.email}</td>
+                          <td className="py-3 px-4">
+                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium ${
+                              c.subscription?.plan === 'company' ? 'bg-amber-100 text-amber-700' :
+                              c.subscription?.plan === 'professional' ? 'bg-blue-100 text-blue-700' :
+                              'bg-gray-100 text-gray-600'
+                            }`}>
+                              {c.subscription?.plan === 'company' && <Crown size={10} />}
+                              {c.subscription?.plan || 'free'}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4">
+                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium ${
+                              c.subscription?.status === 'active' ? 'bg-emerald-100 text-emerald-700' :
+                              c.subscription?.status === 'suspended' ? 'bg-red-100 text-red-700' :
+                              'bg-gray-100 text-gray-600'
+                            }`}>
+                              {c.subscription?.status === 'active' && <CheckCircle size={10} />}
+                              {c.subscription?.status === 'suspended' && <XCircle size={10} />}
+                              {c.subscription?.status || 'inactive'}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4">
+                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium ${c.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
+                              {c.isActive ? <CheckCircle size={10} /> : <XCircle size={10} />}
+                              {c.isActive ? 'Activo' : 'Bloqueado'}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4 text-gray-400 text-xs">
+                            {c.subscription?.endDate ? new Date(c.subscription.endDate).toLocaleDateString() : '-'}
+                          </td>
+                          <td className="py-3 px-4 text-right">
+                            <div className="flex items-center justify-end gap-1.5">
+                              <button onClick={() => toggleUserStatus(c._id, c.isActive)}
+                                className={`px-2.5 py-1.5 rounded-lg text-[10px] font-medium transition-all ${
+                                  c.isActive ? 'bg-red-50 text-red-600 hover:bg-red-100' : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'
+                                }`}
+                              >
+                                {c.isActive ? 'Bloquear' : 'Activar'}
+                              </button>
+                              {c.subscription?.status === 'active' && c.subscription?.endDate && (
+                                <button onClick={() => reprocessPayment(c._id)}
+                                  className="px-2 py-1.5 rounded-lg text-[10px] font-medium bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-all"
+                                  title="Reactivar suscripcion"><RefreshCw size={12} /></button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="p-4 border-t border-gray-100 flex items-center justify-between text-sm text-gray-500">
+                  <span>Pagina {companiesPage} de {Math.ceil(companiesTotal / 15) || 1}</span>
+                  <div className="flex gap-2">
+                    <button disabled={companiesPage <= 1} onClick={() => fetchCompanies(companiesPage - 1, companiesSearch, companiesSubFilter)}
+                      className="px-3 py-1.5 border border-gray-200 rounded-lg text-xs disabled:opacity-40 hover:border-gray-300">Anterior</button>
+                    <button disabled={companiesPage >= Math.ceil(companiesTotal / 15)} onClick={() => fetchCompanies(companiesPage + 1, companiesSearch, companiesSubFilter)}
+                      className="px-3 py-1.5 border border-gray-200 rounded-lg text-xs disabled:opacity-40 hover:border-gray-300">Siguiente</button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Company Payments sub-section */}
+              <div className="bg-white rounded-xl border border-gray-200">
+                <div className="p-5 border-b border-gray-100">
+                  <h2 className="font-bold text-gray-900 flex items-center gap-2">
+                    <CreditCard size={16} /> Pagos de Empresas
+                  </h2>
+                  <p className="text-xs text-gray-500 mt-0.5">{companyPaymentsTotal} transacciones de empresas</p>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-gray-100 bg-gray-50/50">
+                        <th className="text-left py-3 px-4 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">ID</th>
+                        <th className="text-left py-3 px-4 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Empresa</th>
+                        <th className="text-left py-3 px-4 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Concepto</th>
+                        <th className="text-left py-3 px-4 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Monto</th>
+                        <th className="text-left py-3 px-4 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Estado</th>
+                        <th className="text-left py-3 px-4 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Fecha</th>
+                        <th className="text-right py-3 px-4 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {companyPayments.length === 0 && (
+                        <tr><td colSpan={7} className="text-center py-10 text-gray-400">No hay pagos de empresas</td></tr>
+                      )}
+                      {companyPayments.map(p => (
+                        <tr key={p._id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
+                          <td className="py-3 px-4 text-[10px] text-gray-400 font-mono">{(p.mpPaymentId || p._id).toString().slice(-8)}</td>
+                          <td className="py-3 px-4">
+                            <span className="font-medium text-gray-900 text-xs">{p.userId?.name || 'N/A'}</span>
+                            <span className="text-[10px] text-gray-400 block">{p.userId?.email || ''}</span>
+                          </td>
+                          <td className="py-3 px-4 text-gray-600 text-xs">{p.description || p.type || 'Suscripcion empresa'}</td>
+                          <td className="py-3 px-4 font-medium text-gray-900">${(p.amount || 0).toLocaleString()}</td>
+                          <td className="py-3 px-4">
+                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium ${
+                              p.status === 'approved' ? 'bg-emerald-100 text-emerald-700' :
+                              p.status === 'rejected' || p.status === 'cancelled' ? 'bg-red-100 text-red-700' :
+                              p.status === 'pending' ? 'bg-amber-100 text-amber-700' :
+                              'bg-gray-100 text-gray-600'
+                            }`}>
+                              {p.status === 'approved' && <CheckCircle size={10} />}
+                              {p.status === 'pending' && <Clock size={10} />}
+                              {p.status === 'rejected' && <XCircle size={10} />}
+                              {p.status || 'pending'}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4 text-gray-400 text-xs">{new Date(p.createdAt || p.dateCreated).toLocaleDateString()}</td>
+                          <td className="py-3 px-4 text-right">
+                            {p.status === 'approved' && p.userId?._id && (
+                              <button onClick={() => reprocessPayment(p.userId._id)}
+                                className="px-2 py-1 rounded-lg text-[10px] font-medium bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-all"
+                                title="Reactivar suscripcion"><RefreshCw size={12} /></button>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="p-4 border-t border-gray-100 flex items-center justify-between text-sm text-gray-500">
+                  <span>Pagina {companyPaymentsPage} de {Math.ceil(companyPaymentsTotal / 15) || 1}</span>
+                  <div className="flex gap-2">
+                    <button disabled={companyPaymentsPage <= 1} onClick={() => fetchCompanyPayments(companyPaymentsPage - 1)}
+                      className="px-3 py-1.5 border border-gray-200 rounded-lg text-xs disabled:opacity-40 hover:border-gray-300">Anterior</button>
+                    <button disabled={companyPaymentsPage >= Math.ceil(companyPaymentsTotal / 15)} onClick={() => fetchCompanyPayments(companyPaymentsPage + 1)}
+                      className="px-3 py-1.5 border border-gray-200 rounded-lg text-xs disabled:opacity-40 hover:border-gray-300">Siguiente</button>
+                  </div>
                 </div>
               </div>
             </div>

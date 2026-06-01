@@ -2,8 +2,11 @@ const express = require('express');
 const { body, query, param, validationResult } = require('express-validator');
 const CurriculumVitae = require('../models/CurriculumVitae');
 const User = require('../models/User');
-const { authenticate, requireEmployer } = require('../middleware/auth');
+const { authenticate } = require('../middleware/auth');
+const { checkRole } = require('../middleware/checkRole');
+const { checkSubscription } = require('../middleware/checkSubscription');
 const logger = require('../utils/logger');
+const { searchRateLimiter } = require('../middleware/rateLimiter');
 
 const router = express.Router();
 
@@ -65,23 +68,18 @@ function sanitizePayload(bodyData, user) {
       }
     },
     experienceLevel: bodyData.experienceLevel || 'entry',
+    experienceYears: typeof bodyData.experienceYears === 'number' ? bodyData.experienceYears : 0,
+    expectedSalary: bodyData.expectedSalary || null,
+    dateOfBirth: bodyData.dateOfBirth || null,
     isActive: bodyData.isActive !== false
   };
 }
 
-function canViewFullCv(cv, viewer) {
-  if (!viewer) return false;
-  const viewerId = String(viewer._id || viewer.id || viewer.userId);
-  if (String(cv.userId?._id || cv.userId) === viewerId) return true;
-  if (viewer.role === 'admin') return true;
-  if (viewer.role === 'employer' && ['public', 'recruiter-only'].includes(cv.visibility)) return true;
-  return false;
-}
-
+// Current user's own CV - any authenticated user (client, professional, company)
 router.get('/me', authenticate, async (req, res) => {
   try {
     const cv = await CurriculumVitae.findOne({ userId: req.userId });
-    res.json({ success: true, data: cv || null });
+    res.json({ success: true, data: cv ? cv.toFullView() : null });
   } catch (error) {
     logger.error('Get own CV error:', error);
     res.status(500).json({ success: false, message: 'Error al obtener CV' });
@@ -111,19 +109,27 @@ router.put('/me', authenticate, [
       { new: true, upsert: true, runValidators: true, setDefaultsOnInsert: true }
     );
 
-    res.json({ success: true, message: 'CV guardado', data: cv });
+    res.json({ success: true, message: 'CV guardado', data: cv.toFullView() });
   } catch (error) {
     logger.error('Save CV error:', error);
     res.status(500).json({ success: false, message: 'Error al guardar CV' });
   }
 });
 
-router.get('/search', authenticate, requireEmployer, [
+// CRITICAL: CV database search - SOLO company o admin
+router.get('/search', authenticate, checkRole(['company', 'admin']), searchRateLimiter, [
   query('q').optional().trim().isLength({ max: 120 }),
   query('jobTitle').optional().trim().isLength({ max: 120 }),
   query('skills').optional().isString(),
   query('location').optional().trim().isLength({ max: 120 }),
   query('experienceLevel').optional().isIn(['entry', 'mid', 'senior', 'lead']),
+  query('experienceYearsMin').optional().isFloat({ min: 0 }),
+  query('experienceYearsMax').optional().isFloat({ min: 0 }),
+  query('availability').optional().isIn(['full-time', 'part-time', 'freelance', 'por-proyecto']),
+  query('salaryMin').optional().isFloat({ min: 0 }),
+  query('salaryMax').optional().isFloat({ min: 0 }),
+  query('ageMin').optional().isInt({ min: 18 }),
+  query('ageMax').optional().isInt({ min: 18 }),
   query('limit').optional().isInt({ min: 1, max: 50 }),
   query('page').optional().isInt({ min: 1 })
 ], handleValidationErrors, async (req, res) => {
@@ -134,6 +140,13 @@ router.get('/search', authenticate, requireEmployer, [
       skills: normalizeList(req.query.skills),
       location: req.query.location,
       experienceLevel: req.query.experienceLevel,
+      experienceYearsMin: req.query.experienceYearsMin,
+      experienceYearsMax: req.query.experienceYearsMax,
+      availability: req.query.availability,
+      salaryMin: req.query.salaryMin,
+      salaryMax: req.query.salaryMax,
+      ageMin: req.query.ageMin,
+      ageMax: req.query.ageMax,
       limit: Math.min(parseInt(req.query.limit || '20', 10), 50),
       page: Math.max(parseInt(req.query.page || '1', 10), 1)
     };
@@ -150,21 +163,72 @@ router.get('/search', authenticate, requireEmployer, [
   }
 });
 
+// CV detail view - access depends on role + subscription + ownership
 router.get('/:id', authenticate, [
   param('id').isMongoId()
 ], handleValidationErrors, async (req, res) => {
   try {
     const [cv, viewer] = await Promise.all([
       CurriculumVitae.findById(req.params.id).populate('userId', 'name email phone avatar role'),
-      User.findById(req.userId).select('role')
+      User.findById(req.userId).select('role subscription')
     ]);
 
     if (!cv) return res.status(404).json({ success: false, message: 'CV no encontrado' });
-    if (!canViewFullCv(cv, viewer)) {
-      return res.status(403).json({ success: false, message: 'No tenes permisos para ver este CV' });
+
+    const viewerId = String(viewer._id || viewer.id || viewer.userId);
+    const cvOwnerId = String(cv.userId?._id || cv.userId);
+    const isOwner = viewerId === cvOwnerId;
+
+    // Owner always gets full access
+    if (isOwner) {
+      return res.json({ success: true, data: cv.toFullView() });
     }
 
-    res.json({ success: true, data: cv });
+    // Admin always gets full access
+    if (viewer.role === 'admin') {
+      return res.json({ success: true, data: cv.toFullView() });
+    }
+
+    // Company with active subscription gets full CV
+    if (viewer.role === 'company') {
+      if (viewer.subscription?.status !== 'active') {
+        return res.status(403).json({
+          success: false,
+          message: 'Se requiere suscripción activa para ver CVs completos.',
+          code: 'SUBSCRIPTION_REQUIRED'
+        });
+      }
+      if (viewer.subscription.endDate && new Date(viewer.subscription.endDate) < new Date()) {
+        viewer.subscription.status = 'suspended';
+        await viewer.save();
+        return res.status(403).json({
+          success: false,
+          message: 'Suscripción vencida. Renueva tu plan para acceder.',
+          code: 'SUBSCRIPTION_EXPIRED'
+        });
+      }
+      return res.json({ success: true, data: cv.toFullView() });
+    }
+
+    // Legacy employer (migration support)
+    if (viewer.role === 'employer') {
+      if (viewer.subscription?.status !== 'active') {
+        return res.status(403).json({
+          success: false,
+          message: 'Se requiere suscripción activa para ver CVs completos.',
+          code: 'SUBSCRIPTION_REQUIRED'
+        });
+      }
+      return res.json({ success: true, data: cv.toFullView() });
+    }
+
+    // Professional viewing someone else's CV - same as client
+    // Client (free) gets public-only view
+    if (cv.visibility === 'private') {
+      return res.status(403).json({ success: false, message: 'Este CV no está disponible públicamente.' });
+    }
+
+    return res.json({ success: true, data: cv.toPublicView() });
   } catch (error) {
     logger.error('Get CV detail error:', error);
     res.status(500).json({ success: false, message: 'Error al obtener CV' });

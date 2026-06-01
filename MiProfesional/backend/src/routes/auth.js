@@ -68,7 +68,9 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
           password: crypto.randomBytes(32).toString('hex'),
           isVerified: true,
           avatar: profile.photos?.[0]?.value || null,
-          role: 'client'
+          role: 'client',
+          termsAccepted: true,
+          termsAcceptedAt: new Date()
         });
         await user.save();
       }
@@ -153,7 +155,7 @@ router.post('/register', registerLimiter, [
   body('name').trim().isLength({ min: 2, max: 100 }).withMessage('Name must be between 2 and 100 characters'),
   body('email').isEmail().normalizeEmail().withMessage('Please provide a valid email'),
   body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters long'),
-  body('role').optional().isIn(['client', 'professional', 'employer']).withMessage('Role must be client, professional or employer'),
+  body('role').optional().isIn(['client', 'professional', 'employer', 'company']).withMessage('Role must be client, professional, employer or company'),
   body('address').optional().isObject(),
   body('address.street').optional().trim(),
   body('address.number').optional().trim(),
@@ -161,10 +163,14 @@ router.post('/register', registerLimiter, [
   body('address.state').optional().trim(),
   body('categoryId').optional().isMongoId().withMessage('Invalid category ID'),
   body('subcategoryId').optional().isMongoId().withMessage('Invalid subcategory ID'),
-  body('available24h').optional().isBoolean().withMessage('available24h must be a boolean')
+  body('available24h').optional().isBoolean().withMessage('available24h must be a boolean'),
+  body('termsAccepted').isBoolean().withMessage('Debe aceptar los Términos y Condiciones').custom(value => {
+    if (value !== true) throw new Error('Debe aceptar los Términos y Condiciones para registrarse');
+    return true;
+  })
 ], handleValidationErrors, async (req, res) => {
   try {
-    const { name, email, password, phone, location, address, role = 'client', profession, categoryId, subcategoryId, available24h, acceptMarketing } = req.body;
+    const { name, email, password, phone, location, address, role = 'client', profession, categoryId, subcategoryId, available24h, acceptMarketing, termsAccepted } = req.body;
 
     // Check if user already exists
     const existingUser = await User.findOne({ email });
@@ -187,6 +193,8 @@ router.post('/register', registerLimiter, [
       if (address) existingUser.address = { ...existingUser.address?.toObject?.() || existingUser.address || {}, ...address };
       existingUser.isActive = true;
       existingUser.deactivatedAt = undefined;
+      existingUser.termsAccepted = true;
+      existingUser.termsAcceptedAt = new Date();
       existingUser.preferences = {
         emailAlerts: acceptMarketing || false,
         notifications: true,
@@ -271,6 +279,8 @@ router.post('/register', registerLimiter, [
       email,
       password,
       role,
+      termsAccepted: true,
+      termsAcceptedAt: new Date(),
       preferences: {
         emailAlerts: acceptMarketing || false,
         notifications: true,
