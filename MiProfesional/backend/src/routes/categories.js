@@ -328,8 +328,18 @@ router.get('/slug/:slug', [
   try {
     const { slug } = req.params;
 
-    const category = await Category.findOne({ slug, isActive: true })
-      .populate('subcategories', 'title slug image description');
+    let category = await Category.findOne({ slug, isActive: true })
+      .populate('subcategories', 'title slug image description metadata');
+    if (!category) {
+      // Fallback: try legacy slug (24-7 → servicios-24-7 migration)
+      if (slug === 'servicios-24-7') {
+        category = await Category.findOne({ slug: '24-7', isActive: true })
+          .populate('subcategories', 'title slug image description metadata');
+      } else if (slug === '24-7') {
+        category = await Category.findOne({ slug: 'servicios-24-7', isActive: true })
+          .populate('subcategories', 'title slug image description metadata');
+      }
+    }
     if (!category) {
       return res.status(404).json({
         success: false,
