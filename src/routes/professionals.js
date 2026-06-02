@@ -511,6 +511,25 @@ router.get('/favorites', authenticate, async (req, res) => {
   }
 });
 
+// GET /api/v1/geocode - Geocode an address (MUST be before /:id to avoid route clash)
+router.get('/geocode', async (req, res) => {
+  try {
+    const { address, city, state, country } = req.query;
+    if (!address && !city) {
+      return res.status(400).json({ success: false, message: 'Direccion o ciudad requerida' });
+    }
+    const { geocodeAddress } = require('../utils/geocode');
+    const result = await geocodeAddress({ address, city, state, country });
+    if (!result) {
+      return res.json({ success: false, message: 'No se pudo encontrar la ubicacion. Verifica la direccion e intenta de nuevo.' });
+    }
+    res.json({ success: true, data: result });
+  } catch (error) {
+    logger.error('Geocode error:', error);
+    res.status(500).json({ success: false, message: 'Error al geocodificar direccion' });
+  }
+});
+
 // GET /api/v1/professionals/:id
 router.get('/:id', [
   param('id').isMongoId().withMessage('Invalid professional ID')
@@ -847,25 +866,6 @@ router.get('/map', async (req, res) => {
   } catch (error) {
     logger.error('Get map professionals error:', error);
     res.status(500).json({ success: false, message: 'Error al obtener profesionales para mapa' });
-  }
-});
-
-// GET /api/v1/geocode - Geocode an address
-router.get('/geocode', async (req, res) => {
-  try {
-    const { address, city, state, country } = req.query;
-    if (!address && !city) {
-      return res.status(400).json({ success: false, message: 'Direccion o ciudad requerida' });
-    }
-    const { geocodeAddress } = require('../utils/geocode');
-    const result = await geocodeAddress({ address, city, state, country });
-    if (!result) {
-      return res.json({ success: false, message: 'No se pudo encontrar la ubicacion. Verifica la direccion e intenta de nuevo.' });
-    }
-    res.json({ success: true, data: result });
-  } catch (error) {
-    logger.error('Geocode error:', error);
-    res.status(500).json({ success: false, message: 'Error al geocodificar direccion' });
   }
 });
 
