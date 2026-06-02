@@ -165,9 +165,10 @@ const Search = () => {
   const selectedCategory = categories.find(c => c._id === filters.category);
   const subcategories = selectedCategory?.subcategories || [];
 
-  const mapProfessionals = professionals.filter(
-    p => p.location?.coordinates?.lat && p.location?.coordinates?.lng
-  );
+  const mapProfessionals = professionals.filter(p => {
+    const coords = p.location?.coordinates?.coordinates;
+    return coords && coords.length >= 2 && coords[0] && coords[1];
+  });
 
   return (
     <>
