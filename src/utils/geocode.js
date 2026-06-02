@@ -20,7 +20,13 @@ function normalize(text) {
   return s.replace(/\s+/g, ' ').trim();
 }
 
-function selectBestResult(results, { city, state }) {
+function parseStreetNumber(text) {
+  if (!text) return null;
+  const match = text.match(/(\d+)\s*$/);
+  return match ? match[1] : null;
+}
+
+function selectBestResult(results, { city, state, streetNumber }) {
   if (!results || results.length === 0) return null;
 
   const cityLower = city ? city.toLowerCase().trim() : '';
@@ -29,14 +35,27 @@ function selectBestResult(results, { city, state }) {
   const scored = results.map(r => {
     let score = r.importance || 0.5;
     const display = (r.display_name || '').toLowerCase();
+    const addr = r.address || {};
 
     if (cityLower && display.includes(cityLower)) score += 0.3;
     if (stateLower && display.includes(stateLower)) score += 0.2;
 
-    if (r.type === 'city' || r.type === 'town' || r.type === 'village') score += 0.1;
-    if (r.category === 'place' || r.category === 'boundary') score += 0.05;
+    if (r.type === 'house' || r.type === 'building') score += 0.4;
+    else if (r.type === 'amenity' || r.type === 'shop') score += 0.1;
+
+    if (r.type === 'city' || r.type === 'town' || r.type === 'village') score -= 0.2;
+    if (r.category === 'place' || r.category === 'boundary') score -= 0.3;
+    if (r.class === 'highway' || r.type === 'road' || r.type === 'street') score -= 0.3;
+
+    if (addr.house_number && streetNumber) {
+      if (addr.house_number === streetNumber) score += 0.5;
+      else score -= 0.2;
+    } else if (streetNumber && display.includes(streetNumber)) {
+      score += 0.3;
+    }
 
     if (cityLower && !display.includes(cityLower)) score -= 0.5;
+    if (stateLower && !display.includes(stateLower)) score -= 0.3;
 
     return { result: r, score };
   });
@@ -56,6 +75,7 @@ async function geocodeAddress({ address, city, state, country = 'Argentina' }) {
   const normAddr = normalize(address);
   const normCity = normalize(city);
   const normState = normalize(state);
+  const streetNumber = parseStreetNumber(address);
 
   const parts = [normAddr, normCity, normState, 'Argentina'].filter(Boolean);
   if (parts.length < 2) {
@@ -65,7 +85,7 @@ async function geocodeAddress({ address, city, state, country = 'Argentina' }) {
 
   const query = parts.join(', ');
   const q = encodeURIComponent(query);
-  const url = `${NOMINATIM_URL}?format=json&q=${q}&limit=5&countrycodes=ar&accept-language=es`;
+  const url = `${NOMINATIM_URL}?format=json&q=${q}&limit=15&countrycodes=ar&addressdetails=1&accept-language=es`;
 
   logger.debug(`Geocode request URL: ${url}`);
 
@@ -91,19 +111,26 @@ async function geocodeAddress({ address, city, state, country = 'Argentina' }) {
       return null;
     }
 
-    const best = selectBestResult(data, { city: normCity, state: normState });
+    const best = selectBestResult(data, { city: normCity, state: normState, streetNumber });
     if (!best) {
       logger.warn(`No valid result after selection for: ${query}`);
       return null;
     }
 
     const { lat, lon, display_name } = best;
+    const addr = best.address || {};
     logger.info(`Geocoded: ${query} -> ${lat}, ${lon} | ${display_name}`);
 
     return {
       latitude: parseFloat(lat),
       longitude: parseFloat(lon),
-      displayName: display_name
+      displayName: display_name,
+      street: addr.road || '',
+      number: addr.house_number || '',
+      city: addr.city || addr.town || addr.village || addr.municipality || '',
+      state: addr.state || '',
+      country: addr.country || 'Argentina',
+      neighborhood: addr.neighbourhood || addr.suburb || ''
     };
   } catch (err) {
     if (err.name === 'TimeoutError' || err.name === 'AbortError') {
