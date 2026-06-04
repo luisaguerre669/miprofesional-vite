@@ -185,7 +185,35 @@ class Server {
   this.app.use("/api/ratings", ratingsRoutes);
   this.app.use("/api/v1/mercadopago", mercadopagoRoutes);
   this.app.use("/api/notifications", notificationsRoutes);
-  this.app.use("/api/cv", cvRoutes);
+    this.app.use("/api/cv", cvRoutes);
+
+    // GET /api/home — dashboard aggregation for frontend
+    this.app.get("/api/home", async (req, res) => {
+      try {
+        const Category = require("./models/Category");
+        const Professional = require("./models/Professional");
+        const [featuredCategories, featuredProfessionals, emergencyCategories, topRated, stats] = await Promise.all([
+          Category.findFeatured(6),
+          Professional.getFeatured(6),
+          Category.findEmergency(),
+          Professional.getTopRated(10),
+          Professional.getStats()
+        ]);
+        res.json({
+          success: true,
+          data: {
+            featuredCategories,
+            featuredProfessionals,
+            emergencyCategories,
+            topRated,
+            stats
+          }
+        });
+      } catch (error) {
+        logger.error("Home endpoint error:", { error: error.message });
+        res.status(503).json({ success: false, message: "Base de datos no disponible" });
+      }
+    });
 
     this.app.get("/", (req, res) => {
       res.json({

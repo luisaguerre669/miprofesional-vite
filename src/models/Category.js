@@ -103,7 +103,7 @@ categorySchema.virtual('hasSubcategories').get(function() {
 });
 
 categorySchema.virtual('fullTitle').get(function() {
-  if (this.parentCategory) {
+  if (this.parentCategory && typeof this.parentCategory === 'object' && this.parentCategory.title) {
     return `${this.parentCategory.title} > ${this.title}`;
   }
   return this.title;

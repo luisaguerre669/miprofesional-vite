@@ -363,7 +363,7 @@ professionalSchema.virtual('isTopRated').get(function() {
 });
 
 professionalSchema.virtual('isAvailable').get(function() {
-  return this.availability.isAvailable && this.isActive;
+  return this.availability?.isAvailable && this.isActive;
 });
 
 professionalSchema.virtual('completionRate').get(function() {
@@ -379,7 +379,7 @@ professionalSchema.virtual('cancellationRate').get(function() {
 });
 
 professionalSchema.virtual('discoveryCategory').get(function() {
-  if (!this.subscription || this.subscription.status !== 'active' || this.profileStatus !== 'ACTIVE') return 'inactive';
+  if (!this.subscription?.status || this.subscription.status !== 'active' || this.profileStatus !== 'ACTIVE') return 'inactive';
 
   const isRecommended = this.verification?.isVerified &&
     (this.stats?.rating || 0) >= 4.0 &&
@@ -530,6 +530,7 @@ professionalSchema.methods.isWorkingNow = function() {
   if (!todayHours || todayHours.closed) return false;
   
   const currentTime = now.getHours() * 60 + now.getMinutes();
+  if (!todayHours.open || !todayHours.close) return false;
   const [openHour, openMin] = todayHours.open.split(':').map(Number);
   const [closeHour, closeMin] = todayHours.close.split(':').map(Number);
   
