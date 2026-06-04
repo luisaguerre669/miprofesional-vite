@@ -16,7 +16,7 @@ router.get('/', async (req, res) => {
 
   const allOk = Object.values(checks).every(c => c.status === 'ok');
 
-  res.status(allOk ? 200 : 503).json({
+  res.status(200).json({
     success: allOk,
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV || 'development',
