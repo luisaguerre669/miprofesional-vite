@@ -129,6 +129,22 @@ class Server {
     });
     this.app.use("/api/", limiter);
 
+    // DB health check — immediate 503 if MongoDB is disconnected (except /health)
+    this.app.use("/api", (req, res, next) => {
+      if (req.path === "/health" || req.path === "/health/") return next();
+      const readyState = mongoose.connection.readyState;
+      if (readyState !== 1) {
+        const dbStates = { 0: "disconnected", 1: "connected", 2: "connecting", 3: "disconnecting" };
+        logger.warn("DB not available — rejecting request", { path: req.originalUrl, dbState: dbStates[readyState] || "unknown" });
+        return res.status(503).json({
+          success: false,
+          message: "Base de datos no disponible. Intente nuevamente en unos minutos.",
+          dbState: dbStates[readyState] || "unknown"
+        });
+      }
+      next();
+    });
+
     const corsOptions = {
       origin: (origin, callback) => {
         if (isAllowedOrigin(origin, this.allowedOrigins)) return callback(null, true);
@@ -254,6 +270,7 @@ class Server {
       process.on("SIGTERM", () => this.gracefulShutdown("SIGTERM"));
       process.on("SIGINT", () => this.gracefulShutdown("SIGINT"));
 
+      mongoose.set("bufferCommands", false);
       await connectDB();
 
         // Fix legacy categories: update slug if title matches but slug changed
