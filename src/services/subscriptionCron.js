@@ -4,6 +4,11 @@ const logger = require('../utils/logger');
 const eventBus = require('./eventBus');
 
 async function processExpiredTrials() {
+  if (mongoose.connection.readyState !== 1) {
+    logger.warn('Subscription cron skipped — DB not connected');
+    return;
+  }
+
   const Professional = mongoose.model('Professional');
   const now = new Date();
 

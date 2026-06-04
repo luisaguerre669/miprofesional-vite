@@ -301,6 +301,8 @@ class Server {
       mongoose.set("bufferCommands", false);
       await connectDB();
 
+      if (mongoose.connection.readyState === 1) {
+
         // Fix legacy categories: update slug if title matches but slug changed
         try {
           const categoriesData = require('./scripts/categoryData');
@@ -323,7 +325,9 @@ class Server {
           logger.error('Category sync error (non-fatal)', { error: seedErr.message });
         }
 
-      startSubscriptionCron();
+        startSubscriptionCron();
+      }
+
     } catch (error) {
       logger.error("FATAL ERROR starting server:", error);
       process.exit(1);
