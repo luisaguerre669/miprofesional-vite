@@ -120,6 +120,11 @@ categorySchema.index({ 'metadata.emergency': 1 });
 categorySchema.index({ professionalCount: -1 });
 categorySchema.index({ 'stats.avgRating': -1 });
 categorySchema.index({ parentCategory: 1 });
+categorySchema.index({ isActive: 1, sortOrder: 1 });
+categorySchema.index({ 'metadata.popular': 1, 'stats.avgRating': -1 });
+categorySchema.index({ parentCategory: 1, sortOrder: 1 });
+categorySchema.index({ 'metadata.featured': 1, professionalCount: -1 });
+categorySchema.index({ 'metadata.emergency': 1, isActive: 1 });
 
 // Pre-save middleware
 categorySchema.pre('save', function(next) {
@@ -164,10 +169,10 @@ categorySchema.methods.updateStats = async function() {
   ] = await Promise.all([
     Booking.countDocuments({ professionalId: { $in: professionalIds } }),
     Review.aggregate([
-      { $match: { professionalId: { $in: professionalIds } } },
+      { $match: { toProfessional: { $in: professionalIds } } },
       { $group: { _id: null, avgRating: { $avg: '$rating' } } }
     ]).then(result => result[0]?.avgRating || 0),
-    Review.countDocuments({ professionalId: { $in: professionalIds } }),
+    Review.countDocuments({ toProfessional: { $in: professionalIds } }),
     Professional.aggregate([
       { $match: { categoryId: this._id } },
       { $group: { _id: null, avgPrice: { $avg: '$hourlyRate' } } }

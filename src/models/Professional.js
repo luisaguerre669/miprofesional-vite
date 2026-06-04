@@ -407,6 +407,12 @@ professionalSchema.index({ 'stats.reviewCount': -1 });
 professionalSchema.index({ 'stats.totalBookings': -1 });
 professionalSchema.index({ 'pricing.hourlyRate': 1 });
 professionalSchema.index({ createdAt: -1 });
+professionalSchema.index({ categoryId: 1, isActive: 1 });
+professionalSchema.index({ isActive: 1, 'stats.rating': -1 });
+professionalSchema.index({ isActive: 1, 'stats.reviewCount': -1 });
+professionalSchema.index({ isActive: 1, 'pricing.hourlyRate': 1 });
+professionalSchema.index({ isActive: 1, createdAt: -1 });
+professionalSchema.index({ 'location.coordinates': '2dsphere', isActive: 1 });
 
 // Text search index
 professionalSchema.index({

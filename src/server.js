@@ -240,6 +240,20 @@ class Server {
   async start() {
     this.setupProcessHandlers();
     try {
+      this.server.listen(this.port, () => {
+        logger.info("MiProfesional backend listening", {
+          port: this.port,
+          nodeEnv: process.env.NODE_ENV || "development"
+        });
+      });
+
+      this.server.on("error", (error) => {
+        logger.error("Server error:", error);
+        process.exit(1);
+      });
+      process.on("SIGTERM", () => this.gracefulShutdown("SIGTERM"));
+      process.on("SIGINT", () => this.gracefulShutdown("SIGINT"));
+
       await connectDB();
 
         // Fix legacy categories: update slug if title matches but slug changed
@@ -264,20 +278,7 @@ class Server {
           logger.error('Category sync error (non-fatal)', { error: seedErr.message });
         }
 
-      this.server.listen(this.port, () => {
-        logger.info("MiProfesional backend listening", {
-          port: this.port,
-          nodeEnv: process.env.NODE_ENV || "development"
-        });
-      });
-
       startSubscriptionCron();
-      this.server.on("error", (error) => {
-        logger.error("Server error:", error);
-        process.exit(1);
-      });
-      process.on("SIGTERM", () => this.gracefulShutdown("SIGTERM"));
-      process.on("SIGINT", () => this.gracefulShutdown("SIGINT"));
     } catch (error) {
       logger.error("FATAL ERROR starting server:", error);
       process.exit(1);
