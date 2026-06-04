@@ -17,6 +17,83 @@ const eventBus = require('../services/eventBus');
 
 const router = express.Router();
 
+// Security: Blocked disposable/test email domains
+const BLOCKED_DOMAINS = [
+  'test.com', 'example.com', 'example.org', 'example.net',
+  'mailinator.com', 'guerrillamail.com', 'tempmail.com', 'throwaway.com',
+  'yopmail.com', 'sharklasers.com', 'trashmail.com', '10minutemail.com',
+  'mailnator.com'
+];
+
+// Security: Patterns that suggest test/debug accounts
+const TEST_PATTERNS = [
+  /^test/i, /^debug/i, /^prueba/i, /^electest/i, /^proftest/i,
+  /^testprof/i, /^testclient/i, /^testuser/i, /^debuguser/i,
+  /^asdf/i, /^qwerty/i, /^aaa/i, /^xxx/i
+];
+
+const HONEYPOT_FIELD = 'website';
+
+// Security middleware for registration
+const validateRegistrationSecurity = (req, res, next) => {
+  if (req.body[HONEYPOT_FIELD]) {
+    logger.logSecurityRequest('honeypot_triggered', req, { field: HONEYPOT_FIELD });
+    return res.status(201).json({
+      success: true,
+      message: 'Registro exitoso. Revise su correo para verificar la cuenta.'
+    });
+  }
+
+  const { email, name } = req.body;
+
+  if (email) {
+    const domain = email.split('@')[1]?.toLowerCase();
+    if (domain && BLOCKED_DOMAINS.includes(domain)) {
+      logger.logSecurityRequest('blocked_domain', req, { email, domain });
+      return res.status(400).json({
+        success: false,
+        error: 'Dominio de email no permitido',
+        message: 'Por favor use un correo electronico valido'
+      });
+    }
+  }
+
+  if (name) {
+    for (const pattern of TEST_PATTERNS) {
+      if (pattern.test(name)) {
+        logger.logSecurityRequest('blocked_name_pattern', req, { name });
+        return res.status(400).json({
+          success: false,
+          error: 'Nombre no permitido',
+          message: 'Por favor use un nombre valido'
+        });
+      }
+    }
+  }
+
+  if (email) {
+    const emailPrefix = email.split('@')[0];
+    if (emailPrefix && emailPrefix.length < 3) {
+      logger.logSecurityRequest('blocked_short_email', req, { email });
+      return res.status(400).json({
+        success: false,
+        error: 'Email no permitido',
+        message: 'Por favor use un correo electronico valido'
+      });
+    }
+    if (/^\d+$/.test(emailPrefix)) {
+      logger.logSecurityRequest('blocked_numeric_email', req, { email });
+      return res.status(400).json({
+        success: false,
+        error: 'Email no permitido',
+        message: 'Por favor use un correo electronico valido'
+      });
+    }
+  }
+
+  next();
+};
+
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 10,
@@ -149,10 +226,10 @@ const handleValidationErrors = (req, res, next) => {
 };
 
 // POST /api/v1/auth/register
-router.post('/register', registerLimiter, [
+router.post('/register', registerLimiter, validateRegistrationSecurity, [
   body('name').trim().isLength({ min: 2, max: 100 }).withMessage('Name must be between 2 and 100 characters'),
   body('email').isEmail().normalizeEmail().withMessage('Please provide a valid email'),
-  body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters long'),
+  body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters long').matches(/[A-Z]/).withMessage('Password must contain at least one uppercase letter').matches(/[0-9]/).withMessage('Password must contain at least one number'),
   body('role').optional().isIn(['client', 'professional', 'employer']).withMessage('Role must be client, professional or employer'),
   body('address').optional().isObject(),
   body('address.street').optional().trim(),
@@ -257,9 +334,25 @@ router.post('/register', registerLimiter, [
 
       eventBus.emit('user:registered', { email: existingUser.email, name: existingUser.name, token: existingUser.verificationToken });
 
-      const { accessToken, refreshToken } = generateTokens(existingUser._id);
-      logger.logAuth('register_reactivated', existingUser._id, req.ip, true);
+      logger.logRegistration('register_reactivated', existingUser._id, existingUser.email, req, true);
       const publicUser = existingUser.toJSON();
+
+      const requireEmailVerification = process.env.REQUIRE_EMAIL_VERIFICATION === 'true';
+
+      if (requireEmailVerification) {
+        return res.status(200).json({
+          success: true,
+          message: 'Cuenta reactivada. Revise su correo para verificar la cuenta antes de iniciar sesion.',
+          user: publicUser,
+          data: {
+            user: publicUser,
+            emailVerified: existingUser.emailVerified || false,
+            requiresEmailVerification: true
+          }
+        });
+      }
+
+      const { accessToken, refreshToken } = generateTokens(existingUser._id);
 
       return res.status(200).json({
         success: true,
@@ -344,32 +437,45 @@ router.post('/register', registerLimiter, [
 
     eventBus.emit('user:registered', { email: user.email, name: user.name, token: user.verificationToken });
 
-    // Generate tokens
-    const { accessToken, refreshToken } = generateTokens(user._id);
-
-    // Log registration
-    logger.logAuth('register', user._id, req.ip, true);
+    logger.logRegistration('register', user._id, user.email, req, true);
 
     const publicUser = user.toJSON();
 
-    res.status(201).json({
-      success: true,
-      message: 'Registro exitoso. Revise su correo para verificar la cuenta.',
-      user: publicUser,
-      accessToken,
-      refreshToken,
-      data: {
+    const requireEmailVerification = process.env.REQUIRE_EMAIL_VERIFICATION === 'true';
+
+    if (requireEmailVerification) {
+      res.status(201).json({
+        success: true,
+        message: 'Registro exitoso. Revise su correo para verificar la cuenta antes de iniciar sesion.',
         user: publicUser,
-        token: accessToken,
+        data: {
+          user: publicUser,
+          emailVerified: false,
+          requiresEmailVerification: true
+        }
+      });
+    } else {
+      const { accessToken, refreshToken } = generateTokens(user._id);
+
+      res.status(201).json({
+        success: true,
+        message: 'Registro exitoso. Revise su correo para verificar la cuenta.',
+        user: publicUser,
         accessToken,
         refreshToken,
-        expiresIn: process.env.JWT_EXPIRES_IN || '24h',
-        emailVerified: user.emailVerified || false
-      }
-    });
+        data: {
+          user: publicUser,
+          token: accessToken,
+          accessToken,
+          refreshToken,
+          expiresIn: process.env.JWT_EXPIRES_IN || '24h',
+          emailVerified: user.emailVerified || false
+        }
+      });
+    }
 
   } catch (error) {
-    logger.error('Registration error', { error: error.message, email: req.body.email });
+    logger.logRegistration('register_error', null, req.body.email, req, false, error);
     res.status(500).json({
       success: false,
       error: 'Registration failed',

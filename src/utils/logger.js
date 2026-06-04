@@ -163,6 +163,30 @@ class Logger {
     }
   }
 
+  // Registration logging with full request context
+  logRegistration(action, userId, email, req, success = true, error = null) {
+    const userAgent = req.headers ? req.headers['user-agent'] : undefined;
+    const logData = {
+      action,
+      userId,
+      email,
+      ip: req.ip,
+      userAgent,
+      success,
+      timestamp: new Date().toISOString()
+    };
+
+    if (error) {
+      logData.error = error instanceof Error ? error.message : error;
+    }
+
+    if (success) {
+      this.info('Registration success', logData);
+    } else {
+      this.warn('Registration failure', logData);
+    }
+  }
+
   // Business logic logging
   logBooking(action, bookingId, userId, professionalId, data = {}) {
     this.info(`Booking ${action}`, {
@@ -216,6 +240,20 @@ class Logger {
       ...details,
       timestamp: new Date().toISOString()
     });
+  }
+
+  // Security logging with request context
+  logSecurityRequest(event, req, details = {}) {
+    const eventData = {
+      event,
+      ip: req.ip,
+      method: req.method,
+      path: req.path,
+      userAgent: req.headers ? req.headers['user-agent'] : undefined,
+      ...details,
+      timestamp: new Date().toISOString()
+    };
+    this.warn(`Security event: ${event}`, eventData);
   }
 
   // System health logging
