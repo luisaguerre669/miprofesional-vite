@@ -257,6 +257,23 @@ class Server {
 
   async start() {
     this.setupProcessHandlers();
+
+    // Start listening immediately so Render detects the open port
+    this.server.on("error", (error) => {
+      logger.error("Server error:", error);
+      process.exit(1);
+    });
+    this.server.listen(this.port, () => {
+      logger.info("MiProfesional backend listening", {
+        port: this.port,
+        nodeEnv: process.env.NODE_ENV || "development"
+      });
+    });
+
+    process.on("SIGTERM", () => this.gracefulShutdown("SIGTERM"));
+    process.on("SIGINT", () => this.gracefulShutdown("SIGINT"));
+
+    // Connect to DB and run startup tasks in background
     try {
       await connectDB();
 
@@ -282,26 +299,12 @@ class Server {
           logger.error('Category sync error (non-fatal)', { error: seedErr.message });
         }
 
-      this.server.listen(this.port, () => {
-        logger.info("MiProfesional backend listening", {
-          port: this.port,
-          nodeEnv: process.env.NODE_ENV || "development"
-        });
-      });
-
       legacySubscriptionCron();
       subscriptionCronJob();
       setInterval(checkSubscriptionReminders, 12 * 60 * 60 * 1000);
       checkSubscriptionReminders();
-      this.server.on("error", (error) => {
-        logger.error("Server error:", error);
-        process.exit(1);
-      });
-      process.on("SIGTERM", () => this.gracefulShutdown("SIGTERM"));
-      process.on("SIGINT", () => this.gracefulShutdown("SIGINT"));
     } catch (error) {
-      logger.error("FATAL ERROR starting server:", error);
-      process.exit(1);
+      logger.error("DB connection failed — server running but database unavailable:", error.message);
     }
   }
 

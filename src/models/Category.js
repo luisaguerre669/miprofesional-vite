@@ -120,6 +120,7 @@ categorySchema.index({ 'metadata.emergency': 1 });
 categorySchema.index({ professionalCount: -1 });
 categorySchema.index({ 'stats.avgRating': -1 });
 categorySchema.index({ parentCategory: 1 });
+categorySchema.index({ isActive: 1, parentCategory: 1, sortOrder: 1, title: 1 });
 
 // Pre-save middleware
 categorySchema.pre('save', function(next) {
