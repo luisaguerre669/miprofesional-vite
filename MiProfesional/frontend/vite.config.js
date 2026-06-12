@@ -28,6 +28,7 @@ export default defineConfig({
     sourcemap: process.env.NODE_ENV === 'development' ? true : false,
     minify: 'esbuild',
     rollupOptions: {
+      external: ['@capacitor-community/http'],
       output: {
         manualChunks(id) {
           if (!id.includes('node_modules')) return;
