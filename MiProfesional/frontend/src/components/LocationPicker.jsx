@@ -109,13 +109,16 @@ export default function LocationPicker({
           number: result.number || '',
           neighborhood: result.neighborhood || '',
         });
+        if (data.warning) {
+          setGeoError(data.warning);
+        }
       } else {
         const fallback = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
         setResolvedAddress(fallback);
         notifyPosition(lat, lng, { address: fallback });
       }
     } catch (err) {
-      setGeoError('No se pudo resolver la dirección');
+      setGeoError('No se pudo obtener la dirección automáticamente, pero la ubicación fue guardada correctamente');
       const fallback = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
       setResolvedAddress(fallback);
       notifyPosition(lat, lng, { address: fallback });
@@ -166,7 +169,8 @@ export default function LocationPicker({
     await reverseGeocode(lat, lng);
   }, [reverseGeocode]);
 
-  const handleMyLocation = async () => {
+  const handleMyLocation = async (e) => {
+    if (e) e.preventDefault();
     const loc = await getAccurateLocation();
     if (loc && !loc.error && loc.lat && loc.lng) {
       setPosition([loc.lat, loc.lng]);
@@ -177,7 +181,7 @@ export default function LocationPicker({
   };
 
   const handleAddressSearch = (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     geocodeAddress(addressInput);
   };
 
@@ -189,25 +193,27 @@ export default function LocationPicker({
     <div className={`space-y-3 ${compact ? 'text-sm' : ''}`}>
       {/* Search bar + GPS button */}
       <div className="flex gap-2">
-        <form onSubmit={handleAddressSearch} className="flex-1 flex gap-2">
+        <div className="flex-1 flex gap-2">
           <div className="relative flex-1">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
               type="text"
               value={addressInput}
               onChange={(e) => setAddressInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddressSearch(e); } }}
               placeholder="Calle y número, ciudad..."
               className="w-full pl-9 pr-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
           </div>
           <button
-            type="submit"
+            type="button"
+            onClick={handleAddressSearch}
             disabled={geoLoading || !addressInput.trim()}
             className="px-3 py-2.5 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 disabled:opacity-50 transition-all"
           >
             {geoLoading ? <Loader2 size={16} className="animate-spin" /> : <Search size={16} />}
           </button>
-        </form>
+        </div>
         <button
           type="button"
           onClick={handleMyLocation}
@@ -220,8 +226,8 @@ export default function LocationPicker({
       </div>
 
       {geoError && (
-        <p className="text-xs text-red-600 flex items-center gap-1">
-          <MapPin size={12} /> {geoError}
+        <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 flex items-center gap-2">
+          <Info size={14} className="text-amber-500 shrink-0" /> {geoError}
         </p>
       )}
 

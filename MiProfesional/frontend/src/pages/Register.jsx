@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import api from '../lib/axios';
+import DOMPurify from 'dompurify';
 import {
   UserPlus, Shield, ArrowRight, CheckCircle, AlertCircle,
   Phone, Mail, Lock, User, Briefcase, Upload, Gift,
@@ -15,10 +17,19 @@ const LICENSED_PROFESSIONS = [
   'paramedicos', 'veterinarios-urgencia'
 ];
 
+function validatePassword(pw) {
+  const errors = [];
+  if (!pw || pw.length < 8) errors.push('Debe tener al menos 8 caracteres');
+  if (!/[A-Z]/.test(pw)) errors.push('Debe contener al menos una mayúscula');
+  if (!/[0-9]/.test(pw)) errors.push('Debe contener al menos un número');
+  return errors;
+}
+
 const Register = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { register } = useAuth();
+  const { t } = useTranslation('auth');
   const roleParam = searchParams.get('role');
 
   const [step, setStep] = useState(1);
@@ -42,6 +53,7 @@ const Register = () => {
   const [phoneStep, setPhoneStep] = useState('none');
   const [registered, setRegistered] = useState(false);
   const [customProfession, setCustomProfession] = useState('');
+  const [passwordErrors, setPasswordErrors] = useState([]);
 
   const [categories, setCategories] = useState([]);
   const isProfessional = formData.role === 'professional';
@@ -54,7 +66,6 @@ const Register = () => {
     }).catch(e => console.error('Error al cargar categorías:', e));
   }, []);
 
-  // Auto-set available24h when a 24-7 group profession is selected
   useEffect(() => {
     if (isProfessional && formData.profession && findGroupForProfession(formData.profession) === '24-7') {
       setFormData(prev => ({ ...prev, available24h: true }));
@@ -63,25 +74,33 @@ const Register = () => {
 
   const handleChange = (e) => {
     const { name, value, type, checked, files } = e.target;
+    const sanitizedValue = typeof value === 'string' ? DOMPurify.sanitize(value.trim()) : value;
     setFormData(prev => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : type === 'file' ? files[0] : value
+      [name]: type === 'checkbox' ? checked : type === 'file' ? files[0] : sanitizedValue
     }));
     setError('');
+    
+    if (name === 'password') {
+      setPasswordErrors(validatePassword(sanitizedValue));
+    }
   };
 
   const handleSendCode = async () => {
-    if (!formData.phone) { setError('Ingresa tu numero de telefono'); return; }
+    if (!formData.phone) { setError(t('register.errorPhoneRequired')); return; }
     setLoading(true);
     try {
-      const res = await api.post('/auth/send-verification', { phone: formData.phone });
+      const res = await api.post('/auth/send-verification', { phone: DOMPurify.sanitize(formData.phone.trim()) });
       if (res.data.success) setPhoneStep('verify');
-      else setError(res.data.error || 'Error al enviar codigo');
-    } catch { setError('Error de conexion'); }
+      else setError(res.data.error || t('login.errorSendCode'));
+    } catch { setError(t('login.errorConnection')); }
     setLoading(false);
   };
 
   const handleSubmit = async (e) => {
+    console.log("BUILD VERSION:", "__BUILD_20260612_REGISTER_FIX__");
+    // Step 1
+    console.log('[FLOW] Step 1 - handleSubmit iniciado');
     e.preventDefault();
     setError('');
     setLoading(true);
@@ -89,7 +108,20 @@ const Register = () => {
     const finalProfession = formData.profession === '__other__' ? customProfession : formData.profession;
 
     if (isProfessional && !finalProfession) {
-      setError('Selecciona o escribe tu profesion');
+      console.error('[FLOW] Registro cancelado: profesión requerida');
+      setError(t('register.errorProfessionRequired'));
+      setLoading(false);
+      return;
+    }
+
+    // Step 2
+    console.log('[FLOW] Step 2 - validaciones completadas');
+
+    const passwordValidationErrors = validatePassword(formData.password);
+    if (passwordValidationErrors.length > 0) {
+      console.error('[FLOW] Registro cancelado: contraseña inválida', passwordValidationErrors);
+      setError('La contraseña no cumple con los requisitos de seguridad');
+      setPasswordErrors(passwordValidationErrors);
       setLoading(false);
       return;
     }
@@ -100,28 +132,60 @@ const Register = () => {
       neighborhood: formData.neighborhood,
       city: formData.city,
       state: formData.province,
-      country: 'Argentina',
-      coordinates: formData.latitude && formData.longitude ? {
-        type: 'Point',
-        coordinates: [parseFloat(formData.longitude), parseFloat(formData.latitude)]
-      } : undefined
+      country: 'Argentina'
+    } : undefined;
+
+    const coordinates = formData.latitude && formData.longitude ? {
+      type: 'Point',
+      coordinates: [parseFloat(formData.longitude), parseFloat(formData.latitude)]
     } : undefined;
 
     const categoryId = isProfessional ? findCategoryId(finalProfession) : undefined;
     const subcategoryId = isProfessional && categoryId ? findSubcategoryId(finalProfession, categoryId) : undefined;
 
     if (isProfessional && !categoryId) {
-      setError('La profesion seleccionada no tiene una categoria asignada. Selecciona otra profesion.');
+      console.error('[FLOW] Registro cancelado: categoría requerida');
+      setError(t('register.errorCategoryRequired'));
       setLoading(false);
       return;
     }
 
     try {
+      const traceId = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : 'trace-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
+      console.log('[FLOW] traceId:', traceId);
+      console.log('[FLOW] Step 3 - llamando register()');
+
+      const sanitizedData = {
+        name: DOMPurify.sanitize(formData.name.trim()),
+        email: DOMPurify.sanitize(formData.email.trim().toLowerCase()),
+        password: formData.password,
+        phone: formData.phone ? DOMPurify.sanitize(formData.phone.trim()) : undefined,
+        role: formData.role,
+        profession: finalProfession,
+        categoryId,
+        subcategoryId,
+        available24h: formData.available24h,
+        disponible24hs: formData.disponible24hs,
+        disponibleFinesDeSemana: formData.disponibleFinesDeSemana,
+        disponibleFeriados: formData.disponibleFeriados,
+        atencionInmediata: formData.atencionInmediata,
+        servicioADomicilio: formData.servicioADomicilio,
+        address,
+        coordinates,
+        termsAccepted: formData.acceptTerms
+      };
+
+      const safeLog = { ...sanitizedData, password: '***HIDDEN***' };
+      console.log('[FLOW] Payload:', JSON.stringify(safeLog));
+      
+      console.log('[FLOW] Invocando AuthContext.register');
       const result = await register(
-        formData.name, formData.email, formData.password, formData.role,
-        { phone: formData.phone, profession: finalProfession, categoryId, subcategoryId, available24h: formData.available24h, disponible24hs: formData.disponible24hs, disponibleFinesDeSemana: formData.disponibleFinesDeSemana, disponibleFeriados: formData.disponibleFeriados, atencionInmediata: formData.atencionInmediata, servicioADomicilio: formData.servicioADomicilio, address, termsAccepted: formData.acceptTerms }
+        sanitizedData.name, sanitizedData.email, sanitizedData.password, sanitizedData.role,
+        { phone: sanitizedData.phone, profession: sanitizedData.profession, categoryId: sanitizedData.categoryId, subcategoryId: sanitizedData.subcategoryId, available24h: sanitizedData.available24h, disponible24hs: sanitizedData.disponible24hs, disponibleFinesDeSemana: sanitizedData.disponibleFinesDeSemana, disponibleFeriados: sanitizedData.disponibleFeriados, atencionInmediata: sanitizedData.atencionInmediata, servicioADomicilio: sanitizedData.servicioADomicilio, address: sanitizedData.address, coordinates: sanitizedData.coordinates, termsAccepted: sanitizedData.termsAccepted, traceId }
       );
+      console.log('[FLOW] Step 4 - register() finalizado');
       if (result.success) {
+        console.log('[FLOW] Step 5 - respuesta procesada: éxito');
         if (isProfessional && licenseRequired && formData.licenseFile) {
           const form = new FormData();
           form.append('license', formData.licenseFile);
@@ -137,10 +201,15 @@ const Register = () => {
           setRegistered(true);
         }
       } else {
-        setError(result.error || 'Error al registrarse');
+        console.log('[FLOW] Step 5 - respuesta procesada: fallo', result.error);
+        setError(result.error || t('register.errorRegistration'));
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Error al registrarse');
+      console.error('[FLOW] Step 5 - excepción no capturada:', err);
+      const httpStatus = err.response?.status || 0;
+      const responseData = err.response?.data || {};
+      console.log('[FLOW] Detalles HTTP', httpStatus, ':', JSON.stringify(responseData));
+      setError(responseData.message || responseData.error || t('register.errorRegistration'));
     }
     setLoading(false);
   };
@@ -152,16 +221,14 @@ const Register = () => {
           <div className="w-16 h-16 bg-green-100 rounded-xl flex items-center justify-center mx-auto mb-4">
             <CheckCircle className="text-green-600" size={32} />
           </div>
-          <h2 className="text-xl font-bold text-gray-900 mb-2">Registro Exitoso</h2>
-          <p className="text-gray-500 text-sm mb-6">
-            Tu cuenta fue creada exitosamente. Revisa tu correo para verificar tu cuenta.
-          </p>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">{t('register.successTitle')}</h2>
+          <p className="text-gray-500 text-sm mb-6">{t('register.successMessage')}</p>
           <div className="flex flex-col gap-2">
             <Link to="/login" className="inline-flex items-center justify-center gap-2 px-6 py-2.5 bg-primary-600 text-white font-semibold rounded-xl hover:bg-primary-700 transition-all text-sm">
-              Iniciar Sesion <ArrowRight size={16} />
+              {t('register.goToLogin')} <ArrowRight size={16} />
             </Link>
             <Link to="/search" className="text-primary-600 text-xs font-medium hover:underline">
-              Explorar servicios mientras tanto
+              {t('register.exploreServices')}
             </Link>
           </div>
         </div>
@@ -206,19 +273,17 @@ const Register = () => {
   const findSubcategoryId = (professionValue, catId) => {
     const cat = categories.find(c => c._id === catId);
     if (!cat || !cat.subcategories) return undefined;
-    // Try exact slug match first
     const exact = cat.subcategories.find(s => s.slug === professionValue);
     if (exact) return exact._id;
-    // Try partial match (professionValue might be contained in subcategory slug)
     const partial = cat.subcategories.find(s => s.slug.includes(professionValue) || professionValue.includes(s.slug));
     return partial?._id;
   };
 
   const PROFESSIONS = [
-    { value: '', label: 'Selecciona tu profesion...' },
-    { value: '__other__', label: 'Otra (escribir profesion)' },
+    { value: '', label: t('register.professionSelect') },
+    { value: '__other__', label: t('register.professionOther') },
     { group: 'Construccion', items: [
-      { value: 'albanil', label: 'Albanil' },
+      { value: 'albanil', label: 'Albañil' },
       { value: 'plomero', label: 'Plomero' },
       { value: 'electricista', label: 'Electricista' },
       { value: 'gasista', label: 'Gasista' },
@@ -228,27 +293,27 @@ const Register = () => {
       { value: 'herrero', label: 'Herrero' },
       { value: 'pisero', label: 'Pisero' },
       { value: 'yesero', label: 'Yesero' },
-      { value: 'estructuras-metalicas', label: 'Estructuras Metalicas' },
+      { value: 'estructuras-metalicas', label: 'Estructuras Metálicas' },
     ]},
     { group: 'Servicios Generales', items: [
-      { value: 'jardineria', label: 'Jardineria' },
+      { value: 'jardineria', label: 'Jardinería' },
       { value: 'limpieza', label: 'Limpieza' },
       { value: 'mudanzas', label: 'Mudanzas' },
-      { value: 'fumigacion', label: 'Fumigacion / Control de Plagas' },
+      { value: 'fumigacion', label: 'Fumigación / Control de Plagas' },
       { value: 'piletero', label: 'Piletero / Mantenimiento de Piletas' },
       { value: 'cerrajero', label: 'Cerrajero' },
     ]},
     { group: '24-7', items: [
-      { value: 'medicos-247', label: 'Medicos 24/7' },
+      { value: 'medicos-247', label: 'Médicos 24/7' },
       { value: 'enfermeros-247', label: 'Enfermeros 24/7' },
-      { value: 'paramedicos', label: 'Paramedicos' },
+      { value: 'paramedicos', label: 'Paramédicos' },
       { value: 'cuidadores-adultos-mayores', label: 'Cuidadores de Adultos Mayores' },
-      { value: 'acompanantes-terapeuticos-247', label: 'Acompanantes Terapeuticos' },
-      { value: 'psicologos-guardia', label: 'Psicologos de Guardia' },
+      { value: 'acompanantes-terapeuticos-247', label: 'Acompañantes Terapéuticos' },
+      { value: 'psicologos-guardia', label: 'Psicólogos de Guardia' },
       { value: 'terapeutas-247', label: 'Terapeutas 24/7' },
-      { value: 'mecanicos-emergencia', label: 'Mecanicos de Emergencia' },
-      { value: 'auxilio-mecanico-247', label: 'Auxilio Mecanico' },
-      { value: 'gruas-remolques', label: 'Gruas y Remolques' },
+      { value: 'mecanicos-emergencia', label: 'Mecánicos de Emergencia' },
+      { value: 'auxilio-mecanico-247', label: 'Auxilio Mecánico' },
+      { value: 'gruas-remolques', label: 'Grúas y Remolques' },
       { value: 'cerrajeros-247', label: 'Cerrajeros 24/7' },
       { value: 'electricistas-247', label: 'Electricistas 24/7' },
       { value: 'plomeros-247', label: 'Plomeros 24/7' },
@@ -259,25 +324,25 @@ const Register = () => {
       { value: 'veterinarios-urgencia', label: 'Veterinarios de Urgencia' },
       { value: 'traslado-mascotas', label: 'Traslado de Mascotas' },
       { value: 'transporte-urgente', label: 'Transporte Urgente' },
-      { value: 'mensajeria-cadeteria', label: 'Mensajeria y Cadeteria' },
+      { value: 'mensajeria-cadeteria', label: 'Mensajería y Cadetería' },
       { value: 'fletes-emergencia', label: 'Fletes de Emergencia' },
     ]},
     { group: 'Hogar y Confort', items: [
       { value: 'decorador', label: 'Decorador de Interiores' },
       { value: 'arquitecto', label: 'Arquitecto' },
-      { value: 'disenador-interiores', label: 'Disenador de Interiores' },
-      { value: 'domotica', label: 'Domotica / Hogar Inteligente' },
+      { value: 'disenador-interiores', label: 'Diseñador de Interiores' },
+      { value: 'domotica', label: 'Domótica / Hogar Inteligente' },
       { value: 'tapicero', label: 'Tapicero' },
     ]},
     { group: 'Belleza y Cuidado', items: [
       { value: 'peluquero', label: 'Peluquero/a' },
-      { value: 'manicuria', label: 'Manicuria' },
-      { value: 'unas', label: 'Unas / Esculturalas' },
+      { value: 'manicuria', label: 'Manicuría' },
+      { value: 'unas', label: 'Uñas / Esculpidas' },
       { value: 'masajista', label: 'Masajista' },
-      { value: 'cosmetologo', label: 'Cosmetologo/a' },
+      { value: 'cosmetologo', label: 'Cosmetólogo/a' },
       { value: 'barbero', label: 'Barbero' },
       { value: 'maquillador', label: 'Maquillador/a' },
-      { value: 'depilacion', label: 'Depilacion' },
+      { value: 'depilacion', label: 'Depilación' },
     ]},
     { group: 'Bienestar y Deporte', items: [
       { value: 'personal-trainer', label: 'Personal Trainer / Instructor' },
@@ -290,36 +355,36 @@ const Register = () => {
       { value: 'chef', label: 'Chef / Cocinero/a' },
       { value: 'catering', label: 'Servicio de Catering' },
       { value: 'pastelero', label: 'Pastelero/a' },
-      { value: 'bartender', label: 'Bartender / Cocteleria' },
-      { value: 'eventos-gastronomicos', label: 'Eventos Gastronomicos' },
+      { value: 'bartender', label: 'Bartender / Coctelería' },
+      { value: 'eventos-gastronomicos', label: 'Eventos Gastronómicos' },
     ]},
     { group: 'Mascotas', items: [
       { value: 'veterinario', label: 'Veterinario/a' },
       { value: 'paseador', label: 'Paseador de Perros' },
       { value: 'peluquero-mascotas', label: 'Peluquero/a de Mascotas' },
       { value: 'adiestrador', label: 'Adiestrador/a' },
-      { value: 'guarderia-mascotas', label: 'Guarderia de Mascotas' },
+      { value: 'guarderia-mascotas', label: 'Guardería de Mascotas' },
     ]},
     { group: 'Tecnologia', items: [
-      { value: 'reparacion-pc', label: 'Reparacion de PC / Notebook' },
-      { value: 'reparacion-celulares', label: 'Reparacion de Celulares' },
+      { value: 'reparacion-pc', label: 'Reparación de PC / Notebook' },
+      { value: 'reparacion-celulares', label: 'Reparación de Celulares' },
       { value: 'desarrollador', label: 'Desarrollador / Programador' },
-      { value: 'disenador-web', label: 'Disenador Web / UX/UI' },
-      { value: 'soporte-tecnico', label: 'Soporte Tecnico / Redes' },
-      { value: 'instalacion-camaras', label: 'Instalacion de Camaras / Alarmas' },
+      { value: 'disenador-web', label: 'Diseñador Web / UX/UI' },
+      { value: 'soporte-tecnico', label: 'Soporte Técnico / Redes' },
+      { value: 'instalacion-camaras', label: 'Instalación de Cámaras / Alarmas' },
     ]},
     { group: 'Automotor', items: [
-      { value: 'mecanico', label: 'Mecanico Automotriz' },
+      { value: 'mecanico', label: 'Mecánico Automotriz' },
       { value: 'electricista-auto', label: 'Electricista Automotriz' },
       { value: 'chapista', label: 'Chapista / Pintura' },
-      { value: 'gomerias', label: 'Gomeria / Neumaticos' },
+      { value: 'gomerias', label: 'Gomería / Neumáticos' },
       { value: 'lavadero', label: 'Lavadero de Autos' },
       { value: 'cerrajero-auto', label: 'Cerrajero de Autos' },
     ]},
     { group: 'Transporte y Turismo', items: [
       { value: 'remis', label: 'Remis / Taxi' },
       { value: 'flete', label: 'Flete / Camioneta' },
-      { value: 'tour-guide', label: 'Guia de Turismo' },
+      { value: 'tour-guide', label: 'Guía de Turismo' },
       { value: 'transporte-escolar', label: 'Transporte Escolar' },
       { value: 'viajes-egresados', label: 'Viajes de Egresados' },
     ]},
@@ -328,7 +393,7 @@ const Register = () => {
       { value: 'abogado', label: 'Abogado/a' },
       { value: 'seguros', label: 'Productor de Seguros' },
       { value: 'marketing', label: 'Marketing / Publicidad' },
-      { value: 'fotografo', label: 'Fotografo/a' },
+      { value: 'fotografo', label: 'Fotógrafo/a' },
       { value: 'traductor', label: 'Traductor/a' },
       { value: 'community-manager', label: 'Community Manager' },
       { value: 'video-editor', label: 'Editor de Video' },
@@ -343,9 +408,9 @@ const Register = () => {
             <div className="w-16 h-16 bg-primary-600 rounded-xl flex items-center justify-center mx-auto mb-4">
               <UserPlus className="text-white" size={32} />
             </div>
-            <h1 className="text-2xl font-bold text-gray-900">Crear Cuenta</h1>
+            <h1 className="text-2xl font-bold text-gray-900">{t('register.title')}</h1>
             <p className="text-gray-500 mt-1 text-sm">
-              {formData.role === 'company' ? 'Registrate como empresa' : isProfessional ? 'Registrate como profesional' : 'Registrate como cliente'}
+              {formData.role === 'company' ? t('register.subtitleCompany') : isProfessional ? t('register.subtitleProfessional') : t('register.subtitleClient')}
             </p>
           </div>
 
@@ -377,63 +442,71 @@ const Register = () => {
                     className={`flex-1 py-2.5 rounded-xl text-sm font-medium border transition-all ${
                       formData.role === 'client' ? 'border-primary-500 bg-primary-50 text-primary-700' : 'border-gray-200 text-gray-600 hover:border-gray-300'
                     }`}
-                  ><User size={16} className="inline mr-1.5 -mt-0.5" /> Cliente</button>
+                  ><User size={16} className="inline mr-1.5 -mt-0.5" /> {t('register.clientType')}</button>
                   <button type="button" onClick={() => { setFormData(prev => ({ ...prev, role: 'professional' })); }}
                     className={`flex-1 py-2.5 rounded-xl text-sm font-medium border transition-all ${
                       formData.role === 'professional' ? 'border-primary-500 bg-primary-50 text-primary-700' : 'border-gray-200 text-gray-600 hover:border-gray-300'
                     }`}
-                  ><Briefcase size={16} className="inline mr-1.5 -mt-0.5" /> Profesional</button>
+                  ><Briefcase size={16} className="inline mr-1.5 -mt-0.5" /> {t('register.professionalType')}</button>
                   <button type="button" onClick={() => { setFormData(prev => ({ ...prev, role: 'company' })); }}
                     className={`flex-1 py-2.5 rounded-xl text-sm font-medium border transition-all ${
                       formData.role === 'company' ? 'border-primary-500 bg-primary-50 text-primary-700' : 'border-gray-200 text-gray-600 hover:border-gray-300'
                     }`}
-                  ><Building2 size={16} className="inline mr-1.5 -mt-0.5" /> Empresa</button>
+                  ><Building2 size={16} className="inline mr-1.5 -mt-0.5" /> {t('register.companyType')}</button>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Nombre Completo</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('register.nameLabel')}</label>
                   <div className="relative">
                     <User className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                     <input name="name" type="text" required value={formData.name} onChange={handleChange}
                       className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
-                      placeholder="Tu nombre" />
+                      placeholder={t('register.namePlaceholder')} />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Correo Electronico</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('register.emailLabel')}</label>
                   <div className="relative">
                     <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                     <input name="email" type="email" required value={formData.email} onChange={handleChange}
                       className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
-                      placeholder="tu@email.com" />
+                      placeholder={t('register.emailPlaceholder')} />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Contrasena</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('register.passwordLabel')}</label>
                   <div className="relative">
                     <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                    <input name="password" type="password" required minLength={6} value={formData.password} onChange={handleChange}
+                    <input name="password" type="password" required minLength={8} value={formData.password} onChange={handleChange}
                       className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
-                      placeholder="Minimo 6 caracteres" />
+                      placeholder={t('register.passwordPlaceholder')} />
                   </div>
+                  {passwordErrors.length > 0 && (
+                    <div className="mt-2 text-xs text-red-600 space-y-0.5">
+                      {passwordErrors.map((err, i) => <div key={i}>• {err}</div>)}
+                    </div>
+                  )}
+                  {formData.password && passwordErrors.length === 0 && (
+                    <div className="mt-2 text-xs text-green-600">✓ Contraseña segura</div>
+                  )}
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Telefono <span className="text-gray-400 font-normal">(opcional)</span>
+                    {t('register.phoneLabel')} <span className="text-gray-400 font-normal">{t('register.phoneOptional')}</span>
                   </label>
                   <div className="relative">
                     <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                     <input name="phone" type="tel" value={formData.phone} onChange={handleChange}
                       className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
-                      placeholder="+54 11 1234-5678" />
+                      placeholder={t('register.phonePlaceholder')} />
                   </div>
                   {formData.phone && phoneStep === 'none' && (
                     <button type="button" onClick={handleSendCode}
                       className="mt-2 text-xs text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1"
-                    ><Smartphone size={13} /> Verificar telefono</button>
+                    ><Smartphone size={13} /> {t('register.verifyPhone')}</button>
                   )}
                   {phoneStep === 'verify' && (
                     <div className="mt-2 flex gap-2">
@@ -442,7 +515,7 @@ const Register = () => {
                         placeholder="000000" />
                       <button type="button" onClick={handleSendCode}
                         className="px-3 py-1.5 bg-primary-600 text-white text-xs rounded-lg hover:bg-primary-700"
-                      >Verificar</button>
+                      >{t('register.verify')}</button>
                     </div>
                   )}
                 </div>
@@ -453,11 +526,10 @@ const Register = () => {
             {step === 2 && isProfessional && (
               <>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Profesion</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('register.professionLabel')}</label>
                   <select name="profession" value={formData.profession} onChange={handleChange}
                     className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm bg-white"
                   >
-                    <option value="">Selecciona tu profesion...</option>
                     {PROFESSIONS.filter(p => !p.group).map(p => (
                       <option key={p.value} value={p.value}>{p.label}</option>
                     ))}
@@ -473,10 +545,10 @@ const Register = () => {
 
                 {formData.profession === '__other__' && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Escribe tu profesion</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('register.professionCustomLabel')}</label>
                     <input name="customProfession" value={customProfession} onChange={e => setCustomProfession(e.target.value)}
                       className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
-                      placeholder="Ej: Musicoterapeuta, Organizador de Eventos..." />
+                      placeholder={t('register.professionCustomPlaceholder')} />
                   </div>
                 )}
 
@@ -484,27 +556,25 @@ const Register = () => {
                   <>
                     <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-2">
                       <Info size={16} className="text-amber-600 shrink-0 mt-0.5" />
-                      <p className="text-xs text-amber-800">
-                        Tu profesion requiere matricula obligatoria. Subi una foto de tu matricula para verificar tu identidad profesional.
-                      </p>
+                      <p className="text-xs text-amber-800">{t('register.licenseRequired')}</p>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1.5">Numero de Matricula</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('register.licenseNumberLabel')}</label>
                       <input name="licenseNumber" value={formData.licenseNumber} onChange={handleChange}
                         className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
-                        placeholder="Ej: MP 12345" />
+                        placeholder={t('register.licenseNumberPlaceholder')} />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1.5">Foto de Matricula / Documento</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('register.licenseFileLabel')}</label>
                       <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-primary-400 transition-colors">
                         <input type="file" name="licenseFile" accept="image/*,.pdf" onChange={handleChange}
                           className="hidden" id="licenseFile" />
                         <label htmlFor="licenseFile" className="cursor-pointer">
                           <Upload size={24} className="mx-auto text-gray-400 mb-2" />
                           <p className="text-sm text-gray-600 font-medium">
-                            {formData.licenseFile ? formData.licenseFile.name : 'Click para subir foto de matricula'}
+                            {formData.licenseFile ? formData.licenseFile.name : t('register.licenseFileClick')}
                           </p>
-                          <p className="text-xs text-gray-400 mt-1">JPG, PNG o PDF max 10MB</p>
+                          <p className="text-xs text-gray-400 mt-1">{t('register.licenseFileHint')}</p>
                         </label>
                       </div>
                     </div>
@@ -519,18 +589,16 @@ const Register = () => {
                     </div>
                     <div className="flex-1">
                       <label className="font-semibold text-gray-900 text-sm block mb-1">
-                        ¿Brindas servicios de urgencia o emergencia?
+                        {t('register.emergencyServices')}
                       </label>
-                      <p className="text-xs text-gray-500 mb-3">
-                        Marcá las opciones que correspondan para aparecer en la seccion "Servicios 24/7".
-                      </p>
+                      <p className="text-xs text-gray-500 mb-3">{t('register.emergencyDesc')}</p>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                         {[
-                          { key: 'disponible24hs', label: 'Disponible 24 hs', desc: 'Todos los dias, toda la noche' },
-                          { key: 'atencionInmediata', label: 'Atencion inmediata', desc: 'Disponible para ir ahora mismo' },
-                          { key: 'servicioADomicilio', label: 'Servicio a domicilio', desc: 'Voy al lugar del cliente' },
-                          { key: 'disponibleFinesDeSemana', label: 'Fines de semana', desc: 'Sabados y domingos' },
-                          { key: 'disponibleFeriados', label: 'Feriados', desc: 'Dias no laborables' },
+                          { key: 'disponible24hs', label: t('register.available247'), desc: t('register.available247Desc') },
+                          { key: 'atencionInmediata', label: t('register.immediateAttention'), desc: t('register.immediateAttentionDesc') },
+                          { key: 'servicioADomicilio', label: t('register.homeService'), desc: t('register.homeServiceDesc') },
+                          { key: 'disponibleFinesDeSemana', label: t('register.weekends'), desc: t('register.weekendsDesc') },
+                          { key: 'disponibleFeriados', label: t('register.holidays'), desc: t('register.holidaysDesc') },
                         ].map(opt => (
                           <label
                             key={opt.key}
@@ -565,9 +633,9 @@ const Register = () => {
                 <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
                   <div className="p-4 border-b border-gray-100">
                     <h3 className="font-semibold text-gray-900 text-sm flex items-center gap-2">
-                      <MapPin size={16} className="text-primary-600" /> Tu ubicacion exacta
+                      <MapPin size={16} className="text-primary-600" /> {t('register.locationTitle')}
                     </h3>
-                    <p className="text-xs text-gray-400 mt-0.5">Arrastrá el marcador en el mapa o buscá tu dirección</p>
+                    <p className="text-xs text-gray-400 mt-0.5">{t('register.locationSubtitle')}</p>
                   </div>
                   <div className="p-4">
                     <LocationPicker
@@ -587,19 +655,19 @@ const Register = () => {
                   <div className="px-4 pb-4 space-y-2">
                     <div className="flex gap-2">
                       <input name="street" value={formData.street} onChange={handleChange}
-                        placeholder="Calle" className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm" />
+                        placeholder={t('register.streetPlaceholder')} className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm" />
                       <input name="number" value={formData.number} onChange={handleChange}
-                        placeholder="Numero" className="w-24 px-3 py-2 border border-gray-300 rounded-lg text-sm" />
+                        placeholder={t('register.numberPlaceholder')} className="w-24 px-3 py-2 border border-gray-300 rounded-lg text-sm" />
                     </div>
                     <input name="neighborhood" value={formData.neighborhood} onChange={handleChange}
-                      placeholder="Barrio (opcional)" className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
+                      placeholder={t('register.neighborhoodPlaceholder')} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
                     <div className="flex gap-2">
                       <input name="city" value={formData.city} onChange={handleChange}
-                        placeholder="Ciudad" className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm" />
+                        placeholder={t('register.cityPlaceholder')} className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm" />
                       <select name="province" value={formData.province} onChange={handleChange}
                         className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white">
-                        <option value="">Provincia</option>
-                        {['CABA','Buenos Aires','Catamarca','Chaco','Chubut','Cordoba','Corrientes','Entre Rios','Formosa','Jujuy','La Pampa','La Rioja','Mendoza','Misiones','Neuquen','Rio Negro','Salta','San Juan','San Luis','Santa Cruz','Santa Fe','Santiago del Estero','Tierra del Fuego','Tucuman'].map(p => (
+                        <option value="">{t('register.provincePlaceholder')}</option>
+                        {['CABA','Buenos Aires','Catamarca','Chaco','Chubut','Córdoba','Corrientes','Entre Ríos','Formosa','Jujuy','La Pampa','La Rioja','Mendoza','Misiones','Neuquén','Río Negro','Salta','San Juan','San Luis','Santa Cruz','Santa Fe','Santiago del Estero','Tierra del Fuego','Tucumán'].map(p => (
                           <option key={p} value={p}>{p}</option>
                         ))}
                       </select>
@@ -608,24 +676,24 @@ const Register = () => {
                 </div>
                 <div className="p-4 bg-primary-50 rounded-xl border border-primary-100">
                   <h3 className="font-semibold text-gray-900 text-sm mb-2 flex items-center gap-2">
-                    <Shield size={16} className="text-primary-600" /> Terminos Legales
+                    <Shield size={16} className="text-primary-600" /> {t('register.legalTitle')}
                   </h3>
                   <ul className="space-y-2 text-xs text-gray-600">
                     <li className="flex items-start gap-2">
                       <div className="w-1 h-1 rounded-full bg-gray-400 mt-1.5 shrink-0" />
-                      <span>La plataforma no garantiza trabajo a los profesionales registrados.</span>
+                      <span>{t('register.legalItem1')}</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <div className="w-1 h-1 rounded-full bg-gray-400 mt-1.5 shrink-0" />
-                      <span>La plataforma no gestiona pagos entre clientes y profesionales.</span>
+                      <span>{t('register.legalItem2')}</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <div className="w-1 h-1 rounded-full bg-gray-400 mt-1.5 shrink-0" />
-                      <span>La plataforma no interviene en las transacciones acordadas.</span>
+                      <span>{t('register.legalItem3')}</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <div className="w-1 h-1 rounded-full bg-gray-400 mt-1.5 shrink-0" />
-                      <span>Toda relacion contractual es exclusivamente entre el cliente y el profesional.</span>
+                      <span>{t('register.legalItem4')}</span>
                     </li>
                   </ul>
                 </div>
@@ -639,31 +707,30 @@ const Register = () => {
                       </div>
                       <div className="relative z-10">
                         <p className="text-white text-xs font-semibold flex items-center justify-center gap-1.5">
-                          <Gift size={12} /> Primer mes GRATIS para nuevos profesionales
+                          <Gift size={12} /> {t('register.freeMonthBadge')}
                         </p>
                       </div>
                     </div>
                     <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
                       <p className="text-xs text-amber-800">
-                        <strong className="text-amber-900">Suscripcion obligatoria:</strong> Elegi un plan para activar tu perfil profesional en el marketplace.
-                        Despues del pago vas a poder completar tu perfil.
+                        <strong className="text-amber-900">{t('register.subscriptionRequired')}</strong>
                       </p>
                     </div>
                     <div className="p-4 rounded-xl border-2 border-primary-100 bg-primary-50/50">
                       <div className="flex items-center justify-between mb-2">
                         <div>
-                          <p className="text-sm font-semibold text-gray-900">Plan Mensual</p>
-                          <p className="text-xs text-gray-500">30 días gratis · Luego $5.000/mes</p>
+                          <p className="text-sm font-semibold text-gray-900">{t('register.monthlyPlan')}</p>
+                          <p className="text-xs text-gray-500">{t('register.monthlyPlanDesc')}</p>
                         </div>
                         <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-primary-100 text-primary-700 text-[10px] font-bold rounded-full">
-                          Recurrente
+                          {t('register.recurring')}
                         </span>
                       </div>
                       <div className="flex items-baseline gap-1">
                         <p className="text-lg font-bold text-gray-900">$5.000</p>
-                        <p className="text-xs text-gray-400">/ mes</p>
+                        <p className="text-xs text-gray-400">{t('register.perMonth')}</p>
                       </div>
-                      <p className="text-xs text-gray-500 mt-2">Primer mes completamente gratis. Suscripcion recurrente automatica. Cancelas cuando quieras.</p>
+                      <p className="text-xs text-gray-500 mt-2">{t('register.monthlyPlanDetail')}</p>
                     </div>
                   </div>
                 )}
@@ -672,9 +739,9 @@ const Register = () => {
                   <Info size={18} className="text-blue-500 shrink-0 mt-0.5" />
                     <p className="text-xs text-blue-800">
                       {isProfessional
-                        ? 'Despues del registro disfrutaras de 30 dias gratis sin cargo. Al finalizar, se activara automaticamente la suscripcion recurrente. Sin compromiso, cancelas cuando quieras.'
-                        : 'Despues del registro, recibiras un correo de verificacion. Tu cuenta no sera visible hasta que verifiques tu correo.'}
-                    {isProfessional && licenseRequired && ' Ademas, tu matricula debe ser verificada por nuestro equipo.'}
+                        ? t('register.postRegisterProfessional')
+                        : t('register.postRegisterClient')}
+                    {isProfessional && licenseRequired && ' ' + t('register.licenseVerification')}
                   </p>
                 </div>
 
@@ -682,11 +749,11 @@ const Register = () => {
                   <input type="checkbox" name="acceptTerms" checked={formData.acceptTerms} onChange={handleChange}
                     className="mt-0.5 w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500" />
                   <span className="text-sm text-gray-600">
-                    He leído y acepto los{' '}
+                    {t('register.acceptTerms')}{' '}
                     <Link to="/terms" target="_blank" className="text-primary-600 hover:text-primary-700 font-medium underline">
-                      Términos y Condiciones
+                      {t('register.termsLink')}
                     </Link>{' '}
-                    de MiProfesional. Entiendo que MiProfesional es solo una plataforma de conexión y no garantiza trabajo, no gestiona pagos ni interviene en transacciones.
+                    {t('register.termsDescription')}
                   </span>
                 </label>
               </div>
@@ -697,24 +764,24 @@ const Register = () => {
               {step > 1 && (
                 <button type="button" onClick={() => setStep(isProfessional ? step - 1 : 1)}
                   className="px-6 py-2.5 border border-gray-300 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-50 transition-all"
-                >Atras</button>
+                >{t('register.back')}</button>
               )}
               {step < 3 ? (
                 <button type="button" onClick={() => setStep(isProfessional ? step + 1 : 3)}
                   className="flex-1 py-2.5 bg-primary-600 text-white font-semibold rounded-xl hover:bg-primary-700 transition-all text-sm"
-                >Continuar</button>
+                >{t('register.continue')}</button>
               ) : (
                 <button type="submit" disabled={loading || !formData.acceptTerms}
                   className="flex-1 py-2.5 bg-primary-600 text-white font-semibold rounded-xl hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm"
-                >{loading ? 'Creando cuenta...' : 'Crear Cuenta'}</button>
+                >{loading ? t('register.creating') : t('register.createAccount')}</button>
               )}
             </div>
           </form>
 
           <div className="mt-5 text-center">
             <p className="text-sm text-gray-500">
-              Ya tenes una cuenta?{' '}
-              <Link to="/login" className="text-primary-600 hover:text-primary-700 font-medium">Inicia sesion</Link>
+              {t('register.alreadyHaveAccount')}{' '}
+              <Link to="/login" className="text-primary-600 hover:text-primary-700 font-medium">{t('register.loginLink')}</Link>
             </p>
           </div>
         </div>

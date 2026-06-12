@@ -18,20 +18,24 @@ export default defineConfig({
     },
     headers: {
       'X-Content-Type-Options': 'nosniff',
-      'X-Frame-Options': 'SAMEORIGIN'
+      'X-Frame-Options': 'SAMEORIGIN',
+      'X-XSS-Protection': '1; mode=block',
+      'Referrer-Policy': 'strict-origin-when-cross-origin',
+      'Permissions-Policy': 'geolocation=(self), camera=(), microphone=()'
     }
   },
   build: {
-    sourcemap: true,
+    sourcemap: process.env.NODE_ENV === 'development' ? true : false,
     minify: 'esbuild',
     rollupOptions: {
       output: {
-        manualChunks: {
-          react: ['react', 'react-dom'],
-          recharts: ['recharts'],
-          router: ['react-router-dom'],
-          vendor: ['axios'],
-          icons: ['lucide-react']
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return;
+          if (id.includes('react-dom') || id.includes('react')) return 'react';
+          if (id.includes('recharts')) return 'recharts';
+          if (id.includes('react-router-dom')) return 'router';
+          if (id.includes('axios')) return 'vendor';
+          if (id.includes('lucide-react')) return 'icons';
         }
       }
     }
