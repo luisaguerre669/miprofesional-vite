@@ -74,10 +74,11 @@ const Register = () => {
 
   const handleChange = (e) => {
     const { name, value, type, checked, files } = e.target;
-    const sanitizedValue = typeof value === 'string' ? DOMPurify.sanitize(value.trim()) : value;
+    const rawValue = type === 'checkbox' ? checked : type === 'file' ? files[0] : typeof value === 'string' ? value : value;
+    const sanitizedValue = name === 'password' ? rawValue : (typeof rawValue === 'string' ? DOMPurify.sanitize(rawValue.trim()) : rawValue);
     setFormData(prev => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : type === 'file' ? files[0] : sanitizedValue
+      [name]: sanitizedValue
     }));
     setError('');
     
@@ -126,18 +127,19 @@ const Register = () => {
       return;
     }
 
-    const address = formData.street || formData.city ? {
+    const mapCoords = formData.latitude && formData.longitude ? {
+      type: 'Point',
+      coordinates: [parseFloat(formData.longitude), parseFloat(formData.latitude)]
+    } : undefined;
+
+    const address = formData.street || formData.city || mapCoords ? {
       street: formData.street,
       number: formData.number,
       neighborhood: formData.neighborhood,
       city: formData.city,
       state: formData.province,
-      country: 'Argentina'
-    } : undefined;
-
-    const coordinates = formData.latitude && formData.longitude ? {
-      type: 'Point',
-      coordinates: [parseFloat(formData.longitude), parseFloat(formData.latitude)]
+      country: 'Argentina',
+      ...(mapCoords && { coordinates: mapCoords })
     } : undefined;
 
     const categoryId = isProfessional ? findCategoryId(finalProfession) : undefined;
@@ -171,7 +173,6 @@ const Register = () => {
         atencionInmediata: formData.atencionInmediata,
         servicioADomicilio: formData.servicioADomicilio,
         address,
-        coordinates,
         termsAccepted: formData.acceptTerms
       };
 
@@ -181,7 +182,7 @@ const Register = () => {
       console.log('[FLOW] Invocando AuthContext.register');
       const result = await register(
         sanitizedData.name, sanitizedData.email, sanitizedData.password, sanitizedData.role,
-        { phone: sanitizedData.phone, profession: sanitizedData.profession, categoryId: sanitizedData.categoryId, subcategoryId: sanitizedData.subcategoryId, available24h: sanitizedData.available24h, disponible24hs: sanitizedData.disponible24hs, disponibleFinesDeSemana: sanitizedData.disponibleFinesDeSemana, disponibleFeriados: sanitizedData.disponibleFeriados, atencionInmediata: sanitizedData.atencionInmediata, servicioADomicilio: sanitizedData.servicioADomicilio, address: sanitizedData.address, coordinates: sanitizedData.coordinates, termsAccepted: sanitizedData.termsAccepted, traceId }
+        { phone: sanitizedData.phone, profession: sanitizedData.profession, categoryId: sanitizedData.categoryId, subcategoryId: sanitizedData.subcategoryId, available24h: sanitizedData.available24h, disponible24hs: sanitizedData.disponible24hs, disponibleFinesDeSemana: sanitizedData.disponibleFinesDeSemana, disponibleFeriados: sanitizedData.disponibleFeriados, atencionInmediata: sanitizedData.atencionInmediata, servicioADomicilio: sanitizedData.servicioADomicilio, address: sanitizedData.address, termsAccepted: sanitizedData.termsAccepted, traceId }
       );
       console.log('[FLOW] Step 4 - register() finalizado');
       if (result.success) {

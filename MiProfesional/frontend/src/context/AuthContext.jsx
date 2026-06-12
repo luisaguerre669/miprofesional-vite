@@ -67,26 +67,27 @@ export const AuthProvider = ({ children }) => {
   };
 
   const register = async (name, email, password, role = 'client', extra = {}) => {
-    const traceId = extra.traceId || 'no-trace';
+    const { traceId, ...bodyFields } = extra;
+    const tid = traceId || 'no-trace';
     try {
-      log('[AUDIT:' + traceId + '] Step 4 — Petición POST /auth/register enviada');
+      log('[AUDIT:' + tid + '] Step 4 — Petición POST /auth/register enviada');
       console.log('[FLOW] POST /auth/register');
-      const response = await api.post('/auth/register', { name, email, password, role, ...extra });
+      const response = await api.post('/auth/register', { name, email, password, role, ...bodyFields });
       const status = response.status;
       const bodyStr = JSON.stringify(response.data);
-      log('[AUDIT:' + traceId + '] Step 9 — Respuesta recibida (HTTP ' + status + '):', bodyStr);
+      log('[AUDIT:' + tid + '] Step 9 — Respuesta recibida (HTTP ' + status + '):', bodyStr);
       const { user } = response.data.data;
       setUser(user);
-      return { success: true, traceId };
+      return { success: true, traceId: tid };
     } catch (error) {
       const httpStatus = error.response?.status || 0;
       const responseData = error.response?.data || {};
-      log('[AUDIT:' + traceId + '] Step 9 — Respuesta recibida (HTTP ' + httpStatus + ', error):', JSON.stringify(responseData));
+      log('[AUDIT:' + tid + '] Step 9 — Respuesta recibida (HTTP ' + httpStatus + ', error):', JSON.stringify(responseData));
       const backendMsg = responseData.message || responseData.error || 'Error al registrarse. Intenta de nuevo mas tarde.';
       return { 
         success: false, 
         error: backendMsg,
-        traceId
+        traceId: tid
       };
     }
   };
