@@ -8,8 +8,6 @@ const rateLimit = require('express-rate-limit');
 const User = require('../models/User');
 const Professional = require('../models/Professional');
 const logger = require('../utils/logger');
-const { generarToken, verificarToken } = require('../config/jwt');
-const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 
 const { authenticate } = require('../middleware/auth');
@@ -356,7 +354,7 @@ router.post('/register', registerLimiter, validateRegistrationSecurity, [
           user: publicUser,
           data: {
             user: publicUser,
-            emailVerified: existingUser.emailVerified || false,
+            emailVerified: existingUser.isVerified || false,
             requiresEmailVerification: true
           }
         });
@@ -376,7 +374,7 @@ router.post('/register', registerLimiter, validateRegistrationSecurity, [
           accessToken,
           refreshToken,
           expiresIn: process.env.JWT_EXPIRES_IN || '24h',
-          emailVerified: existingUser.emailVerified || false
+          emailVerified: existingUser.isVerified || false
         }
       });
     }
@@ -479,7 +477,7 @@ router.post('/register', registerLimiter, validateRegistrationSecurity, [
           accessToken,
           refreshToken,
           expiresIn: process.env.JWT_EXPIRES_IN || '24h',
-          emailVerified: user.emailVerified || false
+          emailVerified: user.isVerified || false
         }
       });
     }

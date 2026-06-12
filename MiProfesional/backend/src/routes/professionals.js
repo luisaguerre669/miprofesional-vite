@@ -3,7 +3,6 @@
 const express = require('express');
 const { query, param, body, validationResult } = require('express-validator');
 const Professional = require('../models/Professional');
-const Category = require('../models/Category');
 const User = require('../models/User');
 const ContactRequest = require('../models/ContactRequest');
 const logger = require('../utils/logger');

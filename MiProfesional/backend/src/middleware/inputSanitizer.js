@@ -15,7 +15,7 @@ const sanitizeValue = (value) => {
   return value;
 };
 
-const SKIP_FIELDS = new Set(['password', 'newPassword', 'currentPassword', 'confirmPassword']);
+const SKIP_FIELDS = new Set(['password', 'newPassword', 'currentPassword', 'confirmPassword', 'token']);
 
 const inputSanitizer = (req, res, next) => {
   if (req.body && typeof req.body === 'object') {

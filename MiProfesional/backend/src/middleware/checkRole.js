@@ -1,6 +1,5 @@
 const User = require('../models/User');
 const logger = require('../utils/logger');
-const { PLANS } = require('../config/plans');
 
 function checkRole(allowedRoles) {
   return async (req, res, next) => {

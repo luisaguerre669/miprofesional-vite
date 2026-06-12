@@ -6,7 +6,7 @@
 const crypto = require('crypto');
 const { MercadoPagoConfig, Payment } = require('mercadopago');
 const PaymentModel = require('../models/Payment');
-const logger = require('../config/logger');
+const logger = require('../utils/logger');
 
 // Configuración de Mercado Pago
 const mpClient = new MercadoPagoConfig({

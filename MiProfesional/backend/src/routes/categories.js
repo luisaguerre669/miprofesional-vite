@@ -26,7 +26,7 @@ const handleValidationErrors = (req, res, next) => {
 router.get('/', [
   query('search').optional().isLength({ min: 1, max: 100 }).withMessage('Search query must be between 1 and 100 characters'),
   query('isActive').optional().isBoolean().withMessage('isActive must be a boolean'),
-  query('sortBy').optional().isIn(['name', 'count', 'createdAt']).withMessage('Invalid sort field'),
+  query('sortBy').optional().isIn(['title', 'count', 'createdAt']).withMessage('Invalid sort field'),
   query('sortOrder').optional().isIn(['asc', 'desc']).withMessage('Sort order must be asc or desc'),
   query('limit').optional().isInt({ min: 1, max: 100 }).withMessage('Limit must be between 1 and 100'),
   query('page').optional().isInt({ min: 1 }).withMessage('Page must be a positive integer')

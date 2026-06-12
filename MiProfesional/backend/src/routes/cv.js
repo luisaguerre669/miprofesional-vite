@@ -4,7 +4,6 @@ const CurriculumVitae = require('../models/CurriculumVitae');
 const User = require('../models/User');
 const { authenticate } = require('../middleware/auth');
 const { checkRole } = require('../middleware/checkRole');
-const { checkSubscription } = require('../middleware/checkSubscription');
 const logger = require('../utils/logger');
 const { searchRateLimiter } = require('../middleware/rateLimiter');
 
