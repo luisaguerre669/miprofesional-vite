@@ -7,8 +7,7 @@ const connectDB = async () => {
     let uri = process.env.MONGODB_URI || process.env.MONGO_URI;
 
     if (!uri) {
-      logger.error("MONGODB_URI/MONGO_URI no esta definida en el entorno");
-      process.exit(1);
+      throw new Error("MONGODB_URI/MONGO_URI no esta definida en el entorno");
     }
 
     if (uri.startsWith("mongodb+srv://")) {
@@ -51,7 +50,7 @@ const connectDB = async () => {
   } catch (error) {
     logger.error("Error conectando a la base de datos:");
     logger.error(error.message);
-    process.exit(1);
+    throw error;
   }
 };
 

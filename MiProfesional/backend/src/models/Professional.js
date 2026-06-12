@@ -428,6 +428,11 @@ professionalSchema.index({ 'stats.totalBookings': -1 });
 professionalSchema.index({ 'pricing.hourlyRate': 1 });
 professionalSchema.index({ createdAt: -1 });
 
+// Compound indexes for common query patterns (avoid in-memory sort + $or scan)
+professionalSchema.index({ isFeatured: 1, isActive: 1, profileStatus: 1, 'stats.rating': -1 });
+professionalSchema.index({ available24h: 1, isActive: 1, profileStatus: 1, 'stats.rating': -1 });
+professionalSchema.index({ isActive: 1, profileStatus: 1, 'stats.rating': -1 });
+
 // Text search index
 professionalSchema.index({
   profession: 'text',

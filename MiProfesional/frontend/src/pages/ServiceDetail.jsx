@@ -246,7 +246,12 @@ const ServiceDetail = () => {
           )}
 
           {/* Map */}
-          {p.location?.coordinates?.lat && p.location?.coordinates?.lng && (
+          {(() => {
+            const coords = p.location?.coordinates?.coordinates;
+            if (!coords || coords.length < 2) return null;
+            const lng = coords[0], lat = coords[1];
+            if (!lat || !lng) return null;
+            return (
             <div className="bg-white rounded-2xl border border-gray-100 p-6 md:p-8">
               <h2 className="text-xl font-bold text-gray-900 mb-4">Ubicación</h2>
               <div className="relative rounded-xl overflow-hidden border border-gray-200" style={{ height: '300px' }}>
@@ -258,7 +263,7 @@ const ServiceDetail = () => {
                     frameBorder="0"
                     style={{ border: 0 }}
                     referrerPolicy="no-referrer-when-downgrade"
-                    src={`https://www.openstreetmap.org/export/embed.html?bbox=${p.location.coordinates.lng - 0.02},${p.location.coordinates.lat - 0.02},${p.location.coordinates.lng + 0.02},${p.location.coordinates.lat + 0.02}&layer=mapnik&marker=${p.location.coordinates.lat},${p.location.coordinates.lng}`}
+                    src={`https://www.openstreetmap.org/export/embed.html?bbox=${lng - 0.02},${lat - 0.02},${lng + 0.02},${lat + 0.02}&layer=mapnik&marker=${lat},${lng}`}
                   />
                 </div>
               </div>
@@ -266,7 +271,8 @@ const ServiceDetail = () => {
                 {p.location.address ? `${p.location.address}, ` : ''}{p.location.city}{p.location.state ? `, ${p.location.state}` : ''}
               </p>
             </div>
-          )}
+            );
+          })()}
 
           {/* Reviews */}
           <div className="bg-white rounded-2xl border border-gray-100 p-6 md:p-8">

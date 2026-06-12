@@ -71,14 +71,28 @@ router.post(
 
       const { professionalId, bookingId, rating, comment } = req.body;
 
+      const professional = await Professional.findById(professionalId);
+      if (!professional) {
+        return res.status(404).json({ success: false, message: 'Professional not found' });
+      }
+
       const booking = await Booking.findById(bookingId);
       if (!booking) {
         return res.status(404).json({ success: false, message: 'Booking not found' });
       }
+      if (booking.userId.toString() !== req.userId) {
+        return res.status(403).json({ success: false, message: 'This booking does not belong to you' });
+      }
+      if (booking.professionalId.toString() !== professionalId) {
+        return res.status(400).json({ success: false, message: 'Booking does not match this professional' });
+      }
+      if (booking.status !== 'completed') {
+        return res.status(400).json({ success: false, message: 'Cannot review a booking that is not completed' });
+      }
 
-      const professional = await Professional.findById(professionalId);
-      if (!professional) {
-        return res.status(404).json({ success: false, message: 'Professional not found' });
+      const existing = await Review.findOne({ bookingId, type: 'client_to_professional' });
+      if (existing) {
+        return res.status(409).json({ success: false, message: 'You have already reviewed this booking' });
       }
 
       const review = new Review({
@@ -97,6 +111,9 @@ router.post(
       res.status(201).json({ success: true, data: review });
     } catch (err) {
       logger.error('Error creating review:', err);
+      if (err.code === 11000) {
+        return res.status(409).json({ success: false, message: 'Duplicate review for this booking' });
+      }
       res.status(500).json({ success: false, message: 'Server error creating review' });
     }
   }
@@ -105,7 +122,15 @@ router.post(
 router.put(
   '/:id',
   authenticate,
-  [param('id').isMongoId().withMessage('Invalid review ID')],
+  [
+    param('id').isMongoId().withMessage('Invalid review ID'),
+    body('rating').optional().isInt({ min: 1, max: 5 }).withMessage('Rating must be between 1 and 5'),
+    body('comment')
+      .optional()
+      .isString()
+      .isLength({ max: 1000 })
+      .withMessage('Comment must be at most 1000 characters'),
+  ],
   async (req, res) => {
     try {
       const errors = validationResult(req);
@@ -117,24 +142,22 @@ router.put(
       if (!review) {
         return res.status(404).json({ success: false, message: 'Review not found' });
       }
+<<<<<<< HEAD
 
+=======
+>>>>>>> 9eec28205422cb328c48e5a359ffb4dabfda9400
       if (review.fromUser.toString() !== req.userId) {
         return res.status(403).json({ success: false, message: 'Not authorized to edit this review' });
       }
 
-      const { rating, comment } = req.body;
-      if (rating !== undefined) {
-        review.rating = rating;
-      }
-      if (comment !== undefined) {
-        review.comment = comment;
-      }
+      if (req.body.rating !== undefined) review.rating = req.body.rating;
+      if (req.body.comment !== undefined) review.comment = req.body.comment;
 
       await review.save();
 
-      const professional = await Professional.findById(review.toProfessional);
-      if (professional) {
-        await professional.updateRating();
+      if (review.toProfessional) {
+        const professional = await Professional.findById(review.toProfessional);
+        if (professional) await professional.updateRating();
       }
 
       res.json({ success: true, data: review });
@@ -160,7 +183,6 @@ router.delete(
       if (!review) {
         return res.status(404).json({ success: false, message: 'Review not found' });
       }
-
       if (review.fromUser.toString() !== req.userId) {
         return res.status(403).json({ success: false, message: 'Not authorized to delete this review' });
       }
@@ -168,9 +190,9 @@ router.delete(
       const professionalId = review.toProfessional;
       await Review.deleteOne({ _id: review._id });
 
-      const professional = await Professional.findById(professionalId);
-      if (professional) {
-        await professional.updateRating();
+      if (professionalId) {
+        const professional = await Professional.findById(professionalId);
+        if (professional) await professional.updateRating();
       }
 
       res.json({ success: true, data: { message: 'Review deleted' } });

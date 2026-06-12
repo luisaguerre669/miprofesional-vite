@@ -25,9 +25,9 @@ const MapView = ({ professionals = [], center, zoom = 11, height = '400px' }) =>
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         {professionals.map((pro) => {
-          const lat = pro.location?.coordinates?.lat;
-          const lng = pro.location?.coordinates?.lng;
-          if (!lat || !lng) return null;
+          const coords = pro.location?.coordinates?.coordinates;
+          if (!coords || coords.length < 2) return null;
+          const lat = coords[1], lng = coords[0];
           return (
             <Marker key={pro._id} position={[lat, lng]}>
               <Popup>

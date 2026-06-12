@@ -297,6 +297,19 @@ router.post('/register', registerLimiter, validateRegistrationSecurity, [
           };
           await existingPro.save();
         } else {
+          const proLocation = address?.street || address?.city ? {
+            address: `${address.street || ''} ${address.number || ''}`.trim(),
+            city: address.city || 'pendiente',
+            state: address.state || 'pendiente',
+            country: address.country || 'Argentina',
+            coordinates: address.coordinates || { type: 'Point', coordinates: [0, 0] }
+          } : {
+            address: 'pendiente',
+            city: 'pendiente',
+            state: 'pendiente',
+            country: 'Argentina',
+            coordinates: { type: 'Point', coordinates: [0, 0] }
+          };
           await new Professional({
             userId: existingUser._id,
             businessName: name,
@@ -306,7 +319,7 @@ router.post('/register', registerLimiter, validateRegistrationSecurity, [
             available24h: available24h === true,
             description: 'Completa tu perfil profesional',
             contact: { phone: phone || '+000000000000', email: existingUser.email },
-            location: { address: 'pendiente', city: 'pendiente', state: 'pendiente', country: 'Argentina', coordinates: { type: 'Point', coordinates: [0, 0] } },
+            location: proLocation,
             pricing: { hourlyRate: 0, currency: 'ARS' },
             isActive: true,
             profileStatus: 'ACTIVE',
@@ -384,6 +397,19 @@ router.post('/register', registerLimiter, validateRegistrationSecurity, [
       try {
         const now = new Date();
         const trialEnd = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+        const proLocation = address?.street || address?.city ? {
+          address: `${address.street || ''} ${address.number || ''}`.trim(),
+          city: address.city || 'pendiente',
+          state: address.state || 'pendiente',
+          country: address.country || 'Argentina',
+          coordinates: address.coordinates || { type: 'Point', coordinates: [0, 0] }
+        } : {
+          address: 'pendiente',
+          city: 'pendiente',
+          state: 'pendiente',
+          country: 'Argentina',
+          coordinates: { type: 'Point', coordinates: [0, 0] }
+        };
         const professional = new Professional({
           userId: user._id,
           businessName: name,
@@ -392,13 +418,7 @@ router.post('/register', registerLimiter, validateRegistrationSecurity, [
           subcategoryId: subcategoryId || undefined,
           description: 'Completa tu perfil profesional',
           contact: { phone: phone || '+000000000000', email: user.email },
-          location: {
-            address: 'pendiente',
-            city: 'pendiente',
-            state: 'pendiente',
-            country: 'Argentina',
-            coordinates: { type: 'Point', coordinates: [0, 0] }
-          },
+          location: proLocation,
           pricing: { hourlyRate: 0, currency: 'ARS' },
           isActive: true,
           profileStatus: 'ACTIVE',
