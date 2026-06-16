@@ -281,15 +281,11 @@ class Server {
   }
 
   async start() {
-    this.setupProcessHandlers();
+    if (this._started) return;
+    this._started = true;
 
-    // Start listening immediately so Render detects the open port
-    this.server.listen(this.port, () => {
-      logger.info("MiProfesional backend listening", {
-        port: this.port,
-        nodeEnv: process.env.NODE_ENV || "development"
-      });
-    });
+    this.setupProcessHandlers();
+    mongoose.set("bufferCommands", false);
 
     this.server.on("error", (error) => {
       logger.error("Server error:", error);
@@ -298,27 +294,19 @@ class Server {
     process.on("SIGTERM", () => this.gracefulShutdown("SIGTERM"));
     process.on("SIGINT", () => this.gracefulShutdown("SIGINT"));
 
+    // Start listening immediately once so Render detects the open port
+    this.server.listen(this.port, () => {
+      logger.info("MiProfesional backend listening", {
+        port: this.port,
+        nodeEnv: process.env.NODE_ENV || "development"
+      });
+    });
+
     // Connect to DB and run startup tasks in background
     try {
-      this.server.listen(this.port, () => {
-        logger.info("MiProfesional backend listening", {
-          port: this.port,
-          nodeEnv: process.env.NODE_ENV || "development"
-        });
-      });
-
-      this.server.on("error", (error) => {
-        logger.error("Server error:", error);
-        process.exit(1);
-      });
-      process.on("SIGTERM", () => this.gracefulShutdown("SIGTERM"));
-      process.on("SIGINT", () => this.gracefulShutdown("SIGINT"));
-
-      mongoose.set("bufferCommands", false);
       await connectDB();
 
       if (mongoose.connection.readyState === 1) {
-
         // Fix legacy categories: update slug if title matches but slug changed
         try {
           const categoriesData = require('./scripts/categoryData');
