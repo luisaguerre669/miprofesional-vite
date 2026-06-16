@@ -15,6 +15,7 @@ import {
   UserPlus, Plus, AlertTriangle, Building2,
   Briefcase, Crown, User, CheckCircle, Store
 } from 'lucide-react';
+import commerceCategories from '../data/commerceCategories';
 import AdBanner from '../components/ads/AdBanner';
 import NegociosDestacados from '../components/ads/NegociosDestacados';
 import MainBanner from '../components/MainBanner';
@@ -190,7 +191,7 @@ const Home = () => {
             title: 'Comercio',
             slug: 'comercio',
             description: 'Pizzerias, farmacias, panaderias, veterinarias, opticas y mas locales comerciales',
-            image: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=800&q=80',
+            image: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=800&q=85',
             icon: 'Store',
             metadata: { color: '#f59e0b', featured: true },
             sortOrder: 0,
@@ -203,7 +204,7 @@ const Home = () => {
               { name: 'Cafeterias', slug: 'cafeterias' },
               { name: 'Kioscos', slug: 'kioscos' },
               { name: 'Rotiserias', slug: 'rotiserias' },
-              { name: 'Floреrias', slug: 'florerias' },
+              { name: 'Florerias', slug: 'florerias' },
               { name: 'Confiterias', slug: 'confiterias' },
             ],
           });
@@ -676,43 +677,36 @@ const Home = () => {
         </Link>
       </section>
 
-      {/* COMERCIO BANNER PRINCIPAL */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-6">
+      {/* COMERCIO — SECCIÓN COMPLETA */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8 md:mb-12">
+        {/* Hero banner */}
         <Link to="/categoria/comercio"
-          className="block relative overflow-hidden rounded-2xl group shadow-xl hover:shadow-2xl transition-all duration-500"
+          className="block relative overflow-hidden rounded-2xl group shadow-xl hover:shadow-2xl transition-all duration-500 mb-6"
           style={{ minHeight: '220px' }}
         >
-          {/* Imagen de fondo principal — pizzería / comercio real */}
           <div className="absolute inset-0">
             <img
               src="https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=1400&q=85"
-              alt="Comercios de barrio — pizzerías, farmacias, panaderías"
+              alt="Comercios de barrio"
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
               loading="eager"
             />
-            {/* Gradient overlay premium */}
             <div className="absolute inset-0 bg-gradient-to-r from-amber-950/90 via-amber-900/75 to-transparent" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
           </div>
-
-          {/* Grid de fotos secundarias — esquina derecha */}
           <div className="absolute right-0 top-0 bottom-0 w-[45%] hidden md:grid grid-cols-2 grid-rows-2 gap-0.5 overflow-hidden opacity-80 group-hover:opacity-90 transition-opacity">
-            <img src="https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=400&q=75" alt="Pizzería" className="w-full h-full object-cover" loading="lazy" />
-            <img src="https://images.unsplash.com/photo-1576602976047-174e57a47881?w=400&q=75" alt="Farmacia" className="w-full h-full object-cover" loading="lazy" />
-            <img src="https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=400&q=75" alt="Cafetería" className="w-full h-full object-cover" loading="lazy" />
-            <img src="https://images.unsplash.com/photo-1588964895597-cfccd6e2dbf9?w=400&q=75" alt="Veterinaria" className="w-full h-full object-cover" loading="lazy" />
+            <img src="https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=400&q=75" alt="" loading="lazy" />
+            <img src="https://images.unsplash.com/photo-1576602976047-174e57a47881?w=400&q=75" alt="" loading="lazy" />
+            <img src="https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=400&q=75" alt="" loading="lazy" />
+            <img src="https://images.unsplash.com/photo-1588964895597-cfccd6e2dbf9?w=400&q=75" alt="" loading="lazy" />
           </div>
-          {/* Overlay sobre grid de fotos */}
-          <div className="absolute inset-0 hidden md:block bg-gradient-to-r from-transparent via-amber-950/30 to-transparent pointer-events-none" />
-
-          {/* Contenido principal */}
           <div className="relative z-10 px-6 md:px-10 py-8 md:py-10 flex flex-col justify-between h-full min-h-[220px] md:max-w-[55%]">
             <div>
               <div className="flex items-center gap-2 mb-3">
                 <div className="w-8 h-8 rounded-lg bg-amber-500 flex items-center justify-center shrink-0">
                   <Store size={16} className="text-white" />
                 </div>
-                <span className="text-amber-300 text-xs font-bold uppercase tracking-widest">Nueva Categoría</span>
+                <span className="text-amber-300 text-xs font-bold uppercase tracking-widest">Comercios</span>
               </div>
               <h2 className="text-2xl md:text-3xl lg:text-4xl font-black text-white mb-2 leading-tight">
                 Comercios y negocios<br />
@@ -722,22 +716,43 @@ const Home = () => {
                 Pizzerías, farmacias, veterinarias, ópticas, panaderías y más de 30 categorías de locales comerciales cerca tuyo.
               </p>
             </div>
-
-            {/* Chips de subcategorías */}
             <div>
-              <div className="flex flex-wrap gap-1.5 mb-4">
-                {['Pizzerías', 'Farmacias', 'Veterinarias', 'Panaderías', 'Ópticas', 'Cafeterías', 'Kioscos', 'Rotiserías', 'Florerías', 'Confiterías', 'Heladerías', 'Ferreterías'].map(sub => (
-                  <span key={sub} className="px-2.5 py-1 bg-white/10 backdrop-blur-sm border border-white/15 rounded-lg text-white/80 text-[11px] font-medium hover:bg-white/20 transition-colors">
-                    {sub}
-                  </span>
-                ))}
-              </div>
               <span className="inline-flex items-center gap-2 px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-white font-bold rounded-xl transition-all shadow-lg shadow-amber-500/30 text-sm group-hover:translate-x-0.5 transition-transform">
-                Explorar Comercios <ArrowRight size={16} />
+                Explorar todos los comercios <ArrowRight size={16} />
               </span>
             </div>
           </div>
         </Link>
+
+        {/* Commerce subcategory photo grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-4">
+          {commerceCategories.map((cat) => (
+            <Link
+              key={cat.slug}
+              to={`/search?primaryCategory=comercio&q=${encodeURIComponent(cat.title)}`}
+              className="group relative overflow-hidden rounded-xl bg-white shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
+            >
+              <div className="aspect-[4/3] overflow-hidden">
+                <img
+                  src={cat.image}
+                  alt={cat.title}
+                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                  loading="lazy"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-70 group-hover:opacity-90 transition-opacity duration-300" />
+              </div>
+              <div className="absolute bottom-0 left-0 right-0 p-3 md:p-4">
+                <h3 className="text-sm md:text-base font-bold text-white drop-shadow-lg leading-tight">{cat.title}</h3>
+                <p className="text-[11px] text-white/70 mt-0.5 drop-shadow">{cat.description}</p>
+              </div>
+              <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-500 text-white text-[10px] font-bold rounded-full shadow-lg">
+                  Ver <ArrowRight size={10} />
+                </span>
+              </div>
+            </Link>
+          ))}
+        </div>
       </section>
 
       {/* 4 ENTRY POINTS */}
