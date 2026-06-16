@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { SocketProvider } from './context/SocketContext';
@@ -43,18 +43,25 @@ import SubscriptionGuard from './components/SubscriptionGuard';
 
 // Protected Route Component
 const ProtectedRoute = ({ children, requiredRole = null }) => {
-  const { isAuthenticated, user, loading } = useAuth();
+  const { isAuthenticated, user, loading, initialized } = useAuth();
+  const loc = useLocation();
+  const renderCount = React.useRef(0);
+  renderCount.current++;
+  console.log(`[GUARD] ProtectedRoute — render #${renderCount.current} | path="${loc.pathname}" | init=${initialized} | load=${loading} | auth=${isAuthenticated} | role=${user?.role || 'none'}`);
 
-  if (loading) {
+  if (!initialized || loading) {
+    console.log(`[GUARD] Waiting for init — render #${renderCount.current}`);
     return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
   }
 
   if (!isAuthenticated) {
+    console.log(`[GUARD] NOT authenticated — redirecting to /login (render #${renderCount.current})`);
     return <Navigate to="/login" />;
   }
 
   const allowedRoles = Array.isArray(requiredRole) ? requiredRole : [requiredRole];
   if (requiredRole && !allowedRoles.includes(user.role) && user.role !== 'admin') {
+    console.log(`[GUARD] Role mismatch — user.role=${user?.role}, required=${requiredRole} — redirecting to /`);
     return <Navigate to="/" />;
   }
 
@@ -63,6 +70,13 @@ const ProtectedRoute = ({ children, requiredRole = null }) => {
 
 // App Component
 function AppRoutes() {
+  const loc = useLocation();
+  const renderCount = React.useRef(0);
+  renderCount.current++;
+  console.log(`[RENDER] AppRoutes — render #${renderCount.current} | pathname="${loc.pathname}" | search="${loc.search}"`);
+  React.useEffect(() => {
+    console.log(`[NAV] AppRoutes — location changed → "${loc.pathname}${loc.search}" (render #${renderCount.current})`);
+  }, [loc.pathname, loc.search]);
   return (
     <Routes>
       {/* Public Routes */}

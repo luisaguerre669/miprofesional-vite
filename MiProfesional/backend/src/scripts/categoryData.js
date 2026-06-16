@@ -143,6 +143,14 @@ const categoriesData = [
       { title: 'Costura y sastreria', slug: 'costura-sastreria', description: 'Arreglos de ropa, sastreria a medida', image: 'https://images.unsplash.com/photo-1559548331-f9cb9803144e?w=600&q=80', icon: 'Scissors' },
       { title: 'Mantenimiento general', slug: 'mantenimiento-general', description: 'Reparaciones y mantenimiento integral', image: 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=600&q=80', icon: 'Wrench' },
       { title: 'Control de plagas', slug: 'control-plagas', description: 'Fumigacion y control de plagas', image: 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=600&q=80', icon: 'SprayCan' },
+      { title: 'Seguridad', slug: 'seguridad', description: 'Empresas de seguridad, vigilancia privada, alarmas, seguridad electronica y proteccion contra incendios.', image: 'https://images.unsplash.com/photo-1558002038-1055907df827?w=600&q=80', icon: 'Shield', metadata: { group: 'seguridad' }, subcategories: [
+        { title: 'Vigilancia privada', slug: 'vigilancia-privada', description: 'Servicio de vigilancia y seguridad fisica', image: 'https://images.unsplash.com/photo-1558002038-1055907df827?w=600&q=80', icon: 'Shield' },
+        { title: 'Alarmas monitoreadas', slug: 'alarmas-monitoreadas', description: 'Instalacion y monitoreo de alarmas 24/7', image: 'https://images.unsplash.com/photo-1558002038-1055907df827?w=600&q=80', icon: 'Shield' },
+        { title: 'Seguridad electronica', slug: 'seguridad-electronica', description: 'Sistemas electronicos de seguridad y videovigilancia', image: 'https://images.unsplash.com/photo-1558002038-1055907df827?w=600&q=80', icon: 'Monitor' },
+        { title: 'Proteccion contra incendios', slug: 'proteccion-incendios', description: 'Instalacion y mantenimiento de sistemas contra incendios', image: 'https://images.unsplash.com/photo-1558002038-1055907df827?w=600&q=80', icon: 'Flame' },
+        { title: 'Seguridad personal', slug: 'seguridad-personal', description: 'Proteccion personal y escolta privada', image: 'https://images.unsplash.com/photo-1558002038-1055907df827?w=600&q=80', icon: 'Shield' },
+        { title: 'Custodia y monitoreo', slug: 'custodia-monitoreo', description: 'Custodia de bienes y monitoreo remoto', image: 'https://images.unsplash.com/photo-1558002038-1055907df827?w=600&q=80', icon: 'Shield' },
+      ] },
     ]
   },
   {
@@ -279,29 +287,13 @@ const categoriesData = [
     ]
   },
   {
-    title: 'Seguridad',
-    slug: 'seguridad',
-    description: 'Vigilancia privada, alarmas y monitoreo, seguridad electronica y proteccion personal.',
-    image: 'https://images.unsplash.com/photo-1558002038-1055907df827?w=800&q=80',
-    icon: 'Shield',
-    metadata: { color: '#374151', featured: false },
-    sortOrder: 14,
-    subcategories: [
-      { title: 'Vigilancia privada', slug: 'vigilancia-privada', description: 'Servicio de vigilancia y seguridad fisica', image: 'https://images.unsplash.com/photo-1558002038-1055907df827?w=600&q=80', icon: 'Shield' },
-      { title: 'Alarmas y monitoreo', slug: 'alarmas-monitoreo', description: 'Instalacion y monitoreo de alarmas', image: 'https://images.unsplash.com/photo-1558002038-1055907df827?w=600&q=80', icon: 'Shield' },
-      { title: 'Seguridad electronica', slug: 'seguridad-electronica', description: 'Sistemas electronicos de seguridad', image: 'https://images.unsplash.com/photo-1558002038-1055907df827?w=600&q=80', icon: 'Monitor' },
-      { title: 'Seguridad personal', slug: 'seguridad-personal', description: 'Proteccion personal y escolta', image: 'https://images.unsplash.com/photo-1558002038-1055907df827?w=600&q=80', icon: 'Shield' },
-      { title: 'Proteccion contra incendios', slug: 'proteccion-incendios', description: 'Instalacion y mantenimiento de sistemas contra incendios', image: 'https://images.unsplash.com/photo-1558002038-1055907df827?w=600&q=80', icon: 'Flame' },
-    ]
-  },
-  {
     title: 'Belleza y Cuidado',
     slug: 'belleza-y-cuidado',
     description: 'Peluqueria, manicuria, unas, masajes, cosmetologia, barberia, maquillaje profesional y depilacion. Los mejores profesionales de la belleza y el cuidado personal.',
     image: 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=800&q=80',
     icon: 'Sparkles',
     metadata: { color: '#c026d3', featured: true },
-    sortOrder: 15,
+    sortOrder: 14,
     subcategories: [
       { title: 'Peluqueria', slug: 'peluqueria', description: 'Corte, tintura, peinados y tratamientos capilares', image: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?w=600&q=80', icon: 'Scissors' },
       { title: 'Manicuria', slug: 'manicuria', description: 'Esmaltado semipermanente, acrilico, gel y diseno de unas', image: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=600&q=80', icon: 'Sparkles' },
@@ -311,6 +303,39 @@ const categoriesData = [
       { title: 'Barbero', slug: 'barbero', description: 'Corte de cabello, afeitado clasico y arreglo de barba', image: 'https://images.unsplash.com/photo-1599351431202-1e0f0137899a?w=600&q=80', icon: 'Scissors' },
       { title: 'Maquilladora', slug: 'maquilladora', description: 'Maquillaje social, artistico y profesional para todo tipo de eventos', image: 'https://images.unsplash.com/photo-1487412947147-5cebf100ffc2?w=600&q=80', icon: 'Sparkles' },
       { title: 'Depilacion', slug: 'depilacion', description: 'Depilacion definitiva y tradicional con laser, cera y metodos avanzados', image: 'https://images.unsplash.com/photo-1515377905703-c4788e51af15?w=600&q=80', icon: 'Sparkles' },
+    ]
+  },
+  {
+    title: 'Comercios',
+    slug: 'comercios',
+    description: 'Pizzeria, restaurantes, rotiserias, panaderias, reposterias, heladerias, cafeterias y todos los comercios de tu zona.',
+    image: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800&q=80',
+    icon: 'Store',
+    metadata: { color: '#f59e0b', featured: true },
+    sortOrder: 15,
+    subcategories: [
+      { title: 'Pizzeria', slug: 'pizzeria', description: 'Pizzas artesanales, empanadas y comidas al horno', image: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=600&q=80', icon: 'UtensilsCrossed' },
+      { title: 'Restaurantes', slug: 'restaurantes', description: 'Restaurantes, parrillas y comidas para todo el dia', image: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=600&q=80', icon: 'UtensilsCrossed' },
+      { title: 'Rotiserias', slug: 'rotiserias', description: 'Comidas preparadas, rotiseria y viandas', image: 'https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?w=600&q=80', icon: 'UtensilsCrossed' },
+      { title: 'Panaderias', slug: 'panaderias', description: 'Pan artesanal, facturas y productos de panaderia', image: 'https://images.unsplash.com/photo-1509365465985-25d11c17e812?w=600&q=80', icon: 'Bread' },
+      { title: 'Reposterias', slug: 'reposterias', description: 'Tortas, postres, pasteleria artesanal y dulces', image: 'https://images.unsplash.com/photo-1488477181946-6428a0291777?w=600&q=80', icon: 'CakeSlice' },
+      { title: 'Heladerias', slug: 'heladerias', description: 'Helados artesanales, paletas y postres helados', image: 'https://images.unsplash.com/photo-1501443762994-82bd5dace89a?w=600&q=80', icon: 'IceCream' },
+      { title: 'Cafeterias', slug: 'cafeterias', description: 'Cafe de especialidad, te y acompanamientos', image: 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=600&q=80', icon: 'Coffee' },
+      { title: 'Ópticas', slug: 'opticas', description: 'Lentes, armazones, contacto y examenes de la vista', image: 'https://images.unsplash.com/photo-1585314062340-f1a5a7c9328d?w=600&q=80', icon: 'Glasses' },
+      { title: 'Ortopedias', slug: 'ortopedias', description: 'Articulos ortopedicos, rehabilitacion y movilidad', image: 'https://images.unsplash.com/photo-1584515933487-779824d29309?w=600&q=80', icon: 'Stethoscope' },
+      { title: 'Farmacias', slug: 'farmacias', description: 'Farmacias y productos medicinales', image: 'https://images.unsplash.com/photo-1584820927498-cfe5211fd8bf?w=600&q=80', icon: 'Pill' },
+      { title: 'Veterinarias', slug: 'veterinarias', description: 'Clinicas veterinarias, peluqueria y accesorios para mascotas', image: 'https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?w=600&q=80', icon: 'PawPrint' },
+      { title: 'Peluquerias', slug: 'peluquerias', description: 'Peluqueria canina y accesorios para mascotas (y peluqueria humana)', image: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?w=600&q=80', icon: 'Scissors' },
+      { title: 'Barberias', slug: 'barberias', description: 'Barberia clasica y moderna para caballeros', image: 'https://images.unsplash.com/photo-1599351431202-1e0f0137899a?w=600&q=80', icon: 'Scissors' },
+      { title: 'Gimnasios', slug: 'gimnasios', description: 'Gimnasios, centros de fitness y entrenamiento personal', image: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=600&q=80', icon: 'Dumbbell' },
+      { title: 'Ferreterias', slug: 'ferreterias', description: 'Ferreteria, herramientas, pintureria y materiales', image: 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=600&q=80', icon: 'Wrench' },
+      { title: 'Florerias', slug: 'florerias', description: 'Flores, arreglos florales, ramos y plantas', image: 'https://images.unsplash.com/photo-1490750967868-88aa4f44baee?w=600&q=80', icon: 'Flower2' },
+      { title: 'Librerias', slug: 'librerias', description: 'Librerias, papeleria, utiles escolares y lectura', image: 'https://images.unsplash.com/photo-1526243741027-444d633d7365?w=600&q=80', icon: 'BookOpen' },
+      { title: 'Regalerias', slug: 'regalerias', description: 'Regalos, souvenirs, cotillon y detalles personalizados', image: 'https://images.unsplash.com/photo-1513202336486-48345ae95433?w=600&q=80', icon: 'Gift' },
+      { title: 'Tiendas de ropa', slug: 'tiendas-de-ropa', description: 'Indumentaria, accesorios de moda y calzado', image: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=600&q=80', icon: 'Shirt' },
+      { title: 'Minimercados', slug: 'minimercados', description: 'Almacen, mini super, kiosco y venta de alimentos', image: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=600&q=80', icon: 'ShoppingCart' },
+      { title: 'Kioscos', slug: 'kioscos', description: 'Kiosco, golosinas, bebidas y articulos de conveniencia', image: 'https://images.unsplash.com/photo-1527668752968-14dc70a27c95?w=600&q=80', icon: 'ShoppingBag' },
+      { title: 'Otros comercios', slug: 'otros-comercios', description: 'Otros comercios y servicios comerciales', image: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=600&q=80', icon: 'Store' },
     ]
   }
 ];

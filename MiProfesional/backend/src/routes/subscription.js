@@ -141,7 +141,7 @@ router.post("/create-preference", authenticate, async (req, res) => {
     const planConfig = PLANS[plan];
     if (!planConfig) return res.status(400).json({ success: false, message: "Plan invalido" });
 
-    const { MercadoPagoConfig, Preference } = require("mercadopago");
+    const { Preference } = require("mercadopago");
     const client = new MercadoPagoConfig({ accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN });
     const preference = new Preference(client);
 

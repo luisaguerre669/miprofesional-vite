@@ -184,6 +184,74 @@ router.get('/24-7', async (req, res) => {
   }
 });
 
+// Mapa de términos de búsqueda → slug de categoría sugerida
+const CATEGORY_TERM_MAP = {
+  comercio: [
+    'pizza', 'pizzeria', 'farmacia', 'kiosco', 'quiosco', 'optica', 'lentes', 'anteojos',
+    'panaderia', 'pan', 'cafeteria', 'cafe', 'bar', 'veterinaria', 'mascotas',
+    'rotiseria', 'hamburgueseria', 'hamburguesas', 'heladeria', 'helado', 'helados',
+    'confiteria', 'torta', 'carniceria', 'carne', 'verduleria', 'floreria', 'flores',
+    'libreria', 'libros', 'ferreteria', 'pintureria', 'pintura', 'corralon', 'materiales',
+    'bicicleteria', 'bicicleta', 'informatica', 'computadora', 'notebook',
+    'celular', 'telefono', 'ropa', 'zapateria', 'zapatos', 'jugueteria', 'juguetes',
+    'regaleria', 'regalos', 'dietetica', 'naturales', 'vinoteca', 'vino', 'vinos',
+    'comercio', 'negocio', 'tienda', 'local',
+  ],
+  'servicios-24-7': [
+    'urgente', 'urgencia', 'emergencia', '24', '24-7', '24/7', 'noche', 'madrugada',
+  ],
+  salud: [
+    'medico', 'doctor', 'clinica', 'psicologo', 'kinesiologo', 'enfermero', 'dentista',
+  ],
+  'belleza-y-cuidado': [
+    'peluqueria', 'manicuria', 'masaje', 'depilacion', 'estetica', 'barbero', 'maquillaje',
+  ],
+};
+
+// GET /api/v1/categories/suggest?q=pizza
+router.get('/suggest', [
+  query('q').notEmpty().isLength({ min: 2, max: 100 }).withMessage('Search query is required')
+], handleValidationErrors, async (req, res) => {
+  try {
+    const { q } = req.query;
+    const lower = q.toLowerCase().trim();
+
+    // Encontrar qué slug de categoría corresponde al término buscado
+    let suggestedSlug = null;
+    for (const [slug, terms] of Object.entries(CATEGORY_TERM_MAP)) {
+      if (terms.some(term => lower.includes(term) || term.includes(lower) && lower.length >= 4)) {
+        suggestedSlug = slug;
+        break;
+      }
+    }
+
+    if (!suggestedSlug) {
+      return res.json({ success: true, data: null, message: 'No suggestion found' });
+    }
+
+    // Buscar la categoría en la BD
+    const category = await Category.findOne({ slug: suggestedSlug, isActive: true })
+      .select('title slug icon metadata image');
+
+    logger.info('Category suggestion', { query: q, suggestedSlug, found: !!category });
+
+    res.json({
+      success: true,
+      message: 'Suggestion found',
+      data: category || null,
+      suggestedSlug,
+    });
+
+  } catch (error) {
+    logger.error('Category suggest error', { error: error.message, q: req.query.q });
+    res.status(500).json({
+      success: false,
+      error: 'Suggestion failed',
+      message: 'An error occurred while generating suggestion'
+    });
+  }
+});
+
 // GET /api/v1/categories/search
 router.get('/search', [
   query('q').notEmpty().isLength({ min: 1, max: 100 }).withMessage('Search query is required and must be between 1 and 100 characters'),
@@ -264,7 +332,7 @@ router.get('/tree', async (req, res) => {
         select: 'title slug icon description image metadata.color sortOrder professionalCount'
       })
       .sort({ sortOrder: 1, title: 1 })
-      .select('title slug icon description image metadata.color sortOrder professionalCount');
+      .select('title slug icon description image metadata.color sortOrder professionalCount commerceTypes commerceSubcategories commerceTags');
 
     logger.info('Category tree retrieved', { count: parents.length });
 
@@ -280,6 +348,44 @@ router.get('/tree', async (req, res) => {
       success: false,
       error: 'Failed to retrieve category tree',
       message: 'An error occurred while retrieving the category tree'
+    });
+  }
+});
+
+// GET /api/v1/categories/commerce-types — List all commerce types and their subcategories
+router.get('/commerce-types', async (req, res) => {
+  try {
+    const cat = await Category.findOne({ slug: 'comercio', isActive: true })
+      .select('commerceTypes commerceSubcategories commerceTags');
+
+    if (!cat) {
+      return res.json({
+        success: true,
+        data: { types: [], subcategories: {}, tags: [] }
+      });
+    }
+
+    const subcategories = {};
+    if (cat.commerceSubcategories) {
+      for (const [type, subs] of cat.commerceSubcategories) {
+        subcategories[type] = subs;
+      }
+    }
+
+    res.json({
+      success: true,
+      data: {
+        types: cat.commerceTypes || [],
+        subcategories,
+        tags: cat.commerceTags || []
+      }
+    });
+  } catch (error) {
+    logger.error('Get commerce types error', { error: error.message });
+    res.status(500).json({
+      success: false,
+      error: 'Failed to retrieve commerce types',
+      message: 'An error occurred while retrieving commerce types'
     });
   }
 });

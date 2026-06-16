@@ -39,8 +39,7 @@ function validateEnvironment() {
   const config = ENVIRONMENTS[env];
 
   if (!config) {
-    console.error(`[ENV] Unknown NODE_ENV: "${env}". Must be one of: ${Object.keys(ENVIRONMENTS).join(', ')}`);
-    process.exit(1);
+    throw new Error(`[ENV] Unknown NODE_ENV: "${env}". Must be one of: ${Object.keys(ENVIRONMENTS).join(', ')}`);
   }
 
   const requiredVars = ['JWT_SECRET', 'JWT_REFRESH_SECRET', 'MONGODB_URI'];
@@ -51,16 +50,14 @@ function validateEnvironment() {
 
   const missing = requiredVars.filter(v => !process.env[v]);
   if (missing.length > 0) {
-    console.error(`[ENV] Missing required environment variables for ${env}: ${missing.join(', ')}`);
-    process.exit(1);
+    throw new Error(`[ENV] Missing required environment variables for ${env}: ${missing.join(', ')}`);
   }
 
   if (env === 'production') {
     const { execSync } = require('child_process');
     const isSeed = process.argv.some(a => a.includes('seed'));
     if (isSeed) {
-      console.error('[ENV] Seeds are BLOCKED in production. Set NODE_ENV=development to run seeds.');
-      process.exit(1);
+      throw new Error('[ENV] Seeds are BLOCKED in production. Set NODE_ENV=development to run seeds.');
     }
   }
 

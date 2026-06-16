@@ -68,6 +68,7 @@ router.get("/dashboard", async (req, res) => {
     const [
       totalUsers, totalProfessionals, totalBookings, totalRevenue,
       totalCompanies, totalActiveCompanies, totalCVs, totalPayments,
+      totalCVsComplete, totalCVsIncomplete,
       recentUsers, recentBookings
     ] = await Promise.all([
       User.countDocuments(),
@@ -78,6 +79,8 @@ router.get("/dashboard", async (req, res) => {
       User.countDocuments({ role: 'company', 'subscription.status': 'active' }),
       CurriculumVitae.countDocuments({ isActive: true }),
       Payment.countDocuments({ status: 'approved' }),
+      CurriculumVitae.countDocuments({ isActive: true, 'jobTitles.0': { $exists: true }, 'skills.0': { $exists: true } }),
+      CurriculumVitae.countDocuments({ isActive: true, $or: [ { 'jobTitles': { $size: 0 } }, { 'skills': { $size: 0 } }, { 'jobTitles': { $exists: false } }, { 'skills': { $exists: false } } ] }),
       User.find().sort({ createdAt: -1 }).limit(5).select('name email role isActive createdAt'),
       Booking.find().populate("userId", "name").sort({ createdAt: -1 }).limit(5)
     ]);
@@ -88,7 +91,8 @@ router.get("/dashboard", async (req, res) => {
         stats: {
           totalUsers, totalProfessionals, totalBookings,
           totalRevenue: totalRevenue[0]?.total || 0,
-          totalCompanies, totalActiveCompanies, totalCVs, totalPayments
+          totalCompanies, totalActiveCompanies, totalCVs, totalPayments,
+          totalCVsComplete, totalCVsIncomplete
         },
         recentUsers, recentBookings
       }
@@ -114,6 +118,68 @@ router.get("/users", async (req, res) => {
   } catch (error) {
     logger.error("Admin users error:", error);
     res.status(500).json({ success: false, message: "Error al obtener usuarios" });
+  }
+});
+
+router.get("/cvs", async (req, res) => {
+  try {
+    const { page = 1, limit = 20, search, profession, dateFrom, dateTo, completeness } = req.query;
+    const query = { isActive: true };
+
+    if (search) {
+      query.$or = [
+        { 'personalData.fullName': { $regex: search, $options: 'i' } },
+        { 'personalData.email': { $regex: search, $options: 'i' } },
+        { 'personalData.phone': { $regex: search, $options: 'i' } },
+      ];
+    }
+    if (profession) {
+      query.jobTitles = { $regex: profession, $options: 'i' };
+    }
+    if (dateFrom || dateTo) {
+      query.createdAt = {};
+      if (dateFrom) query.createdAt.$gte = new Date(dateFrom);
+      if (dateTo) query.createdAt.$lte = new Date(dateTo);
+    }
+    if (completeness === 'complete') {
+      query['jobTitles.0'] = { $exists: true };
+      query['skills.0'] = { $exists: true };
+    } else if (completeness === 'incomplete') {
+      query.$or = [
+        { 'jobTitles': { $size: 0 } },
+        { 'skills': { $size: 0 } },
+        { 'jobTitles': { $exists: false } },
+        { 'skills': { $exists: false } },
+      ];
+    }
+
+    const cvs = await CurriculumVitae.find(query)
+      .sort({ updatedAt: -1 })
+      .limit(parseInt(limit))
+      .skip((parseInt(page) - 1) * parseInt(limit))
+      .populate('userId', 'name email');
+
+    const total = await CurriculumVitae.countDocuments(query);
+
+    const cvsData = cvs.map(cv => ({
+      _id: cv._id,
+      fullName: cv.personalData?.fullName || 'Sin nombre',
+      email: cv.personalData?.email || '—',
+      phone: cv.personalData?.phone || '—',
+      profession: cv.jobTitles?.[0] || '—',
+      category: cv.categoryId || '—',
+      skillsCount: cv.skills?.length || 0,
+      experienceCount: cv.experience?.length || 0,
+      isComplete: !!(cv.jobTitles?.length && cv.skills?.length),
+      createdAt: cv.createdAt,
+      updatedAt: cv.updatedAt,
+      userId: cv.userId
+    }));
+
+    res.json({ success: true, data: cvsData, pagination: { page: parseInt(page), limit: parseInt(limit), total, pages: Math.ceil(total / parseInt(limit)) } });
+  } catch (error) {
+    logger.error("Admin CVs error:", error);
+    res.status(500).json({ success: false, message: "Error al obtener currículums" });
   }
 });
 
@@ -157,7 +223,8 @@ router.get("/professionals", async (req, res) => {
       .limit(parseInt(limit))
       .skip((parseInt(page) - 1) * parseInt(limit))
       .populate('userId', 'name email phone')
-      .populate('categoryId', 'title');
+      .populate('categoryId', 'title')
+      .populate('categories.categoryId', 'title slug');
 
     const total = await Professional.countDocuments(query);
 
@@ -188,7 +255,7 @@ router.patch("/professionals/:id/verification", [
 
 router.patch("/professionals/:id", async (req, res) => {
   try {
-    const allowed = ['businessName', 'profession', 'description', 'pricing.hourlyRate', 'isActive', 'isFeatured'];
+    const allowed = ['businessName', 'profession', 'description', 'pricing.hourlyRate', 'isActive', 'isFeatured', 'categories', 'workModalities'];
     const updates = {};
     for (const key of allowed) {
       if (req.body[key] !== undefined) updates[key] = req.body[key];
@@ -632,6 +699,135 @@ router.delete("/users/:id", async (req, res) => {
   } catch (error) {
     logger.error("Admin delete user error:", error);
     res.status(500).json({ success: false, message: "Error al eliminar usuario" });
+  }
+});
+
+// ── Migration: populate `categories` from legacy `categoryId` ──
+router.post("/migrate-categories", async (req, res) => {
+  try {
+    const migrated = [];
+    const cursor = Professional.find({
+      $and: [
+        { categoryId: { $ne: null } },
+        { $or: [{ categories: { $exists: false } }, { categories: { $size: 0 } }] }
+      ]
+    }).cursor();
+    let count = 0;
+    for (let pro = await cursor.next(); pro != null; pro = await cursor.next()) {
+      pro.categories = [{
+        categoryId: pro.categoryId,
+        subcategoryId: pro.subcategoryId || null
+      }];
+      await pro.save();
+      migrated.push(pro._id);
+      count++;
+    }
+    logger.info(`Migrated ${count} professionals to multi-category`);
+    res.json({ success: true, message: `Migrados ${count} profesionales`, count, ids: migrated });
+  } catch (error) {
+    logger.error("Migration error:", error);
+    res.status(500).json({ success: false, message: "Error en migracion" });
+  }
+});
+
+// ── Dynamic Category CRUD (admin-managed) ──
+
+// List all categories
+router.get("/categories", async (req, res) => {
+  try {
+    const categories = await Category.find().sort({ sortOrder: 1, title: 1 });
+    res.json({ success: true, data: categories });
+  } catch (error) {
+    logger.error("Admin categories list error:", error);
+    res.status(500).json({ success: false, message: "Error al obtener categorias" });
+  }
+});
+
+// Create a new category
+router.post("/categories", async (req, res) => {
+  try {
+    const { title, slug, description, image, icon, color, sortOrder, parentId } = req.body;
+    const category = new Category({ title, slug, description, image, icon, color, sortOrder, parentId: parentId || null });
+    await category.save();
+    logger.info("Category created by admin", { categoryId: category._id, title });
+    res.status(201).json({ success: true, data: category });
+  } catch (error) {
+    logger.error("Admin create category error:", error);
+    res.status(500).json({ success: false, message: "Error al crear categoria" });
+  }
+});
+
+// Update a category
+router.put("/categories/:id", async (req, res) => {
+  try {
+    const category = await Category.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+    if (!category) return res.status(404).json({ success: false, message: "Categoria no encontrada" });
+    res.json({ success: true, data: category });
+  } catch (error) {
+    logger.error("Admin update category error:", error);
+    res.status(500).json({ success: false, message: "Error al actualizar categoria" });
+  }
+});
+
+// Delete a category
+router.delete("/categories/:id", async (req, res) => {
+  try {
+    const category = await Category.findByIdAndDelete(req.params.id);
+    if (!category) return res.status(404).json({ success: false, message: "Categoria no encontrada" });
+    // Remove this category from all professionals
+    await Professional.updateMany(
+      { 'categories.categoryId': category._id },
+      { $pull: { categories: { categoryId: category._id } } }
+    );
+    logger.info("Category deleted by admin", { categoryId: category._id });
+    res.json({ success: true, message: "Categoria eliminada" });
+  } catch (error) {
+    logger.error("Admin delete category error:", error);
+    res.status(500).json({ success: false, message: "Error al eliminar categoria" });
+  }
+});
+
+// Admin: get a professional's full detail (including categories)
+router.get("/professionals/:id/categories", async (req, res) => {
+  try {
+    const professional = await Professional.findById(req.params.id)
+      .populate('categories.categoryId', 'title slug')
+      .populate('categories.subcategoryId', 'title slug')
+      .populate('categoryId', 'title slug');
+    if (!professional) return res.status(404).json({ success: false, message: "Profesional no encontrado" });
+    res.json({
+      success: true, data: {
+        _id: professional._id,
+        businessName: professional.businessName,
+        categories: professional.categories,
+        categoryId: professional.categoryId,
+        subcategoryId: professional.subcategoryId
+      }
+    });
+  } catch (error) {
+    logger.error("Admin get professional categories error:", error);
+    res.status(500).json({ success: false, message: "Error al obtener categorias del profesional" });
+  }
+});
+
+// Admin: update a professional's categories
+router.put("/professionals/:id/categories", async (req, res) => {
+  try {
+    const { categories } = req.body;
+    if (!Array.isArray(categories)) {
+      return res.status(400).json({ success: false, message: "categories debe ser un arreglo" });
+    }
+    const professional = await Professional.findByIdAndUpdate(
+      req.params.id,
+      { $set: { categories } },
+      { new: true }
+    );
+    if (!professional) return res.status(404).json({ success: false, message: "Profesional no encontrado" });
+    logger.info("Admin updated professional categories", { professionalId: professional._id, categories });
+    res.json({ success: true, data: professional });
+  } catch (error) {
+    logger.error("Admin update professional categories error:", error);
+    res.status(500).json({ success: false, message: "Error al actualizar categorias" });
   }
 });
 

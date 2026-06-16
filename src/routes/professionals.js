@@ -8,6 +8,7 @@ const User = require('../models/User');
 const ContactRequest = require('../models/ContactRequest');
 const logger = require('../utils/logger');
 const { authenticate, optionalAuth } = require('../middleware/auth');
+const { checkCategoryQuery } = require('../utils/categoryGuard');
 
 const router = express.Router();
 
@@ -31,7 +32,12 @@ const handleValidationErrors = (req, res, next) => {
 
 // GET /api/v1/professionals
 router.get('/', [
-  query('categoryId').optional().isMongoId().withMessage('Invalid category ID'),
+  checkCategoryQuery,
+  query('categoryIds').optional().custom((v) => { try { const p = typeof v === 'string' ? JSON.parse(v) : v; return Array.isArray(p) ? true : false; } catch(e) { return false; } }).withMessage('categoryIds must be an array'),
+  query('primaryCategory').optional().isIn(['professional', 'empresa', 'comercio']).withMessage('Invalid primary category'),
+  query('commerceType').optional().isIn(['minorista', 'mayorista', 'mixto']).withMessage('Invalid commerce type'),
+  query('modality').optional().isIn(['local', 'home_service', 'online', 'mobile']).withMessage('Invalid modality'),
+  query('modalities').optional().custom((v) => { try { const p = typeof v === 'string' ? JSON.parse(v) : v; return Array.isArray(p) ? true : false; } catch(e) { return false; } }).withMessage('modalities must be an array'),
   query('search').optional().isLength({ min: 1, max: 100 }).withMessage('Search query must be between 1 and 100 characters'),
   query('location').optional().custom((value) => {
     try {
@@ -57,7 +63,11 @@ router.get('/', [
 ], handleValidationErrors, async (req, res) => {
   try {
     const {
-      categoryId,
+      categoryIds,
+      primaryCategory,
+      commerceType,
+      modality,
+      modalities,
       search,
       location,
       maxDistance = 50,
@@ -75,7 +85,11 @@ router.get('/', [
     } = req.query;
 
     const options = {
-      categoryId,
+      categoryIds: categoryIds ? (typeof categoryIds === 'string' ? JSON.parse(categoryIds) : categoryIds) : undefined,
+      primaryCategory,
+      commerceType,
+      modality,
+      modalities: modalities ? (typeof modalities === 'string' ? JSON.parse(modalities) : modalities) : undefined,
       location: location ? JSON.parse(location) : undefined,
       maxDistance: parseFloat(maxDistance),
       minRating: parseFloat(minRating),
@@ -105,8 +119,7 @@ router.get('/', [
         { $addFields: { rating: { $avg: '$reviews.rating' }, reviewCount: { $size: '$reviews' } } },
         { $sort: { rating: -1, reviewCount: -1 } },
         { $limit: parseInt(limit) },
-        { $lookup: { from: 'categories', localField: 'categoryId', foreignField: '_id', as: 'category' } },
-        { $unwind: { path: '$category', preserveNullAndEmptyArrays: true } }
+        { $lookup: { from: 'categories', localField: 'categories.categoryId', foreignField: '_id', as: 'categoriesPopulated' } }
       ];
       if (featured === 'true') pipe[0].$match.isFeatured = true;
       const result = await Professional.aggregate(pipe);
@@ -123,7 +136,14 @@ router.get('/', [
         professionals = await Professional.search(search, { ...options, available24h: true });
       } else {
         let query = { ...Professional.activeFilter(), available24h: true };
-        if (categoryId) query.categoryId = categoryId;
+        if (categoryIds) {
+          const ids = typeof categoryIds === 'string' ? JSON.parse(categoryIds) : categoryIds;
+          query.$and = [
+            { $or: query.$or },
+            { 'categories.categoryId': { $in: ids } }
+          ];
+          delete query.$or;
+        }
         if (featured === 'true') query.isFeatured = true;
         if (availability !== undefined) query['availability.isAvailable'] = availability === 'true';
         const sort = {};
@@ -133,7 +153,7 @@ router.get('/', [
           .sort(sort)
           .skip(skip)
           .limit(parseInt(limit))
-          .populate('categoryId', 'title')
+          .populate('categories.categoryId', 'title')
           .populate('userId', 'name email phone');
       }
       return res.json({
@@ -147,7 +167,14 @@ router.get('/', [
     } else {
       let query = { ...Professional.activeFilter() };
 
-      if (categoryId) query.categoryId = categoryId;
+      if (categoryIds) {
+        const ids = typeof categoryIds === 'string' ? JSON.parse(categoryIds) : categoryIds;
+        query.$and = [
+          { $or: query.$or },
+          { 'categories.categoryId': { $in: ids } }
+        ];
+        delete query.$or;
+      }
       if (featured === 'true') query.isFeatured = true;
       if (availability !== undefined) query['availability.isAvailable'] = availability === 'true';
 
@@ -159,7 +186,7 @@ router.get('/', [
         .sort(sort)
         .skip(skip)
         .limit(parseInt(limit))
-        .populate('categoryId', 'title')
+        .populate('categories.categoryId', 'title')
         .populate('userId', 'name email phone');
     }
 
@@ -167,7 +194,7 @@ router.get('/', [
     const totalPages = Math.ceil(total / parseInt(limit));
 
     logger.info('Professionals retrieved', {
-      count: professionals.length, total, page: parseInt(page), limit: parseInt(limit), search, categoryId, featured, sortBy, sortOrder
+      count: professionals.length, total, page: parseInt(page), limit: parseInt(limit), search, categoryIds, featured, sortBy, sortOrder
     });
 
     res.json({
@@ -247,17 +274,18 @@ router.get('/verified', [
 // GET /api/v1/professionals/top-rated
 router.get('/top-rated', [
   query('limit').optional().isInt({ min: 1, max: 20 }).withMessage('Limit must be between 1 and 20'),
-  query('categoryId').optional().isMongoId().withMessage('Invalid category ID')
+  query('categoryIds').optional().custom((v) => { try { const p = typeof v === 'string' ? JSON.parse(v) : v; return Array.isArray(p) ? true : false; } catch(e) { return false; } }).withMessage('categoryIds must be an array')
 ], handleValidationErrors, async (req, res) => {
   try {
-    const { limit = 10, categoryId } = req.query;
+    const { limit = 10, categoryIds } = req.query;
+    const ids = categoryIds ? (typeof categoryIds === 'string' ? JSON.parse(categoryIds) : categoryIds) : null;
 
-    const professionals = await Professional.getTopRated(parseInt(limit), categoryId);
+    const professionals = await Professional.getTopRated(parseInt(limit), ids);
 
     logger.info('Top rated professionals retrieved', { 
       count: professionals.length, 
       limit: parseInt(limit),
-      categoryId 
+      categoryIds: ids
     });
 
     res.json({
@@ -292,7 +320,7 @@ router.get('/nearby', [
       parseFloat(maxDistance)
     )
     .limit(parseInt(limit))
-    .populate('categoryId', 'title')
+    .populate('categories.categoryId', 'title')
     .populate('userId', 'name email phone');
 
     logger.info('Nearby professionals retrieved', {
@@ -329,8 +357,14 @@ router.get('/nearby', [
 
 // GET /api/v1/professionals/search
 router.get('/search', [
-  query('q').notEmpty().isLength({ min: 1, max: 100 }).withMessage('Search query is required and must be between 1 and 100 characters'),
-  query('categoryId').optional().isMongoId().withMessage('Invalid category ID'),
+  checkCategoryQuery,
+  query('q').optional().trim().isLength({ min: 1, max: 100 }).withMessage('Search query must be between 1 and 100 characters'),
+  query('search').optional().trim().isLength({ min: 1, max: 100 }).withMessage('Search query must be between 1 and 100 characters'),
+  query('categoryIds').optional().custom((v) => { try { const p = typeof v === 'string' ? JSON.parse(v) : v; return Array.isArray(p) ? true : false; } catch(e) { return false; } }).withMessage('categoryIds must be an array'),
+  query('primaryCategory').optional().isIn(['professional', 'empresa', 'comercio']).withMessage('Invalid primary category'),
+  query('commerceType').optional().isIn(['minorista', 'mayorista', 'mixto']).withMessage('Invalid commerce type'),
+  query('modality').optional().isIn(['local', 'home_service', 'online', 'mobile']).withMessage('Invalid modality'),
+  query('modalities').optional().custom((v) => { try { const p = typeof v === 'string' ? JSON.parse(v) : v; return Array.isArray(p) ? true : false; } catch(e) { return false; } }).withMessage('modalities must be an array'),
   query('location').optional().custom((value) => {
     try {
       const parsed = typeof value === 'string' ? JSON.parse(value) : value;
@@ -344,16 +378,19 @@ router.get('/search', [
   query('minRating').optional().isFloat({ min: 0, max: 5 }).withMessage('Min rating must be between 0 and 5'),
   query('maxPrice').optional().isFloat({ min: 0 }).withMessage('Max price must be a positive number'),
   query('isVerified').optional().isBoolean().withMessage('isVerified must be a boolean'),
-  query('subcategoryId').optional().isMongoId().withMessage('Invalid subcategory ID'),
   query('limit').optional().isInt({ min: 1, max: 50 }).withMessage('Limit must be between 1 and 50'),
   query('page').optional().isInt({ min: 1 }).withMessage('Page must be a positive integer')
 ], handleValidationErrors, async (req, res) => {
   try {
-    const { q: query, categoryId, subcategoryId, location, maxDistance = 50, minRating = 0, maxPrice, isVerified = false, limit = 20, page = 1 } = req.query;
+    const { q: qQuery, search: searchQueryParam, categoryIds, primaryCategory, commerceType, modality, modalities, location, maxDistance = 50, minRating = 0, maxPrice, isVerified = false, limit = 20, page = 1 } = req.query;
+    const query = qQuery || searchQueryParam;
 
     const options = {
-      categoryId,
-      subcategoryId,
+      categoryIds: categoryIds ? (typeof categoryIds === 'string' ? JSON.parse(categoryIds) : categoryIds) : undefined,
+      primaryCategory,
+      commerceType,
+      modality,
+      modalities: modalities ? (typeof modalities === 'string' ? JSON.parse(modalities) : modalities) : undefined,
       location: location ? JSON.parse(location) : undefined,
       maxDistance: parseFloat(maxDistance),
       minRating: parseFloat(minRating),
@@ -370,7 +407,7 @@ router.get('/search', [
     logger.info('Professionals search', {
       query,
       count: professionals.length,
-      categoryId,
+      categoryIds: options.categoryIds,
       location,
       page: parseInt(page),
       limit: parseInt(limit)
@@ -448,12 +485,11 @@ router.get('/ranking', async (req, res) => {
       {
         $lookup: {
           from: 'categories',
-          localField: 'categoryId',
+          localField: 'categories.categoryId',
           foreignField: '_id',
-          as: 'category'
+          as: 'categoriesPopulated'
         }
       },
-      { $unwind: { path: '$category', preserveNullAndEmptyArrays: true } },
       {
         $project: {
           _id: 1,
@@ -470,8 +506,7 @@ router.get('/ranking', async (req, res) => {
           location: { city: 1, state: 1 },
           verification: { isVerified: 1 },
           isFeatured: 1,
-          'category.title': 1,
-          'category.slug': 1
+          categoriesPopulated: 1
         }
       }
     ];
@@ -538,7 +573,7 @@ router.get('/:id', [
     const { id } = req.params;
 
     const professional = await Professional.findById(id)
-      .populate('categoryId', 'title')
+      .populate('categories.categoryId', 'title')
       .populate('userId', 'name email phone avatar location');
 
     if (!professional) {
@@ -736,6 +771,8 @@ router.post('/', authenticate, async (req, res) => {
     const professional = new Professional({
       userId: req.userId,
       categoryId: req.body.categoryId || null,
+      categories: req.body.categories || (req.body.categoryId ? [{ categoryId: req.body.categoryId, subcategoryId: req.body.subcategoryId || null }] : undefined),
+      workModalities: req.body.workModalities || [],
       businessName: req.body.businessName,
       profession: req.body.profession,
       description: req.body.description,
@@ -789,7 +826,7 @@ router.get('/by-city/:city', [
       profileStatus: 'ACTIVE',
       $or: [ { 'subscription.status': 'active' }, { 'subscription.status': 'trial', 'subscription.trialEnd': { $gte: new Date() } } ],
       'location.city': regex
-    }).populate('categoryId', 'title').populate('userId', 'name email phone').limit(50);
+    }).populate('categories.categoryId', 'title').populate('userId', 'name email phone').limit(50);
     res.json({ success: true, count: professionals.length, data: professionals });
   } catch (error) {
     logger.error('Get by city error:', error);
@@ -811,8 +848,8 @@ router.get('/map', async (req, res) => {
     };
 
     const all = await Professional.find(baseFilter)
-      .select('businessName profession location avatar stats.rating stats.reviewCount verification.isVerified description lastActiveAt categoryId')
-      .populate('categoryId', 'title')
+      .select('businessName profession location avatar stats.rating stats.reviewCount verification.isVerified description lastActiveAt categories workModalities')
+      .populate('categories.categoryId', 'title')
       .lean();
 
     const now = Date.now();
@@ -877,7 +914,8 @@ router.put('/:id', authenticate, [
     const professional = await Professional.findById(req.params.id);
     if (!professional) return res.status(404).json({ success: false, message: 'Perfil no encontrado' });
 
-    const allowedFields = ['businessName', 'profession', 'description', 'specialties', 'avatar', 'gallery', 'isFeatured', 'available24h', 'categoryId', 'subcategoryId'];
+    // @deprecated — keep categoryId/subcategoryId for backward-compat updates; pre-save hook syncs from categories[]
+    const allowedFields = ['businessName', 'profession', 'description', 'specialties', 'avatar', 'gallery', 'isFeatured', 'available24h', 'categoryId', 'subcategoryId', 'categories', 'workModalities'];
     for (const field of allowedFields) {
       if (req.body[field] !== undefined) professional[field] = req.body[field];
     }

@@ -1,6 +1,7 @@
 const express = require('express');
 const AuditLog = require('../models/AuditLog');
 const { authenticate, requireAdmin } = require('../middleware/auth');
+const logger = require('../utils/logger');
 
 const router = express.Router();
 
@@ -27,6 +28,7 @@ router.get('/', async (req, res) => {
       pagination: { page: parseInt(page), limit: parseInt(limit), total, pages: Math.ceil(total / parseInt(limit)) }
     });
   } catch (error) {
+    logger.error('Error al obtener logs de auditoría:', error);
     res.status(500).json({ success: false, message: 'Error al obtener logs de auditoría' });
   }
 });
@@ -42,6 +44,7 @@ router.get('/events', async (req, res) => {
     ]);
     res.json({ success: true, data: events });
   } catch (error) {
+    logger.error('Error al obtener resumen de eventos:', error);
     res.status(500).json({ success: false, message: 'Error al obtener resumen de eventos' });
   }
 });
@@ -65,6 +68,7 @@ router.get('/stats', async (req, res) => {
       data: { days: parseInt(days), since, loginCount, searchCount, paymentCount, subscriptionCount, uniqueUsers, blockedCount }
     });
   } catch (error) {
+    logger.error('Error al obtener estadísticas de auditoría:', error);
     res.status(500).json({ success: false, message: 'Error al obtener estadísticas de auditoría' });
   }
 });

@@ -2,38 +2,75 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../lib/axios';
-import { LogIn, Mail, Lock, AlertCircle, Chrome, Smartphone, ArrowLeft, CheckCircle, Building2, Briefcase, User } from 'lucide-react';
+import { LogIn, Mail, Lock, AlertCircle, Chrome, Smartphone, ArrowLeft, CheckCircle, Building2, Briefcase, User, Loader2 } from 'lucide-react';
 
 const Login = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { login } = useAuth();
+  const { login, checkAuth, initialized, isAuthenticated, user } = useAuth();
   const [mode, setMode] = useState('email');
   const [formData, setFormData] = useState({ email: '', password: '', phone: '', code: '' });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [localLoading, setLocalLoading] = useState(false);
   const [codeSent, setCodeSent] = useState(false);
   const [accountType, setAccountType] = useState('client');
+  const [deferringAuth, setDeferringAuth] = useState(false);
+  const [mountedAt] = useState(Date.now());
+  const renderCount = React.useRef(0);
+  renderCount.current++;
+  console.log(`[LOGIN] Render #${renderCount.current} | init=${initialized} | auth=${isAuthenticated} | role=${user?.role || 'none'} | defer=${deferringAuth}`);
 
+  // ---- If already authenticated and initialized, redirect to home ----
   useEffect(() => {
-    fetch(`${import.meta.env.VITE_API_URL?.replace('/api', '') || 'https://miprofesional-backend.onrender.com'}/health`).catch(() => {});
-  }, []);
+    if (initialized && isAuthenticated) {
+      console.log(`[LOGIN] Already authenticated (role=${user?.role}), redirecting to /`);
+      if (user?.role === 'company' || user?.role === 'employer') navigate('/dashboard/company', { replace: true });
+      else if (user?.role === 'professional') navigate('/dashboard/professional', { replace: true });
+      else navigate('/', { replace: true });
+    }
+  }, [initialized, isAuthenticated]);
 
+  // ---- Read URL params for verification/error messages ----
   useEffect(() => {
-    const token = searchParams.get('token');
     const verified = searchParams.get('verified');
     const errorParam = searchParams.get('error');
-    if (token) {
-      localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify({ authProvider: searchParams.get('provider') }));
-      navigate('/', { replace: true });
-    }
     if (verified === 'true') setSuccess('Correo verificado exitosamente. Ya podes iniciar sesion.');
     if (verified === 'false') setError('El enlace de verificacion es invalido o ha expirado.');
     if (errorParam === 'google_auth_failed') setError('La autenticacion con Google fallo. Intenta de nuevo.');
     if (errorParam === 'google_not_configured') setError('El inicio de sesion con Google no esta habilitado temporalmente. Usa email y contrasena.');
-  }, []);
+  }, [searchParams]);
+
+  // ---- Google callback: save token + verify via checkAuth ----
+  const tokenParam = searchParams.get('token');
+  const providerParam = searchParams.get('provider');
+  useEffect(() => {
+    if (!tokenParam) return;
+    console.log(`[LOGIN] Google callback effect — token=${tokenParam.slice(0, 12)}… | init=${initialized} | auth=${isAuthenticated}`);
+    localStorage.setItem('token', tokenParam);
+    localStorage.setItem('user', JSON.stringify({ authProvider: providerParam || 'google' }));
+    if (!initialized) {
+      console.log('[LOGIN] Auth not initialized yet, will retry when init completes');
+      return;
+    }
+    if (isAuthenticated && user) {
+      console.log(`[LOGIN] Already authenticated as ${user.email || user._id}, navigating`);
+      navigate('/', { replace: true });
+      return;
+    }
+    console.log(`[LOGIN] Calling checkAuth...`);
+    setDeferringAuth(true);
+    checkAuth().then(usr => {
+      setDeferringAuth(false);
+      if (usr) {
+        console.log(`[LOGIN] checkAuth OK — user=${usr.email || usr._id}, navigating to /`);
+        navigate('/', { replace: true });
+      } else {
+        console.warn('[LOGIN] checkAuth failed — token invalid or expired');
+        setError('Error al verificar tu sesión. Intenta iniciar sesión nuevamente.');
+      }
+    });
+  }, [initialized, tokenParam, isAuthenticated]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -43,54 +80,69 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    setLoading(true);
+    setLocalLoading(true);
 
     const safetyTimer = setTimeout(() => {
-      setLoading(false);
+      setLocalLoading(false);
       setError('El servidor esta iniciando. Esperá unos segundos e intentá nuevamente.');
     }, 65000);
 
     if (mode === 'email') {
+      console.log(`[LOGIN] handleSubmit — calling login()`);
       const result = await login(formData.email, formData.password);
       clearTimeout(safetyTimer);
       if (result.success) {
         const role = result.role;
-        if (role === 'company' || role === 'employer') navigate('/dashboard/company');
-        else if (role === 'professional') navigate('/dashboard/professional');
-        else navigate('/');
-      } else setError(result.error);
+        console.log(`[LOGIN] login OK — role=${role}, navigating`);
+        if (role === 'company' || role === 'employer') navigate('/dashboard/company', { replace: true });
+        else if (role === 'professional') navigate('/dashboard/professional', { replace: true });
+        else navigate('/', { replace: true });
+      } else {
+        setError(result.error);
+      }
     }
-    setLoading(false);
+    setLocalLoading(false);
   };
 
   const handleSendCode = async () => {
     if (!formData.phone) { setError('Ingresa tu numero de telefono'); return; }
-    setLoading(true);
+    setLocalLoading(true);
     try {
       const res = await api.post('/auth/send-verification', { phone: formData.phone });
       if (res.data.success) setCodeSent(true);
       else setError(res.data.error || 'Error al enviar codigo');
     } catch { setError('Error de conexion'); }
-    setLoading(false);
+    setLocalLoading(false);
   };
 
   const handleVerifyCode = async () => {
-    setLoading(true);
+    setLocalLoading(true);
     try {
       const res = await api.post('/auth/verify-phone', { phone: formData.phone, code: formData.code });
 
       if (res.data.success) {
         const result = await login(formData.phone, '');
-        if (result.success) navigate('/');
+        if (result.success) navigate('/', { replace: true });
         else setError(result.error);
       } else setError(res.data.error || 'Codigo invalido');
     } catch { setError('Error de conexion'); }
-    setLoading(false);
+    setLocalLoading(false);
   };
 
   const handleGoogleLogin = () => {
     window.location.href = `${import.meta.env.VITE_API_URL || 'http://localhost:10000/api'}/auth/google`;
   };
+
+  if (deferringAuth) {
+    return (
+      <div className="min-h-[calc(100vh-200px)] flex items-center justify-center py-12 px-4">
+        <div className="text-center">
+          <Loader2 size={40} className="mx-auto text-primary-600 animate-spin mb-4" />
+          <p className="text-gray-500 text-sm">Verificando tu sesión...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-[calc(100vh-200px)] flex items-center justify-center py-12 px-4">
@@ -192,9 +244,9 @@ const Login = () => {
               <div className="flex justify-end">
                 <Link to="/forgot-password" className="text-xs text-primary-600 hover:text-primary-700 hover:underline">Olvidaste tu contrasena?</Link>
               </div>
-              <button type="submit" disabled={loading}
+              <button type="submit" disabled={localLoading}
                 className="w-full py-2.5 bg-primary-600 text-white font-semibold rounded-lg hover:bg-primary-700 disabled:opacity-50 transition-colors text-sm"
-              >{loading ? 'Ingresando...' : 'Iniciar Sesion'}</button>
+              >{localLoading ? 'Ingresando...' : 'Iniciar Sesion'}</button>
             </form>
           )}
 
@@ -207,9 +259,9 @@ const Login = () => {
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
                   placeholder="+54 11 1234-5678" />
               </div>
-              <button onClick={handleSendCode} disabled={loading}
+              <button onClick={handleSendCode} disabled={localLoading}
                 className="w-full py-2.5 bg-primary-600 text-white font-semibold rounded-lg hover:bg-primary-700 disabled:opacity-50 transition-colors text-sm"
-              >{loading ? 'Enviando...' : 'Enviar codigo'}</button>
+              >{localLoading ? 'Enviando...' : 'Enviar codigo'}</button>
             </div>
           )}
 
@@ -219,9 +271,9 @@ const Login = () => {
               <input name="code" type="text" maxLength={6} value={formData.code} onChange={handleChange}
                 className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm text-center tracking-[8px] font-mono"
                 placeholder="000000" />
-              <button onClick={handleVerifyCode} disabled={loading || formData.code.length !== 6}
+              <button onClick={handleVerifyCode} disabled={localLoading || formData.code.length !== 6}
                 className="w-full py-2.5 bg-primary-600 text-white font-semibold rounded-lg hover:bg-primary-700 disabled:opacity-50 transition-colors text-sm"
-              >{loading ? 'Verificando...' : 'Verificar codigo'}</button>
+              >{localLoading ? 'Verificando...' : 'Verificar codigo'}</button>
               <button onClick={() => setCodeSent(false)}
                 className="w-full text-sm text-gray-500 hover:text-gray-700 flex items-center justify-center gap-1"
               ><ArrowLeft size={14} /> Cambiar numero</button>

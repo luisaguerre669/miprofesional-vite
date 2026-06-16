@@ -38,7 +38,7 @@ async function runAutoSeed() {
     }
 
     parent.subcategories = subIds;
-    parent.professionalCount = await Professional.countDocuments({ categoryId: { $in: subIds } });
+      parent.professionalCount = await Professional.countDocuments({ 'categories.categoryId': { $in: subIds } });
     await parent.save();
     totalSubs += subIds.length;
   }

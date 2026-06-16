@@ -9,16 +9,50 @@ const professionalSchema = new mongoose.Schema({
     ref: 'User',
     required: [true, 'User ID is required']
   },
+  // Marketplace primary category: professional, empresa, comercio
+  primaryCategory: {
+    type: String,
+    enum: ['professional', 'empresa', 'comercio'],
+    default: null
+  },
+  // Commerce-specific type (only for primaryCategory = 'comercio')
+  commerceType: {
+    type: String,
+    enum: ['minorista', 'mayorista', 'mixto'],
+    default: null
+  },
+  // Commerce subcategory (e.g. Farmacia, Kiosco, Panadería)
+  subCategory: {
+    type: String,
+    maxlength: 100,
+    default: null
+  },
+  // Commerce tags (24hs, local fisico, atencion al publico, venta por volumen)
+  tags: [{
+    type: String,
+    maxlength: 50
+  }],
+  // @deprecated Use categories[] instead. Populated by pre-save hook from categories[0].
   categoryId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Category',
     default: null
   },
+  // @deprecated Use categories[] instead. Populated by pre-save hook from categories[0].
   subcategoryId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Category',
     default: null
   },
+  categories: [{
+    categoryId: { type: mongoose.Schema.Types.ObjectId, ref: 'Category', required: true },
+    subcategoryId: { type: mongoose.Schema.Types.ObjectId, ref: 'Category', default: null }
+  }],
+  workModalities: [{
+    type: String,
+    enum: ['local', 'home_service', 'online', 'mobile'],
+    default: []
+  }],
   businessName: {
     type: String,
     trim: true,
@@ -408,6 +442,13 @@ professionalSchema.index({ 'stats.totalBookings': -1 });
 professionalSchema.index({ 'pricing.hourlyRate': 1 });
 professionalSchema.index({ createdAt: -1 });
 professionalSchema.index({ categoryId: 1, isActive: 1 });
+professionalSchema.index({ 'categories.categoryId': 1 });
+professionalSchema.index({ 'categories.subcategoryId': 1 });
+professionalSchema.index({ workModalities: 1 });
+professionalSchema.index({ primaryCategory: 1 });
+professionalSchema.index({ commerceType: 1 });
+professionalSchema.index({ subCategory: 1 });
+professionalSchema.index({ tags: 1 });
 professionalSchema.index({ isActive: 1, 'stats.rating': -1 });
 professionalSchema.index({ isActive: 1, 'stats.reviewCount': -1 });
 professionalSchema.index({ isActive: 1, 'pricing.hourlyRate': 1 });
@@ -433,6 +474,12 @@ professionalSchema.pre('save', async function(next) {
   if (this.isFeatured && this.featuredUntil && new Date() > this.featuredUntil) {
     this.isFeatured = false;
     this.featuredUntil = null;
+  }
+
+  // Sync legacy categoryId/subcategoryId from categories[0]
+  if (this.categories && this.categories.length > 0) {
+    this.categoryId = this.categories[0].categoryId;
+    this.subcategoryId = this.categories[0].subcategoryId;
   }
 
   if (this.isModified('location.address') || this.isModified('location.city') || this.isModified('location.state')) {
@@ -587,9 +634,11 @@ professionalSchema.statics.findByLocation = function(longitude, latitude, maxDis
 
 professionalSchema.statics.search = function(query, options = {}) {
   const {
-    categoryId,
     categoryIds,
-    subcategoryId,
+    primaryCategory,
+    commerceType,
+    modality,
+    modalities,
     location,
     maxDistance = 50,
     minRating = 0,
@@ -597,10 +646,13 @@ professionalSchema.statics.search = function(query, options = {}) {
     isVerified = false,
     available24h = false,
     limit = 20,
-    skip = 0,
+    skip: providedSkip,
+    page = 1,
     sortBy = 'stats.rating',
     sortOrder = 'desc'
   } = options;
+  const pageNumber = parseInt(page, 10) || 1;
+  const skip = providedSkip !== undefined ? parseInt(providedSkip, 10) || 0 : (pageNumber - 1) * limit;
   
   const searchQuery = {
     ...this.activeFilter(),
@@ -611,15 +663,38 @@ professionalSchema.statics.search = function(query, options = {}) {
     searchQuery.$text = { $search: query };
   }
   
-  // Category filter
-  if (categoryId) {
-    searchQuery.categoryId = categoryId;
+  // Category filter — only against categories[] (categories.categoryId is standard)
+  if (categoryIds && categoryIds.length) {
+    const ids = Array.isArray(categoryIds) ? categoryIds : [categoryIds];
+    const categoryFilter = { 'categories.categoryId': { $in: ids } };
+    if (searchQuery.$or) {
+      searchQuery.$and = [
+        { $or: searchQuery.$or },
+        categoryFilter
+      ];
+      delete searchQuery.$or;
+    } else {
+      Object.assign(searchQuery, categoryFilter);
+    }
   }
-  if (categoryIds) {
-    searchQuery.categoryId = { $in: categoryIds };
+
+  // Marketplace primary category filter
+  if (primaryCategory) {
+    searchQuery.primaryCategory = primaryCategory;
   }
-  if (subcategoryId) {
-    searchQuery.subcategoryId = subcategoryId;
+
+  // Commerce type filter (within comercio primaryCategory)
+  if (commerceType) {
+    searchQuery.commerceType = commerceType;
+  }
+
+  // Modality filter
+  if (modality) {
+    searchQuery.workModalities = modality;
+  }
+  if (modalities) {
+    const mods = Array.isArray(modalities) ? modalities : [modalities];
+    searchQuery.workModalities = { $in: mods };
   }
   
   // Location filter
@@ -659,25 +734,30 @@ professionalSchema.statics.search = function(query, options = {}) {
     .sort({ [sortBy]: sortOrder === 'desc' ? -1 : 1 })
     .skip(skip)
     .limit(limit)
-    .populate('categoryId', 'title')
+    .populate('categories.categoryId', 'title')
     .populate('userId', 'name email phone');
 };
 
-professionalSchema.statics.getTopRated = function(limit = 10, categoryId = null) {
+professionalSchema.statics.getTopRated = function(limit = 10, categoryIds = null) {
   const query = {
     ...this.activeFilter(),
     'stats.rating': { $gte: 4.0 },
     'stats.reviewCount': { $gte: 5 }
   };
   
-  if (categoryId) {
-    query.categoryId = categoryId;
+  if (categoryIds) {
+    const ids = Array.isArray(categoryIds) ? categoryIds : [categoryIds];
+    query.$and = [
+      { $or: query.$or },
+      { 'categories.categoryId': { $in: ids } }
+    ];
+    delete query.$or;
   }
   
   return this.find(query)
     .sort({ 'stats.rating': -1, 'stats.reviewCount': -1 })
     .limit(limit)
-    .populate('categoryId', 'title');
+    .populate('categories.categoryId', 'title');
 };
 
 professionalSchema.statics.getFeatured = function(limit = 6) {
@@ -691,7 +771,7 @@ professionalSchema.statics.getFeatured = function(limit = 6) {
   })
   .sort({ 'stats.rating': -1 })
   .limit(limit)
-  .populate('categoryId', 'title');
+  .populate('categories.categoryId', 'title');
 };
 
 professionalSchema.statics.getVerified = function(limit = 20) {
@@ -701,7 +781,7 @@ professionalSchema.statics.getVerified = function(limit = 20) {
   })
   .sort({ 'stats.rating': -1 })
   .limit(limit)
-  .populate('categoryId', 'title');
+  .populate('categories.categoryId', 'title');
 };
 
 professionalSchema.statics.getStats = async function() {

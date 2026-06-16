@@ -30,7 +30,7 @@ const CategoryPage = () => {
       const cat = catRes.data.data;
       setCategory(cat);
       if (!cat) return;
-      return api.get('/professionals/search', { params: { categoryId: cat._id, limit: 12 } }).then(r => r.data.data || []);
+      return api.get('/professionals/search', { params: { categoryIds: JSON.stringify([cat._id]), limit: 12 } }).then(r => r.data.data || []);
     }).then(pros => setProfessionals(pros || []))
     .catch(() => {})
     .finally(() => setLoading(false));

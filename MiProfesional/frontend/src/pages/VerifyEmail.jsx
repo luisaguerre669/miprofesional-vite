@@ -16,7 +16,7 @@ const VerifyEmail = () => {
     api.get(`/auth/verify-email/${token}`)
       .then(() => setStatus('success'))
       .catch(() => setStatus('error'));
-  }, []);
+  }, [searchParams]);
 
   if (status === 'verifying') {
     return (

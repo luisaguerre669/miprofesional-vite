@@ -7,7 +7,7 @@ import DOMPurify from 'dompurify';
 import {
   UserPlus, Shield, ArrowRight, CheckCircle, AlertCircle,
   Phone, Mail, Lock, User, Briefcase, Upload, Gift,
-  FileText, Building2, Sparkles, Smartphone, Info, CreditCard, MapPin, AlertTriangle
+  FileText, Building2, Sparkles, Smartphone, Info, CreditCard, MapPin, AlertTriangle, Store, Tag
 } from 'lucide-react';
 import LocationPicker from '../components/LocationPicker';
 
@@ -45,7 +45,11 @@ const Register = () => {
     disponibleFinesDeSemana: false,
     disponibleFeriados: false,
     atencionInmediata: false,
-    servicioADomicilio: false
+    servicioADomicilio: false,
+    primaryCategory: '',
+    commerceType: '',
+    subCategory: '',
+    tags: ''
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -142,10 +146,10 @@ const Register = () => {
       ...(mapCoords && { coordinates: mapCoords })
     } : undefined;
 
-    const categoryId = isProfessional ? findCategoryId(finalProfession) : undefined;
-    const subcategoryId = isProfessional && categoryId ? findSubcategoryId(finalProfession, categoryId) : undefined;
+    const catId = isProfessional ? findCategoryId(finalProfession) : undefined;
+    const subId = isProfessional && catId ? findSubcategoryId(finalProfession, catId) : undefined;
 
-    if (isProfessional && !categoryId) {
+    if (isProfessional && !catId) {
       console.error('[FLOW] Registro cancelado: categoría requerida');
       setError(t('register.errorCategoryRequired'));
       setLoading(false);
@@ -164,14 +168,16 @@ const Register = () => {
         phone: formData.phone ? DOMPurify.sanitize(formData.phone.trim()) : undefined,
         role: formData.role,
         profession: finalProfession,
-        categoryId,
-        subcategoryId,
+        categories: catId ? [{ categoryId: catId, subcategoryId: subId || null }] : [],
         available24h: formData.available24h,
         disponible24hs: formData.disponible24hs,
         disponibleFinesDeSemana: formData.disponibleFinesDeSemana,
         disponibleFeriados: formData.disponibleFeriados,
         atencionInmediata: formData.atencionInmediata,
         servicioADomicilio: formData.servicioADomicilio,
+        primaryCategory: findGroupForProfession(formData.profession) === 'Comercios' ? 'comercio' : 'professional',
+        commerceType: formData.commerceType || undefined,
+        tags: formData.tags ? formData.tags.split(',').map(t => t.trim()).filter(Boolean) : undefined,
         address,
         termsAccepted: formData.acceptTerms
       };
@@ -182,11 +188,16 @@ const Register = () => {
       console.log('[FLOW] Invocando AuthContext.register');
       const result = await register(
         sanitizedData.name, sanitizedData.email, sanitizedData.password, sanitizedData.role,
-        { phone: sanitizedData.phone, profession: sanitizedData.profession, categoryId: sanitizedData.categoryId, subcategoryId: sanitizedData.subcategoryId, available24h: sanitizedData.available24h, disponible24hs: sanitizedData.disponible24hs, disponibleFinesDeSemana: sanitizedData.disponibleFinesDeSemana, disponibleFeriados: sanitizedData.disponibleFeriados, atencionInmediata: sanitizedData.atencionInmediata, servicioADomicilio: sanitizedData.servicioADomicilio, address: sanitizedData.address, termsAccepted: sanitizedData.termsAccepted, traceId }
+        { phone: sanitizedData.phone, profession: sanitizedData.profession, categories: sanitizedData.categories, available24h: sanitizedData.available24h, disponible24hs: sanitizedData.disponible24hs, disponibleFinesDeSemana: sanitizedData.disponibleFinesDeSemana, disponibleFeriados: sanitizedData.disponibleFeriados, atencionInmediata: sanitizedData.atencionInmediata, servicioADomicilio: sanitizedData.servicioADomicilio, primaryCategory: sanitizedData.primaryCategory, commerceType: sanitizedData.commerceType, tags: sanitizedData.tags, address: sanitizedData.address, termsAccepted: sanitizedData.termsAccepted, traceId }
       );
       console.log('[FLOW] Step 4 - register() finalizado');
       if (result.success) {
         console.log('[FLOW] Step 5 - respuesta procesada: éxito');
+        if (result.requiresEmailVerification) {
+          setRegistered(true);
+          setLoading(false);
+          return;
+        }
         if (isProfessional && licenseRequired && formData.licenseFile) {
           const form = new FormData();
           form.append('license', formData.licenseFile);
@@ -199,7 +210,7 @@ const Register = () => {
         } else if (formData.role === 'company') {
           navigate('/dashboard/company');
         } else {
-          setRegistered(true);
+          navigate('/');
         }
       } else {
         console.log('[FLOW] Step 5 - respuesta procesada: fallo', result.error);
@@ -249,6 +260,7 @@ const Register = () => {
     'Automotor': 'automotores',
     'Transporte y Turismo': 'transporte',
     'Empresas': 'legales-y-administracion',
+    'Comercios': 'comercio',
   };
 
   const categoriesBySlug = {};
@@ -399,6 +411,34 @@ const Register = () => {
       { value: 'community-manager', label: 'Community Manager' },
       { value: 'video-editor', label: 'Editor de Video' },
     ]},
+    { group: 'Comercios', items: [
+      { value: 'comercio-minorista', label: 'Comercio Minorista' },
+      { value: 'comercio-mayorista', label: 'Comercio Mayorista' },
+      { value: 'comercio-mixto', label: 'Comercio Mixto' },
+      { value: 'pizzeria', label: 'Pizzería' },
+      { value: 'farmacia', label: 'Farmacia' },
+      { value: 'panaderia', label: 'Panadería' },
+      { value: 'veterinaria', label: 'Veterinaria' },
+      { value: 'optica', label: 'Óptica' },
+      { value: 'cafeteria', label: 'Cafetería' },
+      { value: 'kiosco', label: 'Kiosco' },
+      { value: 'rotiseria', label: 'Rotisería' },
+      { value: 'heladeria', label: 'Heladería' },
+      { value: 'confiteria', label: 'Confitería' },
+      { value: 'carniceria', label: 'Carnicería' },
+      { value: 'verduleria', label: 'Verdulería' },
+      { value: 'floreria', label: 'Florería' },
+      { value: 'libreria', label: 'Librería' },
+      { value: 'ferreteria', label: 'Ferretería' },
+      { value: 'jugueteria', label: 'Juguetería' },
+      { value: 'bazar', label: 'Bazar' },
+      { value: 'muebleria', label: 'Mueblería' },
+      { value: 'electrodomesticos', label: 'Electrodomésticos' },
+      { value: 'almacen', label: 'Almacén' },
+      { value: 'dietetica', label: 'Dietética' },
+      { value: 'vinoteca', label: 'Vinoteca' },
+      { value: 'supermercado-chino', label: 'Supermercado / Autoservicio' },
+    ]},
   ];
 
   return (
@@ -543,6 +583,52 @@ const Register = () => {
                     ))}
                   </select>
                 </div>
+
+                {/* Commerce-specific fields */}
+                {findGroupForProfession(formData.profession) === 'Comercios' && (
+                  <div className="space-y-3 p-4 bg-amber-50/50 border border-amber-200 rounded-xl">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Store size={16} className="text-amber-600" />
+                      <p className="text-sm font-semibold text-gray-900">Información del Comercio</p>
+                    </div>
+                    {/* Auto-detect commerceType from profession */}
+                    {(() => {
+                      const detectedType = formData.profession === 'comercio-minorista' ? 'minorista'
+                        : formData.profession === 'comercio-mayorista' ? 'mayorista'
+                        : formData.profession === 'comercio-mixto' ? 'mixto'
+                        : null;
+                      return detectedType ? (
+                        <input type="hidden" name="commerceType" value={detectedType} />
+                      ) : null;
+                    })()}
+                    {/* Manual commerceType for specific business types */}
+                    {!['comercio-minorista', 'comercio-mayorista', 'comercio-mixto'].includes(formData.profession) && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1.5">Tipo de Comercio</label>
+                        <div className="flex gap-2">
+                          {['minorista', 'mayorista', 'mixto'].map(type => (
+                            <button key={type} type="button" onClick={() => setFormData(prev => ({ ...prev, commerceType: type }))}
+                              className={`flex-1 py-2 rounded-lg text-xs font-medium border transition-all ${
+                                formData.commerceType === type
+                                  ? 'border-amber-500 bg-amber-100 text-amber-800'
+                                  : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                              }`}
+                            >
+                              {type === 'minorista' ? 'Minorista' : type === 'mayorista' ? 'Mayorista' : 'Mixto'}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">Tags del comercio (opcional)</label>
+                      <input type="text" value={formData.tags} onChange={e => setFormData(prev => ({ ...prev, tags: e.target.value }))}
+                        placeholder="Ej: 24hs, envios, delivery (separados por coma)"
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm"
+                      />
+                    </div>
+                  </div>
+                )}
 
                 {formData.profession === '__other__' && (
                   <div>
@@ -701,14 +787,14 @@ const Register = () => {
 
                 {isProfessional && (
                   <div className="space-y-3">
-                    <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-primary-600 via-primary-500 to-emerald-500 p-4 text-center">
+                    <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-amber-500 via-amber-600 to-orange-600 p-4 text-center">
                       <div className="absolute inset-0 opacity-10">
                         <div className="absolute -top-6 -right-6 w-20 h-20 bg-white rounded-full" />
                         <div className="absolute -bottom-6 -left-6 w-16 h-16 bg-white rounded-full" />
                       </div>
                       <div className="relative z-10">
                         <p className="text-white text-xs font-semibold flex items-center justify-center gap-1.5">
-                          <Gift size={12} /> {t('register.freeMonthBadge')}
+                          <Gift size={12} /> 60 DÍAS GRATIS — primeros 700 suscriptos
                         </p>
                       </div>
                     </div>
@@ -717,22 +803,47 @@ const Register = () => {
                         <strong className="text-amber-900">{t('register.subscriptionRequired')}</strong>
                       </p>
                     </div>
-                    <div className="p-4 rounded-xl border-2 border-primary-100 bg-primary-50/50">
-                      <div className="flex items-center justify-between mb-2">
-                        <div>
-                          <p className="text-sm font-semibold text-gray-900">{t('register.monthlyPlan')}</p>
-                          <p className="text-xs text-gray-500">{t('register.monthlyPlanDesc')}</p>
+                    {(() => {
+                      const primaryCat = findGroupForProfession(formData.profession);
+                      const isComercio = primaryCat === 'Comercios';
+                      const planPrice = isComercio ? '$10.000' : '$5.000';
+                      const planLabel = isComercio ? 'Plan Comercio' : 'Plan Profesional';
+                      const planDesc = isComercio ? 'Ideal para pizzerías, farmacias, panaderías y más' : 'Accedé a todas las funciones profesionales';
+                      if (isComercio) {
+                        return (
+                          <div className="p-4 rounded-xl border-2 border-amber-100 bg-amber-50/50">
+                            <div className="flex items-center justify-between mb-2">
+                              <div>
+                                <p className="text-sm font-semibold text-gray-900">{planLabel}</p>
+                                <p className="text-xs text-gray-500">{planDesc}</p>
+                              </div>
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-100 text-amber-700 text-xs font-bold rounded-full">Recurrente</span>
+                            </div>
+                            <div className="flex items-baseline gap-1">
+                              <p className="text-lg font-bold text-gray-900">{planPrice}</p>
+                              <p className="text-xs text-gray-400">/mes</p>
+                            </div>
+                            <p className="text-xs text-gray-500 mt-2">Cancelá cuando quieras. Sin permanencia.</p>
+                          </div>
+                        );
+                      }
+                      return (
+                        <div className="p-4 rounded-xl border-2 border-primary-100 bg-primary-50/50">
+                          <div className="flex items-center justify-between mb-2">
+                            <div>
+                              <p className="text-sm font-semibold text-gray-900">{planLabel}</p>
+                              <p className="text-xs text-gray-500">{planDesc}</p>
+                            </div>
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-primary-100 text-primary-700 text-xs font-bold rounded-full">Recurrente</span>
+                          </div>
+                          <div className="flex items-baseline gap-1">
+                            <p className="text-lg font-bold text-gray-900">{planPrice}</p>
+                            <p className="text-xs text-gray-400">/mes</p>
+                          </div>
+                          <p className="text-xs text-gray-500 mt-2">Cancelá cuando quieras. Sin permanencia.</p>
                         </div>
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-primary-100 text-primary-700 text-[10px] font-bold rounded-full">
-                          {t('register.recurring')}
-                        </span>
-                      </div>
-                      <div className="flex items-baseline gap-1">
-                        <p className="text-lg font-bold text-gray-900">$5.000</p>
-                        <p className="text-xs text-gray-400">{t('register.perMonth')}</p>
-                      </div>
-                      <p className="text-xs text-gray-500 mt-2">{t('register.monthlyPlanDetail')}</p>
-                    </div>
+                      );
+                    })()}
                   </div>
                 )}
 

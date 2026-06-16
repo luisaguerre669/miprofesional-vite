@@ -281,14 +281,19 @@ router.post('/register', registerLimiter, validateRegistrationSecurity, [
 
       // If re-registering as professional, set up trial
       if (role === 'professional') {
+        const { getTrialDays, incrementPromo } = require('../models/PromoCounter');
+        const trialDays = await getTrialDays();
         const now = new Date();
-        const trialEnd = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+        const trialEnd = new Date(now.getTime() + trialDays * 24 * 60 * 60 * 1000);
         const existingPro = await Professional.findOne({ userId: existingUser._id });
         if (existingPro) {
           existingPro.isActive = true;
           existingPro.profileStatus = 'ACTIVE';
           if (categoryId) existingPro.categoryId = categoryId;
           if (subcategoryId) existingPro.subcategoryId = subcategoryId;
+          if (categoryId && (!existingPro.categories || existingPro.categories.length === 0)) {
+            existingPro.categories = [{ categoryId, subcategoryId: subcategoryId || null }];
+          }
           if (available24h !== undefined) existingPro.available24h = available24h;
           existingPro.subscription = {
             status: 'trial',
@@ -310,12 +315,14 @@ router.post('/register', registerLimiter, validateRegistrationSecurity, [
             country: 'Argentina',
             coordinates: { type: 'Point', coordinates: [0, 0] }
           };
+          const categoriesData = categoryId ? [{ categoryId, subcategoryId: subcategoryId || null }] : [];
           await new Professional({
             userId: existingUser._id,
             businessName: name,
             profession: profession || 'pendiente',
             categoryId: categoryId || undefined,
             subcategoryId: subcategoryId || undefined,
+            categories: categoriesData,
             available24h: available24h === true,
             description: 'Completa tu perfil profesional',
             contact: { phone: phone || '+000000000000', email: existingUser.email },
@@ -330,6 +337,11 @@ router.post('/register', registerLimiter, validateRegistrationSecurity, [
             },
           }).save();
         }
+      }
+
+      if (role === 'professional') {
+        const { incrementPromo } = require('../models/PromoCounter');
+        await incrementPromo();
       }
 
       eventBus.emit('user:registered', { email: existingUser.email, name: existingUser.name, token: existingUser.verificationToken });
@@ -395,8 +407,10 @@ router.post('/register', registerLimiter, validateRegistrationSecurity, [
     // Create professional record if role is professional
     if (role === 'professional') {
       try {
+        const { getTrialDays, incrementPromo } = require('../models/PromoCounter');
+        const trialDays = await getTrialDays();
         const now = new Date();
-        const trialEnd = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+        const trialEnd = new Date(now.getTime() + trialDays * 24 * 60 * 60 * 1000);
         const proLocation = address?.street || address?.city ? {
           address: `${address.street || ''} ${address.number || ''}`.trim(),
           city: address.city || 'pendiente',
@@ -410,12 +424,14 @@ router.post('/register', registerLimiter, validateRegistrationSecurity, [
           country: 'Argentina',
           coordinates: { type: 'Point', coordinates: [0, 0] }
         };
+        const categoriesData = categoryId ? [{ categoryId, subcategoryId: subcategoryId || null }] : [];
         const professional = new Professional({
           userId: user._id,
           businessName: name,
           profession: profession || 'pendiente',
           categoryId: categoryId || undefined,
           subcategoryId: subcategoryId || undefined,
+          categories: categoriesData,
           description: 'Completa tu perfil profesional',
           contact: { phone: phone || '+000000000000', email: user.email },
           location: proLocation,
@@ -433,6 +449,11 @@ router.post('/register', registerLimiter, validateRegistrationSecurity, [
       } catch (proErr) {
         logger.error('Failed to create professional record on register', { error: proErr.message, userId: user._id });
       }
+    }
+
+    if (role === 'professional') {
+      const { incrementPromo } = require('../models/PromoCounter');
+      await incrementPromo();
     }
 
     eventBus.emit('user:registered', { email: user.email, name: user.name, token: user.verificationToken });

@@ -9,22 +9,74 @@ const { MercadoPagoConfig, PreApproval } = require("mercadopago");
 
 const FRONTEND_URL = process.env.FRONTEND_URL || "https://www.miprofesional.online";
 const router = express.Router();
-const MONTHLY_PRICE = 5000;
+const { getTrialDays, getRemainingSpots } = require("../models/PromoCounter");
+const PRO_PRICE = 5000;
+const COMMERCE_PRICE = 10000;
+const COMPANY_PRICE = 20000;
 
-router.get("/plans", (req, res) => {
+router.get("/plans", async (req, res) => {
+  const trialDays = await getTrialDays();
+  const remaining = await getRemainingSpots();
+  const trialLabel = trialDays === 60 ? `${trialDays} días gratis — quedan ${remaining} cupos` : `${trialDays} días gratis`;
+
   res.json({
     success: true,
     data: [
       {
-        id: "monthly",
-        name: "Plan Mensual",
-        price: MONTHLY_PRICE,
-        description: "30 días gratis, luego $5.000/mes. Suscripcion recurrente, cancelá cuando quieras.",
+        id: "professional",
+        name: "Plan Profesional",
+        price: PRO_PRICE,
+        description: `${trialLabel}, luego $${PRO_PRICE.toLocaleString('es-AR')}/mes. Suscripcion recurrente, cancelá cuando quieras.`,
         cta: "Activar suscripcion",
         duration: "1 mes",
         recurring: true,
-        trialDays: 30,
-        benefits: ["Primer mes completamente gratis", "Suscripcion recurrente automatica", "Cancelacion sin cargo en cualquier momento", "Perfil visible en el marketplace"],
+        trialDays,
+        forRole: "professional",
+        benefits: [
+          "Perfil visible en el marketplace",
+          "CV premium destacado",
+          "Estadísticas de perfil",
+          "Suscripcion recurrente automatica",
+          "Cancelacion sin cargo en cualquier momento",
+        ],
+      },
+      {
+        id: "commerce",
+        name: "Plan Comercio",
+        price: COMMERCE_PRICE,
+        description: `${trialLabel}, luego $${COMMERCE_PRICE.toLocaleString('es-AR')}/mes. Ideal para pizzerias, farmacias, panaderias y mas.`,
+        cta: "Activar suscripcion",
+        duration: "1 mes",
+        recurring: true,
+        trialDays,
+        forRole: "commerce",
+        benefits: [
+          "Perfil visible en la seccion Comercios",
+          "Subcategoria especifica para tu rubro",
+          "Fotos y galeria de productos",
+          "Horarios de atencion personalizados",
+          "Suscripcion recurrente automatica",
+          "Cancelacion sin cargo en cualquier momento",
+        ],
+      },
+      {
+        id: "company",
+        name: "Plan Empresa",
+        price: COMPANY_PRICE,
+        description: `${trialLabel}, luego $${COMPANY_PRICE.toLocaleString('es-AR')}/mes. Acceso completo a busqueda de candidatos y curriculums.`,
+        cta: "Activar suscripcion",
+        duration: "1 mes",
+        recurring: true,
+        trialDays,
+        highlighted: true,
+        forRole: "company",
+        benefits: [
+          "Busqueda avanzada de candidatos",
+          "Acceso a CVs completos",
+          "Contacto ilimitado",
+          "Panel de administracion de empresa",
+          "Soporte prioritario",
+        ],
       },
     ]
   });
@@ -49,20 +101,21 @@ router.get("/status", authenticate, async (req, res) => {
         if (now < new Date(expiresAt)) {
           status = "active";
           daysRemaining = Math.ceil((new Date(expiresAt) - now) / (1000 * 60 * 60 * 24));
-          plan = membership.plan || "monthly";
+          plan = membership.plan || "professional";
           isVisible = true;
         } else {
           status = "expired";
         }
       } else {
         status = "active";
-        plan = membership.plan || "monthly";
+        plan = membership.plan || "professional";
         isVisible = true;
         daysRemaining = 30;
       }
     } else {
       const professional = await Professional.findOne({ userId: req.userId });
       if (professional) {
+        plan = professional.subscription?.selectedPlan || professional.subscription?.plan || "professional";
         if (professional.subscription?.status === "trial" && professional.profileStatus === "ACTIVE") {
           status = "trial";
           daysRemaining = Math.ceil((new Date(professional.subscription.trialEnd) - now) / (1000 * 60 * 60 * 24));
@@ -79,6 +132,10 @@ router.get("/status", authenticate, async (req, res) => {
       }
     }
 
+    const planPrices = { professional: PRO_PRICE, commerce: COMMERCE_PRICE, company: COMPANY_PRICE };
+    const price = planPrices[plan] || PRO_PRICE;
+    const trialDays = await getTrialDays();
+
     res.json({
       success: true,
       data: {
@@ -86,8 +143,8 @@ router.get("/status", authenticate, async (req, res) => {
         plan,
         expiresAt,
         daysRemaining: Math.max(0, daysRemaining),
-        price: MONTHLY_PRICE,
-        trialDays: 30,
+        price,
+        trialDays,
         isVisible,
         isRecurring: membership.type === "premium" && !membership.expiresAt,
       }
@@ -103,6 +160,12 @@ router.post("/create-preapproval", authenticate, async (req, res) => {
     const user = await User.findById(req.userId);
     if (!user) return res.status(404).json({ success: false, message: "Usuario no encontrado" });
 
+    const plan = req.body.plan || "professional";
+    const planPrices = { professional: PRO_PRICE, commerce: COMMERCE_PRICE, company: COMPANY_PRICE };
+    const price = planPrices[plan] || PRO_PRICE;
+    const planLabels = { professional: "Profesional", commerce: "Comercio", company: "Empresa" };
+    const label = planLabels[plan] || "Profesional";
+
     const professional = await Professional.findOne({ userId: req.userId });
     const now = new Date();
     let startDate = new Date(now);
@@ -111,19 +174,19 @@ router.post("/create-preapproval", authenticate, async (req, res) => {
       startDate = new Date(professional.subscription.trialEnd);
     }
 
-    const externalReference = `pre_monthly_${req.userId}_${Date.now()}`;
+    const externalReference = `pre_${plan}_${req.userId}_${Date.now()}`;
     const client = new MercadoPagoConfig({ accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN });
     const preApproval = new PreApproval(client);
 
     const mpResponse = await preApproval.create({
       body: {
-        reason: "MiProfesional - $5.000/mes",
+        reason: `MiProfesional - Plan ${label} $${price.toLocaleString('es-AR')}/mes`,
         external_reference: externalReference,
         payer_email: user.email,
         auto_recurring: {
           frequency: 1,
           frequency_type: "months",
-          transaction_amount: MONTHLY_PRICE,
+          transaction_amount: price,
           currency_id: "ARS",
           start_date: startDate.toISOString(),
         },
@@ -146,8 +209,8 @@ router.post("/create-preapproval", authenticate, async (req, res) => {
       userId: req.userId,
       type: "subscription",
       status: "pending",
-      amount: MONTHLY_PRICE,
-      description: "Suscripcion mensual MiProfesional",
+      amount: price,
+      description: `Suscripcion ${label} MiProfesional`,
     });
 
     if (professional) {
@@ -155,13 +218,13 @@ router.post("/create-preapproval", authenticate, async (req, res) => {
         ...(professional.subscription || {}),
         mpPreferenceId: preapprovalId,
         mpInitPoint: initPoint,
-        selectedPlan: "monthly",
+        selectedPlan: plan,
         preapproval: true,
       };
       await professional.save();
     }
 
-    logger.info("MP preapproval created:", { userId: req.userId, preapprovalId, externalReference, startDate });
+    logger.info("MP preapproval created:", { userId: req.userId, preapprovalId, plan, price, externalReference, startDate });
 
     res.json({
       success: true,
@@ -169,8 +232,8 @@ router.post("/create-preapproval", authenticate, async (req, res) => {
         preapprovalId,
         initPoint,
         externalReference,
-        plan: "monthly",
-        amount: MONTHLY_PRICE,
+        plan,
+        amount: price,
         startDate,
       }
     });
@@ -195,11 +258,17 @@ router.post("/webhook", async (req, res) => {
       logger.info("Preapproval update:", { preapprovalId, status, external_reference });
 
       if (status === "authorized" && external_reference) {
-        const userId = external_reference.replace("pre_monthly_", "").split("_")[0];
+        const match = external_reference.match(/^pre_(professional|commerce|company)_(.+)_\d+$/);
+        const plan = match ? match[1] : "professional";
+        const userId = match ? match[2] : external_reference.replace("pre_monthly_", "").split("_")[0];
+
+        const planPrices = { professional: PRO_PRICE, commerce: COMMERCE_PRICE, company: COMPANY_PRICE };
+        const price = planPrices[plan] || PRO_PRICE;
+        const planLabels = { professional: "Profesional", commerce: "Comercio", company: "Empresa" };
 
         const user = await User.findById(userId);
         if (user) {
-          user.membership = { type: "premium", plan: "monthly", expiresAt: null };
+          user.membership = { type: "premium", plan, expiresAt: null };
           await user.save();
 
           const professional = await Professional.findOne({ userId });
@@ -209,7 +278,7 @@ router.post("/webhook", async (req, res) => {
             professional.subscription = {
               ...(professional.subscription || {}),
               status: "active",
-              plan: "monthly",
+              plan,
               paymentId: String(preapprovalId),
               mpPreferenceId: preapprovalId,
               lastPayment: new Date(),
@@ -220,17 +289,18 @@ router.post("/webhook", async (req, res) => {
             await professional.save();
           }
 
-          logger.info("Preapproval authorized - subscription active:", { userId, preapprovalId });
+          logger.info("Preapproval authorized - subscription active:", { userId, plan, preapprovalId });
           eventBus.emit("payment:approved", {
             email: user.email,
             name: user.name || user.email,
-            plan: "Mensual",
-            amount: MONTHLY_PRICE,
+            plan: planLabels[plan] || plan,
+            amount: price,
             expiryDate: "Renovacion automatica mensual",
           });
         }
       } else if (status === "cancelled" && external_reference) {
-        const userId = external_reference.replace("pre_monthly_", "").split("_")[0];
+        const match = external_reference.match(/^pre_(professional|commerce|company)_(.+)_\d+$/);
+        const userId = match ? match[2] : external_reference.replace("pre_monthly_", "").split("_")[0];
 
         const user = await User.findById(userId);
         if (user) {
@@ -285,5 +355,7 @@ router.post("/cancel", authenticate, async (req, res) => {
     res.status(500).json({ success: false, message: "Error al cancelar suscripcion" });
   }
 });
+
+module.exports = router;
 
 module.exports = router;

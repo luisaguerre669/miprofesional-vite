@@ -1,13 +1,50 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import api from '../lib/axios';
 import {
   Search as SearchIcon, Star, MapPin, SlidersHorizontal, X,
-  BadgeCheck, ChevronRight, Briefcase, Navigation, AlertTriangle
+  BadgeCheck, ChevronRight, Briefcase, Navigation, AlertTriangle, Store
 } from 'lucide-react';
 import MapView from '../components/MapView';
 import { getAccurateLocation } from '../utils/geolocation';
+
+// Términos de búsqueda que corresponden a la categoría COMERCIO
+const COMMERCE_TERMS = [
+  'pizza', 'pizzeria', 'pizzerias', 'pizzería', 'pizzerías',
+  'farmacia', 'farmacias', 'medicamento', 'medicamentos',
+  'kiosco', 'kioscos', 'maxikiosco', 'maxi kiosco', 'kioskos', 'quiosco',
+  'optica', 'opticas', 'óptica', 'ópticas', 'lentes', 'anteojos',
+  'panaderia', 'panaderias', 'panderia', 'pan', 'facturas', 'medialunas',
+  'cafeteria', 'cafeterias', 'cafe', 'café', 'cafés', 'bar',
+  'veterinaria', 'veterinarias', 'veterinario', 'veterinarios', 'mascotas',
+  'rotiseria', 'rotiserias', 'rotisería',
+  'hamburgueseria', 'hamburguesas', 'hamb',
+  'heladeria', 'heladerias', 'helado', 'helados',
+  'confiteria', 'confiterias', 'confitería', 'torta', 'tortas',
+  'carniceria', 'carnicerias', 'carne', 'verduleria', 'verdulería',
+  'floreria', 'florerias', 'flores', 'florista',
+  'libreria', 'librerias', 'libros', 'cuadernos',
+  'ferreteria', 'ferreterias', 'ferretera',
+  'pintureria', 'pinturera', 'pintura', 'pinturas',
+  'corralon', 'corralones', 'materiales',
+  'bicicleteria', 'bicicletas', 'bicicleta',
+  'informatica', 'computadoras', 'notebook', 'laptops',
+  'celular', 'celulares', 'telefono', 'telefonos',
+  'ropa', 'indumentaria', 'zapateria', 'zapaterias', 'zapatos',
+  'jugueteria', 'jugueterias', 'juguetes',
+  'regaleria', 'regalerias', 'regalos', 'regalo',
+  'dietetica', 'dieteticas', 'naturales', 'organico',
+  'vinoteca', 'vinotecas', 'vino', 'vinos', 'bebidas',
+  'comercio', 'local', 'negocio', 'tienda',
+];
+
+function isCommerceQuery(q) {
+  if (!q) return false;
+  const lower = q.toLowerCase().trim();
+  return COMMERCE_TERMS.some(term => lower.includes(term) || term.includes(lower) && lower.length >= 4);
+}
+
 const PROVINCES = [
   'CABA', 'Buenos Aires', 'Catamarca', 'Chaco', 'Chubut', 'Cordoba',
   'Corrientes', 'Entre Rios', 'Formosa', 'Jujuy', 'La Pampa', 'La Rioja',
@@ -47,6 +84,10 @@ const Search = () => {
   const [geoError, setGeoError] = useState('');
   const [showAddressForm, setShowAddressForm] = useState(false);
   const [addressForm, setAddressForm] = useState({ street: '', number: '', city: '', province: '' });
+  // Sugerencia de categoría comercio para términos detectados
+  const [commerceSuggestion, setCommerceSuggestion] = useState(false);
+  const [commerceCategoryId, setCommerceCategoryId] = useState(null);
+  const commerceDetectedRef = useRef(false);
   const [filters, setFilters] = useState({
     category: searchParams.get('category') || '',
     subcategory: '',
@@ -56,11 +97,19 @@ const Search = () => {
     featured: false,
     sortBy: '',
     location: '',
+    primaryCategory: '',
+    commerceType: '',
   });
 
   useEffect(() => {
-    api.get('/categories?limit=50').then(r => setCategories(r.data.data || [])).catch(e => console.error('Error al cargar categorías:', e));
-    
+    api.get('/categories?limit=50').then(r => {
+      const cats = r.data.data || [];
+      setCategories(cats);
+      // Detectar si hay categoría comercio cargada
+      const comercioCat = cats.find(c => c.slug === 'comercio');
+      if (comercioCat) setCommerceCategoryId(comercioCat._id);
+    }).catch(e => console.error('Error al cargar categorías:', e));
+
     getAccurateLocation().then(res => {
       if (!res.error && res.lat && res.lng) {
         setUserLocation({ lat: res.lat, lng: res.lng });
@@ -74,16 +123,37 @@ const Search = () => {
     const q = searchParams.get('q');
     const cat = searchParams.get('category');
     const disp247 = searchParams.get('disponibilidad') === '24-7';
+
+    // Detectar términos comerciales en la URL
+    if (q && isCommerceQuery(q) && !cat && !commerceDetectedRef.current) {
+      commerceDetectedRef.current = true;
+      setCommerceSuggestion(true);
+    }
+
     if (q || cat || disp247) {
       if (q) setQuery(q);
       if (cat) setFilters(f => ({ ...f, category: cat }));
-      searchProfessionals(q || '', { ...filters, category: cat || filters.category }, disp247);
+      setLoading(true);
+      const params = { limit: 20 };
+      if (q) params.search = q;
+      if (cat) params.categoryIds = JSON.stringify([cat]);
+      if (disp247) params.disponibilidad = '24-7';
+      if (filters.primaryCategory) params.primaryCategory = filters.primaryCategory;
+      if (filters.commerceType) params.commerceType = filters.commerceType;
+      api.get('/professionals/search', { params })
+        .then(r => setProfessionals(r.data.data || []))
+        .catch(e => console.error('Search error:', e))
+        .finally(() => setLoading(false));
     } else {
-      fetchProfessionals();
+      setLoading(true);
+      api.get('/professionals', { params: { limit: 20 } })
+        .then(r => setProfessionals(r.data.data || []))
+        .catch(e => console.error('Error:', e))
+        .finally(() => setLoading(false));
     }
   }, []);
 
-  const fetchProfessionals = async () => {
+  const fetchProfessionals = useCallback(async () => {
     setLoading(true);
     try {
       const params = { limit: 20 };
@@ -95,20 +165,22 @@ const Search = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [disponibilidad247]);
 
-  const searchProfessionals = async (q, filterOpts, disp247) => {
+  const searchProfessionals = useCallback(async (q, filterOpts, disp247) => {
     setLoading(true);
     try {
       const params = {};
       if (q) params.search = q;
-      if (filterOpts.category) params.categoryId = filterOpts.category;
+      if (filterOpts.category) params.categoryIds = JSON.stringify([filterOpts.category]);
       if (filterOpts.subcategory) params.subcategoryId = filterOpts.subcategory;
       if (filterOpts.minRating > 0) params.minRating = filterOpts.minRating;
       if (filterOpts.maxPrice) params.maxPrice = filterOpts.maxPrice;
       if (filterOpts.verified) params.isVerified = true;
       if (filterOpts.featured) params.featured = true;
       if (filterOpts.sortBy) params.sortBy = filterOpts.sortBy;
+      if (filterOpts.primaryCategory) params.primaryCategory = filterOpts.primaryCategory;
+      if (filterOpts.commerceType) params.commerceType = filterOpts.commerceType;
       if (disp247 || disponibilidad247) params.disponibilidad = '24-7';
       if (filterDisponible24hs) params.disponible24hs = true;
       if (filterAtencionInmediata) params.atencionInmediata = true;
@@ -117,7 +189,6 @@ const Search = () => {
       if (filterDisponibleFeriados) params.disponibleFeriados = true;
       params.limit = 20;
 
-      // Geocodificar siempre, asegurando coordenadas reales
       if (filterOpts.location && filterOpts.location.trim()) {
         const geoRes = await api.get('/professionals/geocode', { params: { city: filterOpts.location, country: 'Argentina' } });
         if (geoRes.data?.success && geoRes.data?.data) {
@@ -140,7 +211,7 @@ const Search = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [disponibilidad247, filterDisponible24hs, filterAtencionInmediata, filterServicioADomicilio, filterDisponibleFinesDeSemana, filterDisponibleFeriados, userLocation]);
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -148,7 +219,25 @@ const Search = () => {
     if (query.trim()) p.q = query;
     if (disponibilidad247) p.disponibilidad = '24-7';
     setSearchParams(p);
+    // Detectar términos comerciales en tiempo real
+    if (isCommerceQuery(query) && !filters.category) {
+      setCommerceSuggestion(true);
+    } else {
+      setCommerceSuggestion(false);
+    }
     searchProfessionals(query, filters);
+  };
+
+  const applyCommerceCategory = () => {
+    if (commerceCategoryId) {
+      const newFilters = { ...filters, category: commerceCategoryId, subcategory: '' };
+      setFilters(newFilters);
+      setCommerceSuggestion(false);
+      searchProfessionals(query, newFilters, disponibilidad247);
+    } else {
+      // Si no hay ID de BD, redirigir a la página de categoría
+      window.location.href = '/categoria/comercio';
+    }
   };
 
   const clear247 = () => {
@@ -177,6 +266,35 @@ const Search = () => {
       <meta name="description" content="Encuentra profesionales verificados. Filtra por categoría, ubicación, rating y precio." />
     </Helmet>
     <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
+      {/* Commerce Suggestion Banner */}
+      {commerceSuggestion && (
+        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-4 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
+              <Store size={20} className="text-amber-600" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-amber-900">Buscando en Comercio</p>
+              <p className="text-xs text-amber-700">Encontramos que tu búsqueda puede estar en nuestra categoría de comercios</p>
+            </div>
+          </div>
+          <div className="flex gap-2 shrink-0">
+            <button
+              onClick={applyCommerceCategory}
+              className="px-3 py-1.5 bg-amber-500 text-white text-xs font-semibold rounded-lg hover:bg-amber-600 transition-all"
+            >
+              Buscar en Comercio
+            </button>
+            <button
+              onClick={() => setCommerceSuggestion(false)}
+              className="p-1.5 text-amber-400 hover:text-amber-600 transition-colors"
+            >
+              <X size={14} />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* 24-7 Banner */}
       {disponibilidad247 && (
         <div className="bg-gradient-to-r from-red-600 via-red-500 to-orange-500 rounded-2xl p-4 md:p-5 shadow-lg flex items-center justify-between gap-3">
@@ -230,12 +348,24 @@ const Search = () => {
           )}
         </form>
 
-        {(filters.category || filters.minRating > 0 || filters.maxPrice || filters.verified || filters.featured) && (
+        {(filters.category || filters.minRating > 0 || filters.maxPrice || filters.verified || filters.featured || filters.primaryCategory || filters.commerceType) && (
           <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-gray-100">
             {filters.category && (
               <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-primary-50 text-primary-700 rounded-lg text-sm">
                 {categories.find(c => c._id === filters.category)?.title}
                 <button onClick={() => { setFilters({...filters, category: '', subcategory: ''}); applyFilters(); }}><X size={14} /></button>
+              </span>
+            )}
+            {filters.primaryCategory && (
+              <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-amber-50 text-amber-700 rounded-lg text-sm">
+                {filters.primaryCategory === 'professional' ? 'Profesionales' : filters.primaryCategory === 'empresa' ? 'Empresas' : 'Comercios'}
+                <button onClick={() => { setFilters({...filters, primaryCategory: '', commerceType: ''}); applyFilters(); }}><X size={14} /></button>
+              </span>
+            )}
+            {filters.commerceType && (
+              <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-amber-50 text-amber-700 rounded-lg text-sm">
+                {filters.commerceType.charAt(0).toUpperCase() + filters.commerceType.slice(1)}
+                <button onClick={() => { setFilters({...filters, commerceType: ''}); applyFilters(); }}><X size={14} /></button>
               </span>
             )}
             {filters.minRating > 0 && (
@@ -278,6 +408,32 @@ const Search = () => {
                   {subcategories.map(sc => (
                     <option key={sc._id || sc} value={sc._id || sc}>{sc.title || sc}</option>
                   ))}
+                </select>
+              </div>
+            )}
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1.5">Tipo de Perfil</label>
+              <select value={filters.primaryCategory} onChange={e => setFilters({...filters, primaryCategory: e.target.value, commerceType: ''})}
+                className="w-full p-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white"
+              >
+                <option value="">Todos</option>
+                <option value="professional">Profesionales</option>
+                <option value="empresa">Empresas</option>
+                <option value="comercio">Comercios</option>
+              </select>
+            </div>
+
+            {filters.primaryCategory === 'comercio' && (
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Tipo de Comercio</label>
+                <select value={filters.commerceType} onChange={e => setFilters({...filters, commerceType: e.target.value})}
+                  className="w-full p-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white"
+                >
+                  <option value="">Todos</option>
+                  <option value="minorista">Minorista</option>
+                  <option value="mayorista">Mayorista</option>
+                  <option value="mixto">Mixto</option>
                 </select>
               </div>
             )}

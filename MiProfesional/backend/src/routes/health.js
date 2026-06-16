@@ -5,26 +5,31 @@ const logger = require('../utils/logger');
 const router = express.Router();
 
 router.get('/', async (req, res) => {
-  const dbState = mongoose.connection.readyState;
-  const dbStates = { 0: 'disconnected', 1: 'connected', 2: 'connecting', 3: 'disconnecting' };
+  try {
+    const dbState = mongoose.connection.readyState;
+    const dbStates = { 0: 'disconnected', 1: 'connected', 2: 'connecting', 3: 'disconnecting' };
 
-  const checks = {
-    server: { status: 'ok', uptime: process.uptime(), nodeVersion: process.version, memory: `${Math.round(process.memoryUsage().rss / 1024 / 1024)} MB` },
-    database: { status: dbState === 1 ? 'ok' : 'error', state: dbStates[dbState] || 'unknown' },
-    logs: { status: 'ok', ...(logger.getLogStats() || { totalLines: 0 }) }
-  };
+    const checks = {
+      server: { status: 'ok', uptime: process.uptime(), nodeVersion: process.version, memory: `${Math.round(process.memoryUsage().rss / 1024 / 1024)} MB` },
+      database: { status: dbState === 1 ? 'ok' : 'error', state: dbStates[dbState] || 'unknown' },
+      logs: { status: 'ok', ...(logger.getLogStats() || { totalLines: 0 }) }
+    };
 
-  const allOk = Object.values(checks).every(c => c.status === 'ok');
+    const allOk = Object.values(checks).every(c => c.status === 'ok');
 
-  res.status(allOk ? 200 : 503).json({
-    success: allOk,
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development',
-    version: '2.0.0',
-    developer: 'LUIS AGUERRE',
-    checks,
-    recentErrors: logger.getRecentErrors(5)
-  });
+    res.status(allOk ? 200 : 503).json({
+      success: allOk,
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV || 'development',
+      version: '2.0.0',
+      developer: 'LUIS AGUERRE',
+      checks,
+      recentErrors: logger.getRecentErrors(5)
+    });
+  } catch (error) {
+    logger.error('Health check error:', error);
+    res.status(500).json({ success: false, message: 'Error en health check' });
+  }
 });
 
 router.get('/debug', async (req, res) => {
@@ -40,12 +45,17 @@ router.get('/debug', async (req, res) => {
     } catch { return res.status(401).json({ success: false, message: 'Token invalido' }); }
   }
 
-  const stats = logger.getStats();
-  res.json({
-    success: true,
-    ...stats,
-    envVars: Object.keys(process.env).filter(k => !k.toLowerCase().includes('secret') && !k.toLowerCase().includes('token') && !k.toLowerCase().includes('key') && !k.toLowerCase().includes('password')).reduce((a, k) => ({ ...a, [k]: process.env[k] }), {})
-  });
+  try {
+    const stats = logger.getStats();
+    res.json({
+      success: true,
+      ...stats,
+      envVars: Object.keys(process.env).filter(k => !k.toLowerCase().includes('secret') && !k.toLowerCase().includes('token') && !k.toLowerCase().includes('key') && !k.toLowerCase().includes('password')).reduce((a, k) => ({ ...a, [k]: process.env[k] }), {})
+    });
+  } catch (error) {
+    logger.error('Debug route error:', error);
+    res.status(500).json({ success: false, message: 'Error obteniendo debug info' });
+  }
 });
 
 module.exports = router;

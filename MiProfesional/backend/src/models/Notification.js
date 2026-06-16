@@ -2,6 +2,7 @@
 // Modelo para gestionar notificaciones push a usuarios y profesionales
 
 const mongoose = require('mongoose');
+const logger = require('../utils/logger');
 
 const notificationSchema = new mongoose.Schema({
   // Información básica
@@ -253,12 +254,12 @@ notificationSchema.statics.getNotificationStats = async function() {
 
 // Middleware para logging
 notificationSchema.pre('save', function(next) {
-  console.log(`🔔 Saving notification: ${this.title} - ${this.type}`);
+  logger.debug(`Saving notification: ${this.title} - ${this.type}`);
   next();
 });
 
 notificationSchema.post('save', function(doc) {
-  console.log(`🔔 Notification saved: ${doc._id}`);
+  logger.debug(`Notification saved: ${doc._id}`);
 });
 
 module.exports = mongoose.model('Notification', notificationSchema);

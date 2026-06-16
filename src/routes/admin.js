@@ -5,8 +5,10 @@ const Professional = require("../models/Professional");
 const Category = require("../models/Category");
 const Booking = require("../models/Booking");
 const Payment = require("../models/Payment");
+const CurriculumVitae = require("../models/CurriculumVitae");
 const { authenticate, requireAdmin } = require("../middleware/auth");
 const logger = require("../utils/logger");
+const { checkCategoryQuery } = require("../utils/categoryGuard");
 
 let maintenanceMode = { active: false, message: '' };
 let featureFlags = {};
@@ -31,29 +33,16 @@ router.use((req, res, next) => {
 
 router.post("/seed-categories", async (req, res) => {
   try {
+    const categoriesData = require("../scripts/categoryData");
     const cats = await Category.find();
     if (cats.length > 0) return res.json({ success: true, message: `Ya existen ${cats.length} categorias` });
-    const categories = [
-      { title: "Construccion", slug: "construccion", description: "Albaniles, plomeros, electricistas, gasistas, pintores, carpinteros, techistas, herreros y mas.", image: "https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?w=800&q=80", icon: "Building2", metadata: { color: "#b45309", featured: true }, sortOrder: 1 },
-      { title: "Servicios Generales", slug: "servicios-generales", description: "Limpieza, jardineria, mudanzas, mantenimiento y reparaciones del hogar.", image: "https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=800&q=80", icon: "Wrench", metadata: { color: "#0f7a5a", featured: true }, sortOrder: 2 },
-      { title: "24-7", slug: "24-7", description: "Profesionales disponibles 24 horas, 7 días a la semana.", image: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&q=80", icon: "AlertTriangle", metadata: { color: "#dc2626", featured: true, emergency: true }, sortOrder: 3 },
-      { title: "Empresas y Equipos", slug: "empresas", description: "Empresas constructoras, cuadrillas, equipos de limpieza y servicios corporativos.", image: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800&q=80", icon: "Briefcase", metadata: { color: "#1d4ed8", featured: true }, sortOrder: 4 },
-      { title: "Tecnologia", slug: "tecnologia", description: "Reparacion de PC, redes, camaras, soporte IT y desarrollo web.", image: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=800&q=80", icon: "Monitor", metadata: { color: "#7c3aed", featured: false }, sortOrder: 5 },
-      { title: "Automotor", slug: "automotor", description: "Mecanica, electricidad automotriz, chapista, gomeria, lavadero y auxilio.", image: "https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?w=800&q=80", icon: "Car", metadata: { color: "#0891b2", featured: false }, sortOrder: 6 },
-      { title: "Hogar y Confort", slug: "hogar", description: "Decoracion, arquitectura, diseno de interiores, domotica y tapiceria.", image: "https://images.unsplash.com/photo-1618220179428-22790b461013?w=800&q=80", icon: "Home", metadata: { color: "#d97706", featured: false }, sortOrder: 7 },
-      { title: "Mascotas", slug: "mascotas", description: "Veterinarios, paseadores, peluqueros, adiestradores y guarderias.", image: "https://images.unsplash.com/photo-1548199973-03cce0bbc87b?w=800&q=80", icon: "Dog", metadata: { color: "#0891b2", featured: false }, sortOrder: 8 },
-      { title: "Belleza y Cuidado", slug: "belleza", description: "Peluqueria, manicura, masajes, cosmetologia, barberia y depilacion.", image: "https://images.unsplash.com/photo-1560066984-138dadb4c035?w=800&q=80", icon: "Sparkles", metadata: { color: "#db2777", featured: false }, sortOrder: 9 },
-      { title: "Gastronomia", slug: "gastronomia", description: "Chefs, catering, pasteleria, bartender y eventos gastronomicos.", image: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800&q=80", icon: "ChefHat", metadata: { color: "#dc2626", featured: false }, sortOrder: 10 },
-      { title: "Transporte y Turismo", slug: "transporte", description: "Remis, fletes, guias de turismo, transporte escolar y viajes.", image: "https://images.unsplash.com/photo-1603796846097-bee99e4a601f?w=800&q=80", icon: "Truck", metadata: { color: "#1d4ed8", featured: false }, sortOrder: 11 },
-      { title: "Cerrajeria", slug: "cerrajeria", description: "Cerrajeros, apertura de puertas, instalacion de cerraduras y cajas de seguridad.", image: "https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=800&q=80", icon: "Lock", metadata: { color: "#65a30d", featured: false }, sortOrder: 12 },
-    ];
     let created = 0;
-    for (const cat of categories) {
+    for (const cat of categoriesData) {
       const exists = await Category.findOne({ slug: cat.slug });
       if (!exists) { await Category.create(cat); created++; }
     }
     logger.info("Categories seeded:", { created });
-    res.json({ success: true, message: `Categorias seeded: ${created} creadas, ${categories.length - created} ya existian` });
+    res.json({ success: true, message: `Categorias seeded: ${created} creadas, ${categoriesData.length - created} ya existian` });
   } catch (error) {
     logger.error("Seed categories error:", error);
     res.status(500).json({ success: false, message: "Error al seedear categorias" });
@@ -142,7 +131,7 @@ router.get("/professionals", async (req, res) => {
       .limit(parseInt(limit))
       .skip((parseInt(page) - 1) * parseInt(limit))
       .populate('userId', 'name email phone')
-      .populate('categoryId', 'title');
+      .populate('categories.categoryId', 'title');
 
     const total = await Professional.countDocuments(query);
 
@@ -246,7 +235,9 @@ router.get("/stats", async (req, res) => {
         { $group: { _id: '$status', count: { $sum: 1 }, total: { $sum: '$amount' } } }
       ]),
       Category.aggregate([
-        { $lookup: { from: 'professionals', localField: '_id', foreignField: 'categoryId', as: 'pros' } },
+        { $lookup: { from: 'professionals', let: { catId: '$_id' }, pipeline: [
+          { $match: { $expr: { $in: ['$$catId', '$categories.categoryId'] } } }
+        ], as: 'pros' } },
         { $project: { title: 1, count: { $size: '$pros' } } },
         { $sort: { count: -1 } },
         { $limit: 10 }
@@ -431,6 +422,346 @@ router.delete("/users/:id", async (req, res) => {
   } catch (error) {
     logger.error("Admin delete user error:", error);
     res.status(500).json({ success: false, message: "Error al eliminar usuario" });
+  }
+});
+
+// ── Categories CRUD ──────────────────────────────────────────
+
+// GET /admin/categories
+router.get("/categories", async (req, res) => {
+  try {
+    const categories = await Category.find().sort({ sortOrder: 1, title: 1 });
+    res.json({ success: true, data: categories });
+  } catch (error) {
+    logger.error("Admin categories error:", error);
+    res.status(500).json({ success: false, message: "Error al obtener categorias" });
+  }
+});
+
+// POST /admin/categories
+router.post("/categories", [
+  body("title").trim().notEmpty().withMessage("Title is required"),
+  body("slug").optional().trim(),
+  body("image").optional().trim(),
+  body("icon").optional().trim(),
+  body("sortOrder").optional().isInt(),
+], handleValidationErrors, async (req, res) => {
+  try {
+    const category = await Category.create(req.body);
+    res.json({ success: true, data: category });
+  } catch (error) {
+    logger.error("Admin create category error:", error);
+    res.status(500).json({ success: false, message: "Error al crear categoria" });
+  }
+});
+
+// PUT /admin/categories/:id
+router.put("/categories/:id", async (req, res) => {
+  try {
+    const category = await Category.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!category) return res.status(404).json({ success: false, message: "Categoria no encontrada" });
+    res.json({ success: true, data: category });
+  } catch (error) {
+    logger.error("Admin update category error:", error);
+    res.status(500).json({ success: false, message: "Error al actualizar categoria" });
+  }
+});
+
+// DELETE /admin/categories/:id
+router.delete("/categories/:id", async (req, res) => {
+  try {
+    await Category.findByIdAndDelete(req.params.id);
+    res.json({ success: true, message: "Categoria eliminada" });
+  } catch (error) {
+    logger.error("Admin delete category error:", error);
+    res.status(500).json({ success: false, message: "Error al eliminar categoria" });
+  }
+});
+
+// ── Professional Categories (admin) ─────────────────────────
+
+// GET /admin/professionals/:id/categories
+router.get("/professionals/:id/categories", async (req, res) => {
+  try {
+    const pro = await Professional.findById(req.params.id).populate('categories.categoryId', 'title');
+    if (!pro) return res.status(404).json({ success: false, message: "Profesional no encontrado" });
+    res.json({ success: true, data: pro.categories || [] });
+  } catch (error) {
+    logger.error("Admin get pro categories error:", error);
+    res.status(500).json({ success: false, message: "Error al obtener categorias" });
+  }
+});
+
+// PUT /admin/professionals/:id/categories
+router.put("/professionals/:id/categories", async (req, res) => {
+  try {
+    const pro = await Professional.findById(req.params.id);
+    if (!pro) return res.status(404).json({ success: false, message: "Profesional no encontrado" });
+    pro.categories = req.body.categories || [];
+    if (req.body.workModalities !== undefined) pro.workModalities = req.body.workModalities;
+    if (req.body.primaryCategory !== undefined) pro.primaryCategory = req.body.primaryCategory;
+    if (req.body.commerceType !== undefined) pro.commerceType = req.body.commerceType;
+    if (req.body.subCategory !== undefined) pro.subCategory = req.body.subCategory;
+    if (req.body.tags !== undefined) pro.tags = req.body.tags;
+    await pro.save();
+    res.json({ success: true, data: pro });
+  } catch (error) {
+    logger.error("Admin update pro categories error:", error);
+    res.status(500).json({ success: false, message: "Error al actualizar categorias" });
+  }
+});
+
+// POST /admin/marketplace-apply — Apply marketplace category to all or filtered professionals
+router.post("/marketplace-apply", async (req, res) => {
+  try {
+    const { primaryCategory, commerceType, subCategory, tags, filter } = req.body;
+    const query = filter || {};
+    if (primaryCategory) query.primaryCategory = { $ne: primaryCategory };
+    const result = await Professional.updateMany(query, {
+      $set: { primaryCategory, commerceType: commerceType || null, subCategory: subCategory || null, tags: tags || [] }
+    });
+    logger.info("Marketplace categories applied", { primaryCategory, modifiedCount: result.modifiedCount });
+    res.json({ success: true, message: `${result.modifiedCount} profesionales actualizados`, modifiedCount: result.modifiedCount });
+  } catch (error) {
+    logger.error("Admin marketplace apply error:", error);
+    res.status(500).json({ success: false, message: "Error al aplicar categorias marketplace" });
+  }
+});
+
+// ── Migration ───────────────────────────────────────────────
+
+// POST /admin/migrate-categories
+router.post("/migrate-categories", async (req, res) => {
+  try {
+    const pros = await Professional.find({
+      $and: [
+        { categoryId: { $ne: null } },
+        { $or: [ { categories: { $exists: false } }, { categories: { $size: 0 } } ] }
+      ]
+    });
+    let migrated = 0;
+    for (const pro of pros) {
+      pro.categories = [{ categoryId: pro.categoryId, subcategoryId: pro.subcategoryId || null }];
+      await pro.save();
+      migrated++;
+    }
+    logger.info("Categories migration completed", { migrated });
+    res.json({ success: true, message: `${migrated} profesionales migrados al nuevo formato categories[]`, migrated });
+  } catch (error) {
+    logger.error("Migration error:", error);
+    res.status(500).json({ success: false, message: "Error en migracion" });
+  }
+});
+
+// GET /admin/cvs — List all CVs with pagination, search, and filters
+router.get("/cvs", async (req, res) => {
+  try {
+    const { search, profession, completeness, category, status: statusFilter, subcategory, page = 1, limit = 15 } = req.query;
+    const pageNum = Math.max(parseInt(page), 1);
+    const limitNum = Math.min(Math.max(parseInt(limit), 1), 100);
+    const skip = (pageNum - 1) * limitNum;
+
+    const filter = {};
+    if (profession) filter["personalData.headline"] = { $regex: profession, $options: "i" };
+    if (category) filter.primaryCategory = category;
+    if (statusFilter) filter.status = statusFilter;
+    if (subcategory) filter.subCategory = { $regex: subcategory, $options: "i" };
+    if (completeness === "complete") {
+      filter["personalData.fullName"] = { $ne: "", $exists: true };
+      filter["personalData.headline"] = { $ne: "", $exists: true };
+      filter["skills.0"] = { $exists: true };
+    }
+    if (completeness === "incomplete") {
+      filter.$or = [
+        { $or: [{ "personalData.fullName": "" }, { "personalData.fullName": { $exists: false } }, { "personalData.fullName": null }] },
+        { $or: [{ "personalData.headline": "" }, { "personalData.headline": { $exists: false } }, { "personalData.headline": null }] },
+        { $or: [{ "skills": { $size: 0 } }, { "skills": { $exists: false } }] }
+      ];
+    }
+
+    if (search) {
+      const searchRegex = { $regex: search, $options: "i" };
+      const searchClause = {
+        $or: [
+          { "personalData.fullName": searchRegex },
+          { "personalData.email": searchRegex },
+          { "personalData.phone": searchRegex }
+        ]
+      };
+      if (filter.$or) {
+        filter.$and = [{ $or: filter.$or }, searchClause];
+        delete filter.$or;
+      } else {
+        filter.$or = searchClause.$or;
+      }
+    }
+
+    const cvs = await CurriculumVitae.find(filter)
+      .populate("userId", "name email phone avatar role")
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limitNum);
+
+    const total = await CurriculumVitae.countDocuments(filter);
+
+    const data = cvs.map(cv => ({
+      _id: cv._id,
+      fullName: cv.personalData?.fullName || "Sin nombre",
+      email: cv.personalData?.email || "",
+      phone: cv.personalData?.phone || "",
+      profession: cv.personalData?.headline || cv.jobTitles?.[0] || "",
+      skillsCount: cv.skills?.length || 0,
+      isComplete: cv.isComplete,
+      status: cv.status,
+      featured: cv.featured,
+      primaryCategory: cv.primaryCategory,
+      commerceType: cv.commerceType,
+      subCategory: cv.subCategory,
+      tags: cv.tags || [],
+      createdAt: cv.createdAt,
+      userId: cv.userId ? { _id: cv.userId._id, name: cv.userId.name, email: cv.userId.email } : null
+    }));
+
+    res.json({
+      success: true,
+      data,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        totalPages: Math.ceil(total / limitNum)
+      }
+    });
+  } catch (error) {
+    logger.error("Admin get CVs error:", error);
+    res.status(500).json({ success: false, message: "Error al obtener curriculums" });
+  }
+});
+
+// GET /admin/cvs/:id — Get CV full detail
+router.get("/cvs/:id", async (req, res) => {
+  try {
+    const cv = await CurriculumVitae.findById(req.params.id)
+      .populate("userId", "name email phone avatar role createdAt");
+    if (!cv) return res.status(404).json({ success: false, message: "CV no encontrado" });
+    res.json({ success: true, data: cv });
+  } catch (error) {
+    logger.error("Admin get CV detail error:", error);
+    res.status(500).json({ success: false, message: "Error al obtener detalle del CV" });
+  }
+});
+
+// PATCH /admin/cvs/:id/status — Update CV status
+router.patch("/cvs/:id/status", async (req, res) => {
+  try {
+    const { status } = req.body;
+    const valid = ["nuevo", "revisado", "aprobado", "rechazado"];
+    if (!valid.includes(status)) return res.status(400).json({ success: false, message: "Estado invalido" });
+    const cv = await CurriculumVitae.findByIdAndUpdate(req.params.id, { status }, { new: true });
+    if (!cv) return res.status(404).json({ success: false, message: "CV no encontrado" });
+    logger.info("Admin CV status updated", { cvId: req.params.id, status });
+    res.json({ success: true, data: { _id: cv._id, status: cv.status } });
+  } catch (error) {
+    logger.error("Admin update CV status error:", error);
+    res.status(500).json({ success: false, message: "Error al actualizar estado del CV" });
+  }
+});
+
+// PATCH /admin/cvs/:id/featured — Toggle featured
+router.patch("/cvs/:id/featured", async (req, res) => {
+  try {
+    const cv = await CurriculumVitae.findById(req.params.id);
+    if (!cv) return res.status(404).json({ success: false, message: "CV no encontrado" });
+    cv.featured = !cv.featured;
+    await cv.save();
+    logger.info("Admin CV featured toggled", { cvId: req.params.id, featured: cv.featured });
+    res.json({ success: true, data: { _id: cv._id, featured: cv.featured } });
+  } catch (error) {
+    logger.error("Admin toggle CV featured error:", error);
+    res.status(500).json({ success: false, message: "Error al cambiar destacado del CV" });
+  }
+});
+
+// DELETE /admin/cvs/:id — Delete CV
+router.delete("/cvs/:id", async (req, res) => {
+  try {
+    const cv = await CurriculumVitae.findByIdAndDelete(req.params.id);
+    if (!cv) return res.status(404).json({ success: false, message: "CV no encontrado" });
+    logger.info("Admin CV deleted", { cvId: req.params.id });
+    res.json({ success: true, message: "CV eliminado correctamente" });
+  } catch (error) {
+    logger.error("Admin delete CV error:", error);
+    res.status(500).json({ success: false, message: "Error al eliminar CV" });
+  }
+});
+
+// POST /admin/migrate-marketplace — Run full marketplace migration (Seguridad → Comercio, assign primaryCategory)
+router.post("/migrate-marketplace", async (req, res) => {
+  try {
+    const Category = require("../models/Category");
+    const Professional = require("../models/Professional");
+
+    const comercioSubSlugs = [
+      'com-farmacia', 'com-optica', 'com-kiosco', 'com-rotiseria', 'com-tienda',
+      'com-perfumeria', 'com-almacen', 'com-panaderia', 'com-carniceria', 'com-verduleria',
+      'com-heladeria', 'com-libreria', 'com-jugueteria', 'com-ferreteria', 'com-bazar',
+      'com-muebleria', 'com-electro', 'com-alimentos-mayorista', 'com-bebidas-mayorista',
+      'com-distribuidora', 'com-limpieza-industrial', 'com-mixto-almacen', 'com-mixto-tienda',
+      'com-mixto-dual', 'almacen', 'supermercado', 'dietetica', 'carniceria', 'panaderia',
+      'verduleria', 'vineria', 'heladeria', 'libreria', 'indumentaria', 'regalos',
+      'ferreteria', 'electrodomesticos', 'farmacia', 'perfumeria', 'jugueteria',
+      'tienda-mascotas', 'casa-repuestos', 'muebleria', 'bazar', 'productos-regionales',
+      'cerrajeria-comercial'
+    ];
+
+    const seguridadSlugs = ['vigilancia-privada', 'alarmas-monitoreo', 'seguridad-electronica', 'seguridad-personal', 'proteccion-incendios', 'seguridad'];
+
+    const allPros = await Professional.find({});
+    let updated = 0;
+    let migratedFromSeguridad = 0;
+
+    for (const pro of allPros) {
+      if (pro.primaryCategory) continue;
+      let needsSave = false;
+
+      const catIds = (pro.categories || []).map(c => c.categoryId?.toString()).filter(Boolean);
+      const cats = await Category.find({ _id: { $in: catIds } }).lean();
+      const proSlugs = cats.map(c => c.slug);
+
+      const hasCommerceCat = proSlugs.some(s => comercioSubSlugs.includes(s));
+      const hasSeguridadCat = proSlugs.some(s => seguridadSlugs.includes(s));
+
+      if (hasCommerceCat || hasSeguridadCat) {
+        pro.primaryCategory = 'comercio';
+        pro.commerceType = 'minorista';
+        const foundSlug = proSlugs.find(s => comercioSubSlugs.includes(s));
+        pro.subCategory = foundSlug ? foundSlug.split('-').slice(1).join(' ').replace(/\b\w/g, c => c.toUpperCase()) : 'Tienda';
+        if (hasSeguridadCat) {
+          migratedFromSeguridad++;
+          pro.tags = pro.tags || [];
+          if (!pro.tags.includes('24hs')) pro.tags.push('24hs');
+        }
+        needsSave = true;
+      } else {
+        pro.primaryCategory = 'professional';
+        needsSave = true;
+      }
+
+      if (needsSave) {
+        await pro.save();
+        updated++;
+      }
+    }
+
+    const slugsToDeprecate = ['seguridad', 'delivery'];
+    for (const slug of slugsToDeprecate) {
+      await Category.updateOne({ slug }, { isActive: false });
+    }
+
+    res.json({ success: true, message: `Migracion completada`, migratedFromSeguridad, updated, total: allPros.length });
+  } catch (error) {
+    logger.error("Admin marketplace migration error:", error);
+    res.status(500).json({ success: false, message: "Error en migracion marketplace" });
   }
 });
 

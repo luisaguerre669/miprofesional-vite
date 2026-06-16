@@ -210,7 +210,7 @@ const userSchema = new mongoose.Schema({
     },
     lastReminderSent: {
       type: String,
-      enum: ['7d', '1d', 'expired'],
+      enum: [null, '7d', '1d', 'expired'],
       default: null
     }
   }

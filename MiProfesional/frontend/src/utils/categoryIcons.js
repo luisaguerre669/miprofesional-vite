@@ -9,7 +9,11 @@ import {
   BadgeCheck, ChevronDown, ChevronUp, Eye, EyeOff, Mail, LockKeyhole, Globe,
   ShoppingBag, Tag, Percent, CreditCard, Landmark, FileText, SlidersHorizontal,
   Filter, XCircle, Check, MenuSquare, List, Grid, RefreshCw, Loader2,
-  Dumbbell, Ruler
+  Dumbbell, Ruler,
+  // Commerce icons
+  Store, ShoppingCart, Coffee, Pill, Flower2, PawPrint,
+  Wine, Bike, Smartphone, Shirt, Baby, Gift,
+  UtensilsCrossed, IceCream, ShoppingBasket
 } from 'lucide-react';
 
 export const iconMap = {
@@ -22,6 +26,10 @@ export const iconMap = {
   Landmark, FileText, SlidersHorizontal, Filter, XCircle, Check,
   MenuSquare, List, Grid, RefreshCw, Loader2,
   Dumbbell, Ruler,
+  // Commerce icons
+  Store, ShoppingCart, Coffee, Pill, Flower2, PawPrint,
+  Wine, Bike, Smartphone, Shirt, Baby, Gift,
+  UtensilsCrossed, IceCream, ShoppingBasket,
 };
 
 export function resolveIcon(name, fallback = Briefcase) {

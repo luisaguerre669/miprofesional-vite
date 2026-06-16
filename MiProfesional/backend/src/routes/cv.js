@@ -197,7 +197,7 @@ router.get('/:id', authenticate, [
           code: 'SUBSCRIPTION_REQUIRED'
         });
       }
-      if (viewer.subscription.endDate && new Date(viewer.subscription.endDate) < new Date()) {
+      if (viewer.subscription?.endDate && new Date(viewer.subscription.endDate) < new Date()) {
         viewer.subscription.status = 'suspended';
         await viewer.save();
         return res.status(403).json({

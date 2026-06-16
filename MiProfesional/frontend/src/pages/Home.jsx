@@ -13,9 +13,11 @@ import {
   Search, ArrowRight, Star, MapPin, Sparkles,
   ChevronLeft, ChevronRight, Shield, Clock,
   UserPlus, Plus, AlertTriangle, Building2,
-  Briefcase, Crown, User, CheckCircle
+  Briefcase, Crown, User, CheckCircle, Store
 } from 'lucide-react';
 import AdBanner from '../components/ads/AdBanner';
+import NegociosDestacados from '../components/ads/NegociosDestacados';
+import MainBanner from '../components/MainBanner';
 import { resolveIcon, getInlineGradient } from '../utils/categoryIcons';
 
 const customIcon = new L.DivIcon({
@@ -36,13 +38,26 @@ const colorClasses = {
   emerald: { tag: 'text-emerald-300', bg: 'bg-emerald-500', hover: 'hover:bg-emerald-600', shadow: 'shadow-emerald-500/25' },
   purple: { tag: 'text-purple-300', bg: 'bg-purple-500', hover: 'hover:bg-purple-600', shadow: 'shadow-purple-500/25' },
   amber: { tag: 'text-amber-300', bg: 'bg-amber-500', hover: 'hover:bg-amber-600', shadow: 'shadow-amber-500/25' },
+  orange: { tag: 'text-orange-300', bg: 'bg-orange-500', hover: 'hover:bg-orange-600', shadow: 'shadow-orange-500/25' },
 };
 
 const promoSlides = [
   {
+    id: 'comercio',
+    image: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=1400&q=80',
+    image2: 'https://images.unsplash.com/photo-1578916171728-46686eac8d58?w=800&q=80',
+    tag: 'Nueva Categoria',
+    title: 'Comercios y negocios ',
+    titleAccent: 'de tu barrio',
+    desc: 'Pizzerias, farmacias, veterinarias, opticas, panaderias y mas locales comerciales cerca tuyo. Todo lo que necesitas a pasos de tu casa.',
+    link: '/categoria/comercio',
+    color: 'orange',
+    subcategories: ['Pizzerias', 'Farmacias', 'Veterinarias', 'Panaderias', 'Opticas', 'Cafeterias', 'Kioscos', 'Rotiserias', 'Confiterias', 'Floреrias'],
+  },
+  {
     id: 'belleza',
     image: 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=1200&q=80',
-    tag: 'Nueva Categoria',
+    tag: 'Belleza',
     title: 'Belleza y ',
     titleAccent: 'Cuidado Personal',
     desc: 'Encontra los mejores profesionales de estetica, peluqueria, masajes y cuidado personal cerca de tu zona.',
@@ -66,7 +81,7 @@ const promoSlides = [
     tag: 'Cuidado de tu Salud',
     title: 'Medicos y ',
     titleAccent: 'especialistas',
-    desc: 'Encontrá medicos, psicologos, kinesiologos y profesionales de la salud a domicilio o consulta.',
+    desc: 'Encontra medicos, psicologos, kinesiologos y profesionales de la salud a domicilio o consulta.',
     link: '/categoria/salud',
     color: 'purple',
   },
@@ -166,6 +181,35 @@ const Home = () => {
     api.get('/categories/tree')
       .then(r => {
         const data = r.data.data || [];
+
+        // Fallback estático para Comercio si aún no está en la BD
+        const hasComercio = data.some(c => c.slug === 'comercio');
+        if (!hasComercio) {
+          data.unshift({
+            _id: 'comercio-static',
+            title: 'Comercio',
+            slug: 'comercio',
+            description: 'Pizzerias, farmacias, panaderias, veterinarias, opticas y mas locales comerciales',
+            image: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=800&q=80',
+            icon: 'Store',
+            metadata: { color: '#f59e0b', featured: true },
+            sortOrder: 0,
+            subcategories: [
+              { name: 'Pizzerias', slug: 'pizzerias' },
+              { name: 'Farmacias', slug: 'farmacias' },
+              { name: 'Panaderias', slug: 'panaderias' },
+              { name: 'Veterinarias', slug: 'veterinarias' },
+              { name: 'Opticas', slug: 'opticas' },
+              { name: 'Cafeterias', slug: 'cafeterias' },
+              { name: 'Kioscos', slug: 'kioscos' },
+              { name: 'Rotiserias', slug: 'rotiserias' },
+              { name: 'Floреrias', slug: 'florerias' },
+              { name: 'Confiterias', slug: 'confiterias' },
+            ],
+          });
+        }
+
+        // Fallback estático para Belleza si no está en la BD
         const hasBelleza = data.some(c => c.slug === 'belleza-y-cuidado');
         if (!hasBelleza) {
           data.push({
@@ -189,6 +233,7 @@ const Home = () => {
             ],
           });
         }
+
         setCategories(data);
       })
       .catch(() => setCategories([]))
@@ -544,7 +589,7 @@ const Home = () => {
               </div>
             </form>
             <div className="flex flex-wrap gap-1 justify-center">
-              {['Albanil', 'Plomero', 'Electricista', 'Medico', 'Cerrajero', 'Gasista'].map(cat => (
+              {['Albanil', 'Plomero', 'Electricista', 'Medico', 'Cerrajero', 'Gasista', 'Pizzeria', 'Farmacia'].map(cat => (
                 <Link key={cat} to={`/search?q=${encodeURIComponent(cat)}`}
                   className="px-2 py-0.5 bg-white/5 hover:bg-white/10 backdrop-blur-sm border border-white/10 hover:border-primary-500/30 rounded-lg text-[10px] text-gray-300 hover:text-white transition-all"
                 >{cat}</Link>
@@ -590,7 +635,7 @@ const Home = () => {
                 </div>
               </form>
               <div className="flex flex-wrap gap-2 mt-4">
-                {['Albanil', 'Plomero', 'Electricista', 'Medico', 'Cerrajero', 'Gasista'].map(cat => (
+                {['Albanil', 'Plomero', 'Electricista', 'Medico', 'Cerrajero', 'Gasista', 'Pizzeria', 'Farmacia', 'Veterinaria', 'Panaderia'].map(cat => (
                   <Link key={cat} to={`/search?q=${encodeURIComponent(cat)}`}
                     className="px-3 py-1 bg-white/5 hover:bg-white/10 backdrop-blur-sm border border-white/10 hover:border-primary-500/30 rounded-xl text-[11px] text-gray-300 hover:text-white transition-all"
                   >{cat}</Link>
@@ -627,6 +672,70 @@ const Home = () => {
             <span className="inline-flex items-center gap-2 px-5 py-2.5 bg-white text-red-600 font-bold text-sm rounded-xl hover:bg-red-50 transition-all shadow-lg group-hover:translate-x-0.5 transition-transform">
               Ver Servicios 24/7 <ArrowRight size={16} />
             </span>
+          </div>
+        </Link>
+      </section>
+
+      {/* COMERCIO BANNER PRINCIPAL */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-6">
+        <Link to="/categoria/comercio"
+          className="block relative overflow-hidden rounded-2xl group shadow-xl hover:shadow-2xl transition-all duration-500"
+          style={{ minHeight: '220px' }}
+        >
+          {/* Imagen de fondo principal — pizzería / comercio real */}
+          <div className="absolute inset-0">
+            <img
+              src="https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=1400&q=85"
+              alt="Comercios de barrio — pizzerías, farmacias, panaderías"
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+              loading="eager"
+            />
+            {/* Gradient overlay premium */}
+            <div className="absolute inset-0 bg-gradient-to-r from-amber-950/90 via-amber-900/75 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+          </div>
+
+          {/* Grid de fotos secundarias — esquina derecha */}
+          <div className="absolute right-0 top-0 bottom-0 w-[45%] hidden md:grid grid-cols-2 grid-rows-2 gap-0.5 overflow-hidden opacity-80 group-hover:opacity-90 transition-opacity">
+            <img src="https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=400&q=75" alt="Pizzería" className="w-full h-full object-cover" loading="lazy" />
+            <img src="https://images.unsplash.com/photo-1576602976047-174e57a47881?w=400&q=75" alt="Farmacia" className="w-full h-full object-cover" loading="lazy" />
+            <img src="https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=400&q=75" alt="Cafetería" className="w-full h-full object-cover" loading="lazy" />
+            <img src="https://images.unsplash.com/photo-1588964895597-cfccd6e2dbf9?w=400&q=75" alt="Veterinaria" className="w-full h-full object-cover" loading="lazy" />
+          </div>
+          {/* Overlay sobre grid de fotos */}
+          <div className="absolute inset-0 hidden md:block bg-gradient-to-r from-transparent via-amber-950/30 to-transparent pointer-events-none" />
+
+          {/* Contenido principal */}
+          <div className="relative z-10 px-6 md:px-10 py-8 md:py-10 flex flex-col justify-between h-full min-h-[220px] md:max-w-[55%]">
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-8 h-8 rounded-lg bg-amber-500 flex items-center justify-center shrink-0">
+                  <Store size={16} className="text-white" />
+                </div>
+                <span className="text-amber-300 text-xs font-bold uppercase tracking-widest">Nueva Categoría</span>
+              </div>
+              <h2 className="text-2xl md:text-3xl lg:text-4xl font-black text-white mb-2 leading-tight">
+                Comercios y negocios<br />
+                <span className="text-amber-300">de tu barrio</span>
+              </h2>
+              <p className="text-white/70 text-sm md:text-base mb-5 max-w-md leading-relaxed">
+                Pizzerías, farmacias, veterinarias, ópticas, panaderías y más de 30 categorías de locales comerciales cerca tuyo.
+              </p>
+            </div>
+
+            {/* Chips de subcategorías */}
+            <div>
+              <div className="flex flex-wrap gap-1.5 mb-4">
+                {['Pizzerías', 'Farmacias', 'Veterinarias', 'Panaderías', 'Ópticas', 'Cafeterías', 'Kioscos', 'Rotiserías', 'Florerías', 'Confiterías', 'Heladerías', 'Ferreterías'].map(sub => (
+                  <span key={sub} className="px-2.5 py-1 bg-white/10 backdrop-blur-sm border border-white/15 rounded-lg text-white/80 text-[11px] font-medium hover:bg-white/20 transition-colors">
+                    {sub}
+                  </span>
+                ))}
+              </div>
+              <span className="inline-flex items-center gap-2 px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-white font-bold rounded-xl transition-all shadow-lg shadow-amber-500/30 text-sm group-hover:translate-x-0.5 transition-transform">
+                Explorar Comercios <ArrowRight size={16} />
+              </span>
+            </div>
           </div>
         </Link>
       </section>
@@ -854,75 +963,9 @@ const Home = () => {
         )}
       </section>
 
-      {/* PROMO CAROUSEL */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-10 md:mb-20">
-        <div className="relative overflow-hidden rounded-2xl">
-          <div className="relative">
-            {promoSlidesForPlatform.map((slide, i) => {
-              const cc = colorClasses[slide.color];
-              return (
-                <Link key={slide.id} to={slide.link}
-                  className={`${i === activePromoIndex ? 'block' : 'hidden'} group relative overflow-hidden rounded-2xl border border-gray-200 bg-white hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300`}
-                >
-                  <div className="aspect-[21/9] md:aspect-[3/1] overflow-hidden">
-                    <img src={slide.image} alt={slide.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                      loading="lazy"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/60 to-transparent" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
-                  </div>
-                  <div className="absolute inset-0 p-6 md:p-10 lg:p-14 flex flex-col justify-center">
-                    <div className="max-w-xl">
-                      <div className="flex items-center gap-2 mb-3">
-                        <Sparkles size={20} className={cc.tag} />
-                        <span className={`${cc.tag} text-xs font-bold uppercase tracking-widest`}>{slide.tag}</span>
-                      </div>
-                      <h2 className="text-2xl md:text-4xl font-black text-white mb-2">
-                        {slide.title}<span className={cc.tag}>{slide.titleAccent}</span>
-                      </h2>
-                      <p className="text-sm md:text-base text-white/60 mb-4 md:mb-6 max-w-md leading-relaxed">{slide.desc}</p>
-                      <span className={`inline-flex items-center gap-2 px-5 py-2.5 ${cc.bg} text-white font-bold rounded-xl ${cc.hover} transition-all shadow-lg ${cc.shadow} text-sm`}>
-                        Ver mas <ArrowRight size={16} />
-                      </span>
-                    </div>
-                  </div>
-                  {slide.subcategories && (
-                    <div className="absolute bottom-0 right-0 p-4 md:p-6 hidden sm:block">
-                      <div className="flex flex-wrap justify-end gap-1.5 max-w-md">
-                        {slide.subcategories.map(sub => (
-                          <span key={sub} className="px-2.5 py-1 bg-white/10 backdrop-blur-sm rounded-md text-white/80 text-[11px] font-medium border border-white/10">
-                            {sub}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </Link>
-              );
-            })}
-          </div>
-          {promoSlidesForPlatform.length > 1 && (
-            <>
-              <button onClick={() => setCarouselIndex(i => (i - 1 + promoSlidesForPlatform.length) % promoSlidesForPlatform.length)}
-                className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white hover:bg-white/40 transition-all z-10">
-                <ChevronLeft size={20} />
-              </button>
-              <button onClick={() => setCarouselIndex(i => (i + 1) % promoSlidesForPlatform.length)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white hover:bg-white/40 transition-all z-10">
-                <ChevronRight size={20} />
-              </button>
-              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 z-10">
-                {promoSlidesForPlatform.map((_, i) => (
-                  <button key={i} onClick={() => setCarouselIndex(i)}
-                    className={`w-2 h-2 rounded-full transition-all ${i === activePromoIndex ? 'bg-white w-6' : 'bg-white/40 hover:bg-white/60'}`}
-                  />
-                ))}
-              </div>
-            </>
-          )}
-        </div>
-      </section>
+      <NegociosDestacados />
+
+      <MainBanner />
 
       {/* MAP + ADS SECTION */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-10 md:mb-20">
@@ -974,9 +1017,9 @@ const Home = () => {
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-6 md:mb-10">
             <h2 className="text-xl md:text-2xl font-bold text-gray-900">Elegí el plan ideal para vos</h2>
-            <p className="text-gray-500 mt-1 text-xs md:text-sm">Todos los planes incluyen 30 días de prueba gratuita</p>
+            <p className="text-amber-700 mt-1 text-xs md:text-sm font-semibold">⚡ 60 DÍAS GRATIS — primeros 700 suscriptores. Después mantené tu plan desde $5.000/mes.</p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="bg-white rounded-2xl border border-gray-100 p-5 md:p-6 text-center">
               <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center mx-auto mb-3">
                 <User size={20} className="text-blue-600" />
@@ -987,13 +1030,14 @@ const Home = () => {
               <p className="text-[11px] text-gray-500 mb-4">Siempre gratis</p>
               <ul className="text-xs text-gray-600 space-y-2 mb-5 text-left">
                 <li className="flex items-start gap-2"><CheckCircle size={12} className="text-emerald-500 shrink-0 mt-0.5" /> Buscar profesionales</li>
+                <li className="flex items-start gap-2"><CheckCircle size={12} className="text-emerald-500 shrink-0 mt-0.5" /> Buscar comercios</li>
                 <li className="flex items-start gap-2"><CheckCircle size={12} className="text-emerald-500 shrink-0 mt-0.5" /> Subir currículum</li>
                 <li className="flex items-start gap-2"><CheckCircle size={12} className="text-emerald-500 shrink-0 mt-0.5" /> Contacto directo</li>
               </ul>
               <Link to="/register" className="block w-full py-2 bg-blue-600 text-white text-xs font-bold rounded-xl hover:bg-blue-700 transition-all">Crear cuenta</Link>
             </div>
             <div className="bg-white rounded-2xl border-2 border-primary-200 p-5 md:p-6 text-center relative">
-              <span className="inline-flex items-center gap-1 px-3 py-0.5 bg-primary-100 text-primary-700 text-[10px] font-bold rounded-full mb-2">30 días gratis</span>
+              <span className="inline-flex items-center gap-1 px-3 py-0.5 bg-primary-100 text-primary-700 text-[10px] font-bold rounded-full mb-2">60 días gratis</span>
               <div className="w-10 h-10 bg-primary-50 rounded-xl flex items-center justify-center mx-auto mb-3">
                 <Briefcase size={20} className="text-primary-600" />
               </div>
@@ -1006,11 +1050,28 @@ const Home = () => {
                 <li className="flex items-start gap-2"><CheckCircle size={12} className="text-emerald-500 shrink-0 mt-0.5" /> CV premium destacado</li>
                 <li className="flex items-start gap-2"><CheckCircle size={12} className="text-emerald-500 shrink-0 mt-0.5" /> Estadísticas de perfil</li>
               </ul>
-              <Link to="/register?role=professional" className="block w-full py-2 bg-primary-600 text-white text-xs font-bold rounded-xl hover:bg-primary-700 transition-all">Empezar 30 días gratis</Link>
+              <Link to="/register?role=professional" className="block w-full py-2 bg-primary-600 text-white text-xs font-bold rounded-xl hover:bg-primary-700 transition-all">Empezar 60 días gratis</Link>
+            </div>
+            <div className="bg-white rounded-2xl border-2 border-amber-200 p-5 md:p-6 text-center relative">
+              <span className="inline-flex items-center gap-1 px-3 py-0.5 bg-amber-100 text-amber-700 text-[10px] font-bold rounded-full mb-2">60 días gratis</span>
+              <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center mx-auto mb-3">
+                <Store size={20} className="text-amber-600" />
+              </div>
+              <h3 className="font-bold text-gray-900">Comercio</h3>
+              <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-1">Plan Mensual</p>
+              <p className="text-3xl font-black text-gray-900 mb-1">$10.000</p>
+              <p className="text-[11px] text-gray-500 mb-4">por mes · Cancelas cuando quieras</p>
+              <ul className="text-xs text-gray-600 space-y-2 mb-5 text-left">
+                <li className="flex items-start gap-2"><CheckCircle size={12} className="text-emerald-500 shrink-0 mt-0.5" /> Perfil en sección Comercios</li>
+                <li className="flex items-start gap-2"><CheckCircle size={12} className="text-emerald-500 shrink-0 mt-0.5" /> Subcategoría específica</li>
+                <li className="flex items-start gap-2"><CheckCircle size={12} className="text-emerald-500 shrink-0 mt-0.5" /> Galería de productos</li>
+                <li className="flex items-start gap-2"><CheckCircle size={12} className="text-emerald-500 shrink-0 mt-0.5" /> Horarios personalizados</li>
+              </ul>
+              <Link to="/register?role=professional" className="block w-full py-2 bg-amber-600 text-white text-xs font-bold rounded-xl hover:bg-amber-700 transition-all">Empezar 60 días gratis</Link>
             </div>
             <div className="bg-white rounded-2xl border border-gray-100 p-5 md:p-6 text-center">
-              <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center mx-auto mb-3">
-                <Building2 size={20} className="text-amber-600" />
+              <div className="w-10 h-10 bg-purple-50 rounded-xl flex items-center justify-center mx-auto mb-3">
+                <Building2 size={20} className="text-purple-600" />
               </div>
               <h3 className="font-bold text-gray-900">Empresa</h3>
               <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-1">Plan Mensual</p>
@@ -1021,7 +1082,7 @@ const Home = () => {
                 <li className="flex items-start gap-2"><CheckCircle size={12} className="text-emerald-500 shrink-0 mt-0.5" /> Contacto ilimitado</li>
                 <li className="flex items-start gap-2"><CheckCircle size={12} className="text-emerald-500 shrink-0 mt-0.5" /> Panel de administración</li>
               </ul>
-              <Link to="/register?role=company" className="block w-full py-2 bg-amber-600 text-white text-xs font-bold rounded-xl hover:bg-amber-700 transition-all">Crear cuenta empresa</Link>
+              <Link to="/register?role=company" className="block w-full py-2 bg-purple-600 text-white text-xs font-bold rounded-xl hover:bg-purple-700 transition-all">Crear cuenta empresa</Link>
             </div>
           </div>
         </div>

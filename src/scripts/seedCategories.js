@@ -38,7 +38,7 @@ async function seed() {
       }
 
       parent.subcategories = subIds;
-      parent.professionalCount = await Professional.countDocuments({ categoryId: { $in: subIds } });
+      parent.professionalCount = await Professional.countDocuments({ 'categories.categoryId': { $in: subIds } });
       await parent.save();
       console.log(`  ${mainData.title} (${mainData.slug}) — ${subIds.length} subcategorias, ${parent.professionalCount} profesionales`);
       totalSubs += subIds.length;

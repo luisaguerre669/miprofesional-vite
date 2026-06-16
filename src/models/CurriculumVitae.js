@@ -69,7 +69,18 @@ const cvSchema = new mongoose.Schema({
     default: 'entry',
     index: true
   },
-  isActive: { type: Boolean, default: true, index: true }
+  isActive: { type: Boolean, default: true, index: true },
+  status: {
+    type: String,
+    enum: ['nuevo', 'revisado', 'aprobado', 'rechazado'],
+    default: 'nuevo',
+    index: true
+  },
+  featured: { type: Boolean, default: false, index: true },
+  primaryCategory: { type: String, enum: ['professional', 'empresa', 'comercio', null], default: null, index: true },
+  commerceType: { type: String, enum: ['minorista', 'mayorista', 'mixto', null], default: null },
+  subCategory: { type: String, trim: true, maxlength: 120, default: null },
+  tags: [{ type: String, trim: true, maxlength: 60 }]
 }, {
   timestamps: true,
   toJSON: { virtuals: true },
@@ -93,6 +104,15 @@ cvSchema.index({
   'education.field': 'text',
   'location.city': 'text',
   'location.state': 'text'
+});
+
+cvSchema.virtual('isComplete').get(function() {
+  return !!(
+    this.personalData?.fullName &&
+    this.skills?.length > 0 &&
+    this.personalData?.headline &&
+    (this.experience?.length > 0 || this.education?.length > 0)
+  );
 });
 
 cvSchema.statics.searchForEmployers = function(filters = {}) {

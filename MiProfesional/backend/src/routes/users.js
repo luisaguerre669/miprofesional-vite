@@ -47,7 +47,7 @@ router.put("/profile", authenticate, [
     if (req.body.address) {
       const user = await User.findById(req.userId);
       if (!user) return res.status(404).json({ success: false, message: "Usuario no encontrado" });
-      user.address = { ...user.address.toObject(), ...req.body.address };
+      user.address = { ...(user.address ? user.address.toObject() : {}), ...req.body.address };
       if (req.body.address.city || req.body.address.street) {
         user.markModified('address');
       }

@@ -9,16 +9,30 @@ const professionalSchema = new mongoose.Schema({
     ref: 'User',
     required: [true, 'User ID is required']
   },
+  // @deprecated Use `categories` array instead. Kept for backward compatibility.
   categoryId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Category',
     default: null
   },
+  // @deprecated Use `categories` array instead. Kept for backward compatibility.
   subcategoryId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Category',
     default: null
   },
+  // Multi-category support: a professional/business can belong to many categories
+  categories: [{
+    categoryId: { type: mongoose.Schema.Types.ObjectId, ref: 'Category', required: true },
+    subcategoryId: { type: mongoose.Schema.Types.ObjectId, ref: 'Category', default: null },
+    _id: false
+  }],
+  // Work modalities: how the professional offers their services
+  workModalities: [{
+    type: String,
+    enum: ['local', 'home_service', 'online', 'mobile'],
+    trim: true
+  }],
   businessName: {
     type: String,
     trim: true,
@@ -418,6 +432,8 @@ professionalSchema.virtual('discoveryCategory').get(function() {
 // Indexes
 professionalSchema.index({ userId: 1 });
 professionalSchema.index({ categoryId: 1 });
+professionalSchema.index({ 'categories.categoryId': 1 });
+professionalSchema.index({ 'categories.subcategoryId': 1 });
 professionalSchema.index({ 'location.coordinates': '2dsphere' });
 professionalSchema.index({ 'verification.isVerified': 1 });
 professionalSchema.index({ isActive: 1 });
@@ -447,6 +463,12 @@ professionalSchema.pre('save', async function(next) {
   if (this.isFeatured && this.featuredUntil && new Date() > this.featuredUntil) {
     this.isFeatured = false;
     this.featuredUntil = null;
+  }
+
+  // Sync legacy categoryId from primary category (backward compatibility)
+  if (this.categories && this.categories.length > 0) {
+    this.categoryId = this.categories[0].categoryId;
+    this.subcategoryId = this.categories[0].subcategoryId;
   }
 
   if (this.isModified('location.address') || this.isModified('location.city') || this.isModified('location.state')) {
@@ -603,6 +625,8 @@ professionalSchema.statics.search = function(query, options = {}) {
     categoryId,
     categoryIds,
     subcategoryId,
+    modality,
+    modalities,
     location,
     maxDistance = 50,
     minRating = 0,
@@ -629,15 +653,33 @@ professionalSchema.statics.search = function(query, options = {}) {
     searchQuery.$text = { $search: query };
   }
   
-  // Category filter
+  // Multi-category filter: match against both legacy `categoryId` and new `categories` array
   if (categoryId) {
-    searchQuery.categoryId = categoryId;
+    searchQuery.$or = [
+      { categoryId },
+      { 'categories.categoryId': categoryId }
+    ];
   }
-  if (categoryIds) {
-    searchQuery.categoryId = { $in: categoryIds };
+  if (categoryIds && categoryIds.length > 0) {
+    const catIds = Array.isArray(categoryIds) ? categoryIds : [categoryIds];
+    searchQuery.$or = [
+      { categoryId: { $in: catIds } },
+      { 'categories.categoryId': { $in: catIds } }
+    ];
   }
   if (subcategoryId) {
-    searchQuery.subcategoryId = subcategoryId;
+    searchQuery.$or = [
+      { subcategoryId },
+      { 'categories.subcategoryId': subcategoryId }
+    ];
+  }
+
+  // Work modality filter
+  if (modality) {
+    searchQuery.workModalities = modality;
+  }
+  if (modalities && modalities.length > 0) {
+    searchQuery.workModalities = { $in: Array.isArray(modalities) ? modalities : [modalities] };
   }
   
   // Location filter

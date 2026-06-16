@@ -3,6 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../lib/axios';
 import CVForm from '../components/cv/CVForm';
+import {
+  Briefcase, CheckCircle, ChevronDown, ChevronRight, Mail, MapPin,
+  Phone, Save, Store, Home, Monitor, Smartphone, User, Layers, Tag
+} from 'lucide-react';
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -31,7 +35,11 @@ const Profile = () => {
     address: '',
     neighborhood: '',
     city: '',
-    state: ''
+    state: '',
+    primaryCategory: '',
+    commerceType: '',
+    subCategory: '',
+    tags: '',
   });
   const [available24h, setAvailable24h] = useState(false);
   const [availabilityFlags, setAvailabilityFlags] = useState({
@@ -41,6 +49,20 @@ const Profile = () => {
     atencionInmediata: false,
     servicioADomicilio: false,
   });
+  const [allCategories, setAllCategories] = useState([]);
+  const [selectedCategories, setSelectedCategories] = useState([]);
+  const [selectedWorkModalities, setSelectedWorkModalities] = useState([]);
+  const [expandedCats, setExpandedCats] = useState({});
+  const MODALITIES = [
+    { key: 'local', label: 'Local fisico', icon: Store },
+    { key: 'home_service', label: 'A domicilio', icon: Home },
+    { key: 'online', label: 'Online', icon: Monitor },
+    { key: 'mobile', label: 'Movil', icon: Smartphone },
+  ];
+
+  useEffect(() => {
+    api.get('/categories?limit=50').then(r => setAllCategories(r.data.data || [])).catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (user) {
@@ -75,6 +97,8 @@ const Profile = () => {
           atencionInmediata: pro.atencionInmediata || false,
           servicioADomicilio: pro.servicioADomicilio || false,
         });
+        setSelectedCategories(pro.categories || []);
+        setSelectedWorkModalities(pro.workModalities || []);
         setProForm({
           businessName: pro.businessName || '',
           profession: pro.profession || '',
@@ -85,7 +109,11 @@ const Profile = () => {
           address: pro.location?.address || '',
           neighborhood: pro.location?.neighborhood || '',
           city: pro.location?.city || '',
-          state: pro.location?.state || ''
+          state: pro.location?.state || '',
+          primaryCategory: pro.primaryCategory || '',
+          commerceType: pro.commerceType || '',
+          subCategory: pro.subCategory || '',
+          tags: (pro.tags || []).join(', '),
         });
       }
     } catch (error) {
@@ -137,6 +165,12 @@ const Profile = () => {
         profession: proForm.profession,
         description: proForm.description,
         specialties: proForm.specialties.split(',').map(s => s.trim()).filter(Boolean),
+        primaryCategory: proForm.primaryCategory || undefined,
+        commerceType: proForm.commerceType || undefined,
+        subCategory: proForm.subCategory || undefined,
+        tags: proForm.tags ? proForm.tags.split(',').map(t => t.trim()).filter(Boolean) : undefined,
+        categories: selectedCategories,
+        workModalities: selectedWorkModalities,
         available24h,
         ...availabilityFlags,
         pricing: { hourlyRate: Number(proForm.hourlyRate) },
@@ -264,6 +298,194 @@ const Profile = () => {
               <input type="text" value={proForm.specialties} onChange={(e) => setProForm({ ...proForm, specialties: e.target.value })}
                 className="w-full p-3 border border-gray-300 rounded-lg" placeholder="Ej: Gas, Electricidad, Reparaciones" />
             </div>
+
+            {/* Multi-Category Selector */}
+            <div className="p-4 bg-white border border-gray-200 rounded-lg space-y-3">
+              <div>
+                <p className="font-medium text-gray-900 text-sm flex items-center gap-1.5"><Layers size={14} /> Categorias del Negocio</p>
+                <p className="text-xs text-gray-500">Selecciona una o mas categorias donde aparece tu negocio</p>
+              </div>
+              <div className="max-h-72 overflow-y-auto space-y-1">
+                {allCategories.filter(c => !c.parentId).map(cat => (
+                  <div key={cat._id} className="border border-gray-100 rounded-lg">
+                    <button type="button" onClick={() => setExpandedCats(p => ({ ...p, [cat._id]: !p[cat._id] }))}
+                      className="w-full flex items-center justify-between px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-lg"
+                    >
+                      <span>{cat.title}</span>
+                      {expandedCats[cat._id] ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                    </button>
+                    {expandedCats[cat._id] && (cat.subcategories || allCategories.filter(s => s.parentId === cat._id)).map(sub => (
+                      <label key={sub._id || sub.slug} className={`flex items-center gap-2 px-4 py-1.5 cursor-pointer transition-all ${
+                        selectedCategories.some(s => s.subcategoryId === (sub._id || sub.slug)) ? 'bg-primary-50' : 'hover:bg-gray-50'
+                      }`}>
+                        <input type="checkbox" checked={selectedCategories.some(s => s.subcategoryId === (sub._id || sub.slug))}
+                          onChange={() => {
+                            setSelectedCategories(prev => {
+                              const exists = prev.some(s => s.subcategoryId === (sub._id || sub.slug));
+                              if (exists) return prev.filter(s => s.subcategoryId !== (sub._id || sub.slug));
+                              return [...prev, { categoryId: cat._id, subcategoryId: sub._id || sub.slug }];
+                            });
+                          }}
+                          className="rounded border-gray-300 text-primary-600 focus:ring-primary-400"
+                        />
+                        <span className="text-sm text-gray-600">{sub.title}</span>
+                      </label>
+                    ))}
+                    {!expandedCats[cat._id] && (
+                      <label className="flex items-center gap-2 px-4 py-1 cursor-pointer hover:bg-gray-50">
+                        <input type="checkbox" checked={selectedCategories.some(s => s.categoryId === cat._id)}
+                          onChange={() => {
+                            setSelectedCategories(prev => {
+                              const exists = prev.some(s => s.categoryId === cat._id);
+                              if (exists) return prev.filter(s => s.categoryId !== cat._id);
+                              return [...prev, { categoryId: cat._id, subcategoryId: null }];
+                            });
+                          }}
+                          className="rounded border-gray-300 text-primary-600 focus:ring-primary-400"
+                        />
+                        <span className="text-sm text-gray-600">{cat.title} (categoria completa)</span>
+                      </label>
+                    )}
+                  </div>
+                ))}
+                {allCategories.length === 0 && <p className="text-xs text-gray-400 py-2 text-center">Cargando categorias...</p>}
+              </div>
+              {selectedCategories.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {selectedCategories.map((sc, i) => {
+                    const cat = allCategories.find(c => c._id === sc.categoryId);
+                    const sub = cat?.subcategories?.find(s => (s._id || s.slug) === sc.subcategoryId) || allCategories.find(c => c._id === sc.subcategoryId);
+                    return (
+                      <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 bg-primary-50 text-primary-700 text-[10px] font-medium rounded-md">
+                        {cat?.title}{sub ? ` → ${sub.title}` : ''}
+                      </span>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Work Modalities */}
+            <div className="p-4 bg-white border border-gray-200 rounded-lg space-y-3">
+              <p className="font-medium text-gray-900 text-sm">Modalidades de atencion</p>
+              <p className="text-xs text-gray-500">¿Como ofreces tus servicios?</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {MODALITIES.map(mod => {
+                  const ModIcon = mod.icon;
+                  return (
+                    <label key={mod.key} className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition-all ${
+                      selectedWorkModalities.includes(mod.key) ? 'bg-white border-primary-300' : 'bg-white/50 border-gray-200'
+                    }`}>
+                      <input type="checkbox" checked={selectedWorkModalities.includes(mod.key)}
+                        onChange={() => setSelectedWorkModalities(prev =>
+                          prev.includes(mod.key) ? prev.filter(k => k !== mod.key) : [...prev, mod.key]
+                        )}
+                        className="rounded border-gray-300 text-primary-600 focus:ring-primary-400"
+                      />
+                      <ModIcon size={14} className="text-gray-500" />
+                      <span className="text-sm font-medium text-gray-900">{mod.label}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Marketplace Fields */}
+            <div className="p-4 bg-amber-50/50 border border-amber-200 rounded-lg space-y-3">
+              <p className="font-medium text-gray-900 text-sm flex items-center gap-1.5"><Store size={14} /> Marketplace</p>
+              <p className="text-xs text-gray-500">Configura los datos de tu comercio o empresa</p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Tipo de Perfil</label>
+                  <select value={proForm.primaryCategory} onChange={e => setProForm({ ...proForm, primaryCategory: e.target.value })}
+                    className="w-full p-2.5 border border-gray-200 rounded-lg text-sm bg-white"
+                  >
+                    <option value="">Seleccionar</option>
+                    <option value="professional">Profesional</option>
+                    <option value="empresa">Empresa</option>
+                    <option value="comercio">Comercio</option>
+                  </select>
+                </div>
+                {proForm.primaryCategory === 'comercio' && (
+                  <>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Tipo de Comercio</label>
+                      <select value={proForm.commerceType} onChange={e => setProForm({ ...proForm, commerceType: e.target.value })}
+                        className="w-full p-2.5 border border-gray-200 rounded-lg text-sm bg-white"
+                      >
+                        <option value="">Seleccionar</option>
+                        <option value="minorista">Minorista</option>
+                        <option value="mayorista">Mayorista</option>
+                        <option value="mixto">Mixto</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Subcategoría</label>
+                      <input type="text" value={proForm.subCategory} onChange={e => setProForm({ ...proForm, subCategory: e.target.value })}
+                        placeholder="Ej: Pizzería, Farmacia"
+                        className="w-full p-2.5 border border-gray-200 rounded-lg text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Tags (separados por coma)</label>
+                      <input type="text" value={proForm.tags} onChange={e => setProForm({ ...proForm, tags: e.target.value })}
+                        placeholder="Ej: 24hs, envios, delivery"
+                        className="w-full p-2.5 border border-gray-200 rounded-lg text-sm"
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Marketplace Fields */}
+            <div className="p-4 bg-amber-50/50 border border-amber-200 rounded-lg space-y-3">
+              <p className="font-medium text-gray-900 text-sm flex items-center gap-1.5"><Store size={14} /> Marketplace</p>
+              <p className="text-xs text-gray-500">Configura los datos de tu comercio o empresa</p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Tipo de Perfil</label>
+                  <select value={proForm.primaryCategory} onChange={e => setProForm({ ...proForm, primaryCategory: e.target.value })}
+                    className="w-full p-2.5 border border-gray-200 rounded-lg text-sm bg-white"
+                  >
+                    <option value="">Seleccionar</option>
+                    <option value="professional">Profesional</option>
+                    <option value="empresa">Empresa</option>
+                    <option value="comercio">Comercio</option>
+                  </select>
+                </div>
+                {proForm.primaryCategory === 'comercio' && (
+                  <>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Tipo de Comercio</label>
+                      <select value={proForm.commerceType} onChange={e => setProForm({ ...proForm, commerceType: e.target.value })}
+                        className="w-full p-2.5 border border-gray-200 rounded-lg text-sm bg-white"
+                      >
+                        <option value="">Seleccionar</option>
+                        <option value="minorista">Minorista</option>
+                        <option value="mayorista">Mayorista</option>
+                        <option value="mixto">Mixto</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Subcategoría</label>
+                      <input type="text" value={proForm.subCategory} onChange={e => setProForm({ ...proForm, subCategory: e.target.value })}
+                        placeholder="Ej: Pizzería, Farmacia"
+                        className="w-full p-2.5 border border-gray-200 rounded-lg text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Tags (separados por coma)</label>
+                      <input type="text" value={proForm.tags} onChange={e => setProForm({ ...proForm, tags: e.target.value })}
+                        placeholder="Ej: 24hs, envios, delivery"
+                        className="w-full p-2.5 border border-gray-200 rounded-lg text-sm"
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Tarifa por hora ($)</label>

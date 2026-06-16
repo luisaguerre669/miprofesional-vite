@@ -7,6 +7,8 @@ import { isNativeAndroid } from '../utils/platform';
 
 
 const Layout = ({ children }) => {
+  const renderCount = React.useRef(0);
+  renderCount.current++;
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
   const [searchQuery, setSearchQuery] = React.useState('');
   const [scrolled, setScrolled] = React.useState(false);
@@ -14,6 +16,7 @@ const Layout = ({ children }) => {
   const { user, isAuthenticated, logout, isProfessional, isEmployer, isCompany } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  console.log(`[RENDER] Layout — render #${renderCount.current} | path="${location.pathname}" | auth=${isAuthenticated} | role=${user?.role || 'none'}`);
 
   React.useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);

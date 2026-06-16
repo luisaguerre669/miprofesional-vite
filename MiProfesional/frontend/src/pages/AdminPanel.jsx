@@ -9,7 +9,7 @@ import {
   Shield, Star, Mail, Phone, MapPin, Trash2, ExternalLink, Edit3,
   UserPlus, DollarSign, Calendar, Filter, ArrowUpRight, TrendingUp,
   Activity, Loader2, ChevronLeft, ChevronRight, MoreHorizontal, RefreshCw, Wifi, Database, Server, Terminal,
-  Building2, Crown, Zap
+  Building2, Crown, Zap, FileText, Eye, Store
 } from 'lucide-react';
 
 const sidebar = [
@@ -18,6 +18,7 @@ const sidebar = [
   { id: 'professionals', label: 'Profesionales', icon: Briefcase },
   { id: 'companies', label: 'Empresas', icon: Building2 },
   { id: 'payments', label: 'Pagos', icon: CreditCard },
+  { id: 'cvs', label: 'Curriculums', icon: FileText },
   { id: 'stats', label: 'Estadisticas', icon: BarChart3 },
   { id: 'settings', label: 'Configuracion', icon: Settings },
 ];
@@ -73,6 +74,18 @@ const AdminPanel = () => {
   const [companyPaymentsPage, setCompanyPaymentsPage] = useState(1);
   const [companyPaymentsTotal, setCompanyPaymentsTotal] = useState(0);
 
+  const [cvs, setCvs] = useState([]);
+  const [cvsPage, setCvsPage] = useState(1);
+  const [cvsTotal, setCvsTotal] = useState(0);
+  const [cvsSearch, setCvsSearch] = useState('');
+  const [cvsProfessionFilter, setCvsProfessionFilter] = useState('');
+  const [cvsCompletenessFilter, setCvsCompletenessFilter] = useState('');
+  const [cvsCategoryFilter, setCvsCategoryFilter] = useState('');
+  const [cvsStatusFilter, setCvsStatusFilter] = useState('');
+  const [cvsSubcategoryFilter, setCvsSubcategoryFilter] = useState('');
+  const [selectedCv, setSelectedCv] = useState(null);
+  const [selectedCvFull, setSelectedCvFull] = useState(null);
+
   useEffect(() => {
     fetchDashboard();
     fetchUsers();
@@ -82,6 +95,7 @@ const AdminPanel = () => {
     fetchCompanies();
     fetchCompaniesStats();
     fetchCompanyPayments();
+    fetchCVs();
   }, []);
 
   const fetchDashboard = async () => {
@@ -212,6 +226,61 @@ const AdminPanel = () => {
     } catch (e) { alert(e.response?.data?.message || 'Error al reprocesar'); }
   };
 
+  const fetchCVs = async (page = 1, search = '', profession = '', completeness = '', category = '', status = '', subcategory = '') => {
+    try {
+      const params = { page, limit: 15 };
+      if (search) params.search = search;
+      if (profession) params.profession = profession;
+      if (completeness) params.completeness = completeness;
+      if (category) params.category = category;
+      if (status) params.status = status;
+      if (subcategory) params.subcategory = subcategory;
+      const { data } = await api.get('/admin/cvs', { params });
+      setCvs(data.data || []);
+      setCvsTotal(data.pagination?.total || 0);
+      setCvsPage(page);
+    } catch (e) { console.error(e); }
+  };
+
+  const handleCvSearch = (e) => {
+    e.preventDefault();
+    fetchCVs(1, cvsSearch, cvsProfessionFilter, cvsCompletenessFilter, cvsCategoryFilter, cvsStatusFilter, cvsSubcategoryFilter);
+  };
+
+  const updateCvStatus = async (id, status) => {
+    try {
+      await api.patch(`/admin/cvs/${id}/status`, { status });
+      fetchCVs(cvsPage, cvsSearch, cvsProfessionFilter, cvsCompletenessFilter, cvsCategoryFilter, cvsStatusFilter, cvsSubcategoryFilter);
+    } catch (e) { console.error(e); }
+  };
+
+  const toggleCvFeatured = async (id) => {
+    try {
+      await api.patch(`/admin/cvs/${id}/featured`);
+      fetchCVs(cvsPage, cvsSearch, cvsProfessionFilter, cvsCompletenessFilter, cvsCategoryFilter, cvsStatusFilter, cvsSubcategoryFilter);
+    } catch (e) { console.error(e); }
+  };
+
+  const deleteCv = async (id, name) => {
+    if (!window.confirm(`Eliminar el CV de ${name}?`)) return;
+    try {
+      await api.delete(`/admin/cvs/${id}`);
+      if (selectedCv?._id === id) setSelectedCv(null);
+      if (selectedCvFull?._id === id) setSelectedCvFull(null);
+      fetchCVs(cvsPage, cvsSearch, cvsProfessionFilter, cvsCompletenessFilter, cvsCategoryFilter, cvsStatusFilter, cvsSubcategoryFilter);
+    } catch (e) { console.error(e); }
+  };
+
+  const openCvDetail = async (cv) => {
+    setSelectedCv(cv);
+    try {
+      const { data } = await api.get(`/admin/cvs/${cv._id}`);
+      setSelectedCvFull(data.data);
+    } catch (e) {
+      setSelectedCvFull(cv);
+    }
+  };
+
   const cleanTestData = async () => {
     if (!window.confirm('Eliminar todos los datos de prueba (usuarios test/fix/demo)? Esta accion no se puede deshacer.')) return;
     try {
@@ -314,6 +383,50 @@ const AdminPanel = () => {
                     </div>
                   );
                 })}
+              </div>
+
+              {/* CV Stats Row */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="bg-white rounded-xl border border-gray-200 p-5">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center">
+                      <FileText size={20} className="text-purple-600" />
+                    </div>
+                    <ArrowUpRight size={16} className="text-gray-300" />
+                  </div>
+                  <p className="text-2xl font-black text-gray-900">{(dashboard?.stats?.totalCVs || 0).toLocaleString()}</p>
+                  <p className="text-xs text-gray-500 mt-1">Total Curriculums</p>
+                </div>
+                <div className="bg-white rounded-xl border border-gray-200 p-5">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center">
+                      <CheckCircle size={20} className="text-emerald-600" />
+                    </div>
+                    <ArrowUpRight size={16} className="text-gray-300" />
+                  </div>
+                  <p className="text-2xl font-black text-gray-900">{(dashboard?.stats?.totalCVsComplete || 0).toLocaleString()}</p>
+                  <p className="text-xs text-gray-500 mt-1">Curriculums Completos</p>
+                </div>
+                <div className="bg-white rounded-xl border border-gray-200 p-5">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center">
+                      <AlertTriangle size={20} className="text-amber-600" />
+                    </div>
+                    <ArrowUpRight size={16} className="text-gray-300" />
+                  </div>
+                  <p className="text-2xl font-black text-gray-900">{(dashboard?.stats?.totalCVsIncomplete || 0).toLocaleString()}</p>
+                  <p className="text-xs text-gray-500 mt-1">Curriculums Incompletos</p>
+                </div>
+                <div className="bg-white rounded-xl border border-gray-200 p-5">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
+                      <CreditCard size={20} className="text-blue-600" />
+                    </div>
+                    <ArrowUpRight size={16} className="text-gray-300" />
+                  </div>
+                  <p className="text-2xl font-black text-gray-900">{(dashboard?.stats?.totalPayments || 0).toLocaleString()}</p>
+                  <p className="text-xs text-gray-500 mt-1">Pagos</p>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -494,6 +607,7 @@ const AdminPanel = () => {
                       <th className="text-left py-3 px-4 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Profesional</th>
                       <th className="text-left py-3 px-4 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Rubro</th>
                       <th className="text-left py-3 px-4 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Categoria</th>
+                      <th className="text-left py-3 px-4 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Marketplace</th>
                       <th className="text-left py-3 px-4 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Verificacion</th>
                       <th className="text-left py-3 px-4 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Rating</th>
                       <th className="text-right py-3 px-4 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Acciones</th>
@@ -516,7 +630,37 @@ const AdminPanel = () => {
                           </div>
                         </td>
                         <td className="py-3 px-4 text-gray-600">{p.profession}</td>
-                        <td className="py-3 px-4 text-gray-500 text-xs">{p.categoryId?.title || '-'}</td>
+                        <td className="py-3 px-4">
+                          <div className="flex flex-wrap gap-1">
+                            {(() => {
+                              const cats = p.categories?.length ? p.categories : (p.categoryId ? [{ categoryId: p.categoryId, subcategoryId: p.subcategoryId }] : []);
+                              return cats.length > 0 ? cats.map((cat, i) => {
+                                const catTitle = cat.categoryId?.title || (typeof cat.categoryId === 'string' ? cat.categoryId.slice(-6) : '—');
+                                const subTitle = cat.subcategoryId?.title || (typeof cat.subcategoryId === 'string' ? cat.subcategoryId.slice(-6) : null);
+                                return (
+                                  <span key={i} className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-medium rounded-md ${subTitle ? 'bg-primary-50 text-primary-700' : 'bg-gray-100 text-gray-700'}`}>
+                                    {catTitle}{subTitle ? <span className="opacity-50">→</span> : ''}{subTitle}
+                                  </span>
+                                );
+                              }) : <span className="text-gray-400 text-xs">—</span>;
+                            })()}
+                          </div>
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium rounded-md ${
+                            p.primaryCategory === 'comercio' ? 'bg-amber-50 text-amber-700' :
+                            p.primaryCategory === 'empresa' ? 'bg-blue-50 text-blue-700' :
+                            'bg-gray-50 text-gray-600'
+                          }`}>
+                            {p.primaryCategory === 'comercio' ? <>
+                              <Store size={10} /> Comercio{p.commerceType ? <span className="opacity-50">·{p.commerceType}</span> : ''}
+                            </> : p.primaryCategory === 'empresa' ? <>
+                              <Building2 size={10} /> Empresa
+                            </> : p.primaryCategory === 'professional' ? <>
+                              <Briefcase size={10} /> Profesional
+                            </> : '—'}
+                          </span>
+                        </td>
                         <td className="py-3 px-4">
                           <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium ${
                             p.verification?.verificationStatus === 'verified' ? 'bg-emerald-100 text-emerald-700' :
@@ -1015,6 +1159,427 @@ const AdminPanel = () => {
               <div className="bg-white rounded-xl border border-gray-200 p-6">
                 <h3 className="font-bold text-gray-900 text-sm mb-4 flex items-center gap-2"><Activity size={16} /> Estado del Servidor</h3>
                 <SystemStatus />
+              </div>
+            </div>
+          )}
+
+          {/* ===== CURRÍCULUMS ===== */}
+          {activeSection === 'cvs' && (
+            <div className="space-y-6">
+              {/* Filters */}
+              <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-5">
+                <form onSubmit={handleCvSearch} className="flex flex-col md:flex-row gap-3 flex-wrap">
+                  <div className="flex-1 relative min-w-[200px]">
+                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <input type="text" placeholder="Buscar por nombre, email o telefono..."
+                      value={cvsSearch} onChange={e => setCvsSearch(e.target.value)}
+                      className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-primary-500" />
+                  </div>
+                  <input type="text" placeholder="Profesion..."
+                    value={cvsProfessionFilter} onChange={e => setCvsProfessionFilter(e.target.value)}
+                    className="w-full md:w-36 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-primary-500" />
+                  <select value={cvsCategoryFilter} onChange={e => setCvsCategoryFilter(e.target.value)}
+                    className="w-full md:w-36 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-primary-500">
+                    <option value="">Categoria</option>
+                    <option value="professional">Profesionales</option>
+                    <option value="empresa">Empresas</option>
+                    <option value="comercio">Comercio</option>
+                  </select>
+                  <select value={cvsStatusFilter} onChange={e => setCvsStatusFilter(e.target.value)}
+                    className="w-full md:w-32 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-primary-500">
+                    <option value="">Estado</option>
+                    <option value="nuevo">Nuevo</option>
+                    <option value="revisado">Revisado</option>
+                    <option value="aprobado">Aprobado</option>
+                    <option value="rechazado">Rechazado</option>
+                  </select>
+                  <input type="text" placeholder="Subcategoria..."
+                    value={cvsSubcategoryFilter} onChange={e => setCvsSubcategoryFilter(e.target.value)}
+                    className="w-full md:w-32 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-primary-500" />
+                  <select value={cvsCompletenessFilter} onChange={e => setCvsCompletenessFilter(e.target.value)}
+                    className="w-full md:w-32 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-primary-500">
+                    <option value="">Completitud</option>
+                    <option value="complete">Completos</option>
+                    <option value="incomplete">Incompletos</option>
+                  </select>
+                  <button type="submit" className="px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition-all">
+                    <Search size={14} className="inline mr-1" /> Buscar
+                  </button>
+                </form>
+              </div>
+
+              {/* Table */}
+              <div className="bg-white rounded-xl border border-gray-200">
+                <div className="p-5 border-b border-gray-100 flex items-center justify-between">
+                  <div>
+                    <h2 className="font-bold text-gray-900">Curriculums</h2>
+                    <p className="text-xs text-gray-500">{cvsTotal} registros</p>
+                  </div>
+                  <button onClick={() => fetchCVs(1, cvsSearch, cvsProfessionFilter, cvsCompletenessFilter, cvsCategoryFilter, cvsStatusFilter, cvsSubcategoryFilter)}
+                    className="p-2 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-all">
+                    <RefreshCw size={14} />
+                  </button>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-gray-100 bg-gray-50/50">
+                        <th className="text-left py-3 px-4 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Nombre</th>
+                        <th className="text-left py-3 px-4 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Email</th>
+                        <th className="text-left py-3 px-4 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Profesion</th>
+                        <th className="text-left py-3 px-4 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Categoria</th>
+                        <th className="text-left py-3 px-4 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Skills</th>
+                        <th className="text-left py-3 px-4 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Estado CV</th>
+                        <th className="text-left py-3 px-4 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Destacado</th>
+                        <th className="text-left py-3 px-4 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Fecha</th>
+                        <th className="text-right py-3 px-4 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {cvs.length === 0 && (
+                        <tr><td colSpan={9} className="text-center py-10 text-gray-400">No hay curriculums registrados</td></tr>
+                      )}
+                      {cvs.map(cv => (
+                        <tr key={cv._id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
+                          <td className="py-3 px-4">
+                            <span className="font-medium text-gray-900 text-xs">{cv.fullName}</span>
+                          </td>
+                          <td className="py-3 px-4 text-gray-500 text-xs truncate max-w-[120px]">{cv.email}</td>
+                          <td className="py-3 px-4">
+                            <span className="text-gray-700 text-xs">{cv.profession || '—'}</span>
+                          </td>
+                          <td className="py-3 px-4">
+                            <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium rounded-md ${
+                              cv.primaryCategory === 'comercio' ? 'bg-amber-50 text-amber-700' :
+                              cv.primaryCategory === 'empresa' ? 'bg-blue-50 text-blue-700' :
+                              cv.primaryCategory === 'professional' ? 'bg-gray-100 text-gray-700' :
+                              'bg-gray-50 text-gray-400'
+                            }`}>
+                              {cv.primaryCategory === 'comercio' ? 'Comercio' :
+                               cv.primaryCategory === 'empresa' ? 'Empresa' :
+                               cv.primaryCategory === 'professional' ? 'Profesional' :
+                               '—'}
+                            </span>
+                            {cv.subCategory && <span className="ml-1 text-[10px] text-gray-400">· {cv.subCategory}</span>}
+                          </td>
+                          <td className="py-3 px-4 text-gray-500 text-xs">{cv.skillsCount}</td>
+                          <td className="py-3 px-4">
+                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium ${
+                              cv.status === 'aprobado' ? 'bg-emerald-100 text-emerald-700' :
+                              cv.status === 'revisado' ? 'bg-blue-100 text-blue-700' :
+                              cv.status === 'rechazado' ? 'bg-red-100 text-red-700' :
+                              'bg-amber-100 text-amber-700'
+                            }`}>
+                              {cv.status === 'aprobado' && <CheckCircle size={10} />}
+                              {cv.status === 'rechazado' && <XCircle size={10} />}
+                              {cv.status === 'revisado' && <Clock size={10} />}
+                              {(!cv.status || cv.status === 'nuevo') && <AlertTriangle size={10} />}
+                              {cv.status || 'nuevo'}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4">
+                            {cv.featured ? (
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded-md text-[10px] font-medium">
+                                <Crown size={10} /> Si
+                              </span>
+                            ) : (
+                              <span className="text-gray-300 text-[10px]">—</span>
+                            )}
+                          </td>
+                          <td className="py-3 px-4 text-gray-400 text-xs">{new Date(cv.createdAt).toLocaleDateString()}</td>
+                          <td className="py-3 px-4 text-right">
+                            <div className="flex items-center justify-end gap-1">
+                              <button onClick={() => openCvDetail(cv)}
+                                className="inline-flex items-center gap-1 px-2 py-1.5 rounded-lg text-[10px] font-medium bg-primary-50 text-primary-600 hover:bg-primary-100 transition-all"
+                              ><Eye size={12} /> Ver</button>
+                              <div className="relative group">
+                                <button className="p-1.5 text-gray-400 hover:text-gray-600 transition-all">
+                                  <MoreHorizontal size={14} />
+                                </button>
+                                <div className="absolute right-0 top-full mt-1 w-40 bg-white rounded-xl shadow-lg border border-gray-200 py-1 z-20 hidden group-hover:block">
+                                  {cv.status !== 'aprobado' && (
+                                    <button onClick={() => updateCvStatus(cv._id, 'aprobado')}
+                                      className="w-full text-left px-3 py-1.5 text-[11px] text-emerald-700 hover:bg-emerald-50 flex items-center gap-2">
+                                      <CheckCircle size={12} /> Aprobar
+                                    </button>
+                                  )}
+                                  {cv.status !== 'revisado' && (
+                                    <button onClick={() => updateCvStatus(cv._id, 'revisado')}
+                                      className="w-full text-left px-3 py-1.5 text-[11px] text-blue-700 hover:bg-blue-50 flex items-center gap-2">
+                                      <Clock size={12} /> Marcar revisado
+                                    </button>
+                                  )}
+                                  {cv.status !== 'rechazado' && (
+                                    <button onClick={() => updateCvStatus(cv._id, 'rechazado')}
+                                      className="w-full text-left px-3 py-1.5 text-[11px] text-red-700 hover:bg-red-50 flex items-center gap-2">
+                                      <XCircle size={12} /> Rechazar
+                                    </button>
+                                  )}
+                                  <button onClick={() => toggleCvFeatured(cv._id)}
+                                    className="w-full text-left px-3 py-1.5 text-[11px] text-amber-700 hover:bg-amber-50 flex items-center gap-2">
+                                    <Crown size={12} /> {cv.featured ? 'Quitar destacado' : 'Destacar'}
+                                  </button>
+                                  <hr className="my-1 border-gray-100" />
+                                  <button onClick={() => deleteCv(cv._id, cv.fullName)}
+                                    className="w-full text-left px-3 py-1.5 text-[11px] text-red-600 hover:bg-red-50 flex items-center gap-2">
+                                    <Trash2 size={12} /> Eliminar
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="p-4 border-t border-gray-100 flex items-center justify-between text-sm text-gray-500">
+                  <span>Pagina {cvsPage} de {Math.ceil(cvsTotal / 15) || 1}</span>
+                  <div className="flex gap-2">
+                    <button disabled={cvsPage <= 1} onClick={() => fetchCVs(cvsPage - 1, cvsSearch, cvsProfessionFilter, cvsCompletenessFilter, cvsCategoryFilter, cvsStatusFilter, cvsSubcategoryFilter)}
+                      className="px-3 py-1.5 border border-gray-200 rounded-lg text-xs disabled:opacity-40 hover:border-gray-300">Anterior</button>
+                    <button disabled={cvsPage >= Math.ceil(cvsTotal / 15)} onClick={() => fetchCVs(cvsPage + 1, cvsSearch, cvsProfessionFilter, cvsCompletenessFilter, cvsCategoryFilter, cvsStatusFilter, cvsSubcategoryFilter)}
+                      className="px-3 py-1.5 border border-gray-200 rounded-lg text-xs disabled:opacity-40 hover:border-gray-300">Siguiente</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* CV Detail Modal */}
+          {selectedCv && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={() => { setSelectedCv(null); setSelectedCvFull(null); }}>
+              <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+                <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between rounded-t-2xl z-10">
+                  <h3 className="font-bold text-gray-900 text-lg">Detalle del Curriculum</h3>
+                  <div className="flex items-center gap-2">
+                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium ${
+                      selectedCv.status === 'aprobado' ? 'bg-emerald-100 text-emerald-700' :
+                      selectedCv.status === 'revisado' ? 'bg-blue-100 text-blue-700' :
+                      selectedCv.status === 'rechazado' ? 'bg-red-100 text-red-700' :
+                      'bg-amber-100 text-amber-700'
+                    }`}>
+                      {selectedCv.status || 'nuevo'}
+                    </span>
+                    {selectedCv.featured && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 text-amber-700 rounded-md text-[10px] font-medium">
+                        <Crown size={10} /> Destacado
+                      </span>
+                    )}
+                    <button onClick={() => { setSelectedCv(null); setSelectedCvFull(null); }}
+                      className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-all">
+                      <XCircle size={18} />
+                    </button>
+                  </div>
+                </div>
+                <div className="p-6 space-y-6">
+                  {/* Header */}
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 rounded-xl bg-primary-50 flex items-center justify-center">
+                      <FileText size={24} className="text-primary-600" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-gray-900 text-lg">{selectedCv.fullName}</h4>
+                      <p className="text-sm text-gray-500">{selectedCv.profession || 'Sin profesion'}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium ${
+                          selectedCv.isComplete ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+                        }`}>
+                          {selectedCv.isComplete ? <CheckCircle size={10} /> : <AlertTriangle size={10} />}
+                          {selectedCv.isComplete ? 'Completo' : 'Incompleto'}
+                        </span>
+                        <span className="text-[10px] text-gray-400">Creado: {new Date(selectedCv.createdAt).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Contact info */}
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    <div className="bg-gray-50 rounded-lg p-3">
+                      <p className="text-[10px] text-gray-500 uppercase font-semibold">Email</p>
+                      <p className="text-sm font-medium text-gray-900 truncate">{selectedCv.email || '—'}</p>
+                    </div>
+                    <div className="bg-gray-50 rounded-lg p-3">
+                      <p className="text-[10px] text-gray-500 uppercase font-semibold">Telefono</p>
+                      <p className="text-sm font-medium text-gray-900">{selectedCv.phone || '—'}</p>
+                    </div>
+                    <div className="bg-gray-50 rounded-lg p-3">
+                      <p className="text-[10px] text-gray-500 uppercase font-semibold">Categoria</p>
+                      <p className="text-sm font-medium text-gray-900">
+                        {selectedCv.primaryCategory === 'comercio' ? 'Comercio' :
+                         selectedCv.primaryCategory === 'empresa' ? 'Empresa' :
+                         selectedCv.primaryCategory === 'professional' ? 'Profesional' : '—'}
+                        {selectedCv.subCategory ? <span className="text-gray-400 text-xs"> · {selectedCv.subCategory}</span> : ''}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Full CV Data */}
+                  {selectedCvFull && (
+                    <>
+                      {/* Tags */}
+                      {selectedCvFull.tags?.length > 0 && (
+                        <div>
+                          <p className="text-[10px] text-gray-500 uppercase font-semibold mb-2">Tags</p>
+                          <div className="flex flex-wrap gap-1.5">
+                            {selectedCvFull.tags.map((tag, i) => (
+                              <span key={i} className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded-md text-[10px] font-medium">{tag}</span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Skills */}
+                      {selectedCvFull.skills?.length > 0 && (
+                        <div>
+                          <p className="text-[10px] text-gray-500 uppercase font-semibold mb-2">Habilidades ({selectedCvFull.skills.length})</p>
+                          <div className="flex flex-wrap gap-1.5">
+                            {selectedCvFull.skills.map((skill, i) => (
+                              <span key={i} className={`px-2 py-0.5 rounded-md text-[10px] font-medium ${
+                                skill.level === 'experto' ? 'bg-purple-100 text-purple-700' :
+                                skill.level === 'avanzado' ? 'bg-blue-100 text-blue-700' :
+                                skill.level === 'intermedio' ? 'bg-amber-100 text-amber-700' :
+                                'bg-gray-100 text-gray-600'
+                              }`}>
+                                {skill.name}{skill.level ? <span className="opacity-50 ml-0.5">·{skill.level}</span> : ''}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Experience */}
+                      {selectedCvFull.experience?.length > 0 && (
+                        <div>
+                          <p className="text-[10px] text-gray-500 uppercase font-semibold mb-2">Experiencia ({selectedCvFull.experience.length})</p>
+                          <div className="space-y-2">
+                            {selectedCvFull.experience.map((exp, i) => (
+                              <div key={i} className="bg-gray-50 rounded-lg p-3">
+                                <div className="flex items-start justify-between">
+                                  <div>
+                                    <p className="text-sm font-semibold text-gray-900">{exp.jobTitle || 'Sin titulo'}</p>
+                                    <p className="text-xs text-gray-500">{exp.company || ''}</p>
+                                  </div>
+                                  <span className="text-[10px] text-gray-400">
+                                    {exp.startDate ? new Date(exp.startDate).toLocaleDateString('es-AR', { month: 'short', year: 'numeric' }) : '?'}
+                                    {' — '}
+                                    {exp.current ? 'Actual' : exp.endDate ? new Date(exp.endDate).toLocaleDateString('es-AR', { month: 'short', year: 'numeric' }) : '?'}
+                                  </span>
+                                </div>
+                                {exp.description && <p className="text-xs text-gray-500 mt-1">{exp.description}</p>}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Education */}
+                      {selectedCvFull.education?.length > 0 && (
+                        <div>
+                          <p className="text-[10px] text-gray-500 uppercase font-semibold mb-2">Educacion ({selectedCvFull.education.length})</p>
+                          <div className="space-y-2">
+                            {selectedCvFull.education.map((edu, i) => (
+                              <div key={i} className="bg-gray-50 rounded-lg p-3">
+                                <div className="flex items-start justify-between">
+                                  <div>
+                                    <p className="text-sm font-semibold text-gray-900">{edu.degree || 'Sin titulo'}</p>
+                                    <p className="text-xs text-gray-500">{edu.institution}{edu.field ? ` · ${edu.field}` : ''}</p>
+                                  </div>
+                                  <span className="text-[10px] text-gray-400">
+                                    {edu.startDate ? new Date(edu.startDate).toLocaleDateString('es-AR', { month: 'short', year: 'numeric' }) : '?'}
+                                    {' — '}
+                                    {edu.current ? 'Actual' : edu.endDate ? new Date(edu.endDate).toLocaleDateString('es-AR', { month: 'short', year: 'numeric' }) : '?'}
+                                  </span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Location & Availability */}
+                      <div className="grid grid-cols-2 gap-3">
+                        {selectedCvFull.location?.city && (
+                          <div className="bg-gray-50 rounded-lg p-3">
+                            <p className="text-[10px] text-gray-500 uppercase font-semibold">Ubicacion</p>
+                            <p className="text-sm font-medium text-gray-900">
+                              {[selectedCvFull.location.city, selectedCvFull.location.state].filter(Boolean).join(', ') || '—'}
+                            </p>
+                          </div>
+                        )}
+                        {selectedCvFull.availability?.status && (
+                          <div className="bg-gray-50 rounded-lg p-3">
+                            <p className="text-[10px] text-gray-500 uppercase font-semibold">Disponibilidad</p>
+                            <p className="text-sm font-medium text-gray-900">{selectedCvFull.availability.status}</p>
+                            <p className="text-[10px] text-gray-400">
+                              {selectedCvFull.availability.mode} · {selectedCvFull.availability.hours}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Experience Level */}
+                      {selectedCvFull.experienceLevel && (
+                        <div className="bg-gray-50 rounded-lg p-3">
+                          <p className="text-[10px] text-gray-500 uppercase font-semibold">Nivel de Experiencia</p>
+                          <p className="text-sm font-medium text-gray-900 capitalize">{selectedCvFull.experienceLevel}</p>
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {/* Linked User */}
+                  {selectedCv.userId && (
+                    <div className="border-t border-gray-100 pt-4">
+                      <p className="text-[10px] text-gray-500 uppercase font-semibold mb-1">Vinculado a Usuario</p>
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-600">
+                          {(selectedCv.userId.name || '?').charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">{selectedCv.userId.name || 'N/A'}</p>
+                          <p className="text-xs text-gray-400">{selectedCv.userId.email || ''}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Actions */}
+                  <div className="border-t border-gray-100 pt-4 flex flex-wrap gap-2">
+                    <div className="flex gap-1.5">
+                      <button onClick={() => updateCvStatus(selectedCv._id, 'revisado')}
+                        className={`px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all ${
+                          selectedCv.status === 'revisado' ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-blue-50 text-blue-700 hover:bg-blue-100'
+                        }`} disabled={selectedCv.status === 'revisado'}>
+                        <Clock size={12} className="inline mr-1" /> Revisado
+                      </button>
+                      <button onClick={() => updateCvStatus(selectedCv._id, 'aprobado')}
+                        className={`px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all ${
+                          selectedCv.status === 'aprobado' ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                        }`} disabled={selectedCv.status === 'aprobado'}>
+                        <CheckCircle size={12} className="inline mr-1" /> Aprobar
+                      </button>
+                      <button onClick={() => updateCvStatus(selectedCv._id, 'rechazado')}
+                        className={`px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all ${
+                          selectedCv.status === 'rechazado' ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-red-50 text-red-700 hover:bg-red-100'
+                        }`} disabled={selectedCv.status === 'rechazado'}>
+                        <XCircle size={12} className="inline mr-1" /> Rechazar
+                      </button>
+                    </div>
+                    <div className="flex gap-1.5 ml-auto">
+                      <button onClick={() => toggleCvFeatured(selectedCv._id)}
+                        className={`px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all ${
+                          selectedCv.featured ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-600 hover:bg-amber-50'
+                        }`}>
+                        <Crown size={12} className="inline mr-1" /> {selectedCv.featured ? 'Destacado' : 'Destacar'}
+                      </button>
+                      <button onClick={() => { deleteCv(selectedCv._id, selectedCv.fullName); }}
+                        className="px-3 py-1.5 rounded-lg text-[11px] font-medium bg-red-50 text-red-700 hover:bg-red-100 transition-all">
+                        <Trash2 size={12} className="inline mr-1" /> Eliminar
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           )}

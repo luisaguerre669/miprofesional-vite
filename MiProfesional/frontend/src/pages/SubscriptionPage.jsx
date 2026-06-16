@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Loader2, CheckCircle, XCircle, ArrowRight, Crown, Building2, Briefcase, Sparkles, CreditCard } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, ArrowRight, Crown, Building2, Briefcase, Store, Sparkles, CreditCard } from 'lucide-react';
 import api from '../lib/axios';
 import { useAuth } from '../context/AuthContext';
 
@@ -120,7 +120,8 @@ export default function SubscriptionPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {plans.map(plan => {
             const isCurrentPlan = currentPlan === plan.id && isActive;
-            const Icon = plan.id === 'company' ? Building2 : Briefcase;
+            const iconMap = { professional: Briefcase, commerce: Store, company: Building2 };
+            const Icon = iconMap[plan.id] || Briefcase;
             return (
               <div
                 key={plan.id}
@@ -146,13 +147,15 @@ export default function SubscriptionPage() {
                 <div className="p-6 sm:p-8">
                   <div className="flex items-center gap-3 mb-4">
                     <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                      plan.id === 'company' ? 'bg-amber-100' : 'bg-primary-50'
+                      plan.id === 'company' ? 'bg-purple-100' : plan.id === 'commerce' ? 'bg-amber-100' : 'bg-primary-50'
                     }`}>
-                      <Icon size={24} className={plan.id === 'company' ? 'text-amber-600' : 'text-primary-600'} />
+                      <Icon size={24} className={
+                        plan.id === 'company' ? 'text-purple-600' : plan.id === 'commerce' ? 'text-amber-600' : 'text-primary-600'
+                      } />
                     </div>
                     <div>
                       <h3 className="text-lg font-bold text-gray-900">{plan.name}</h3>
-                      <p className="text-xs text-gray-500">{plan.forRole === 'company' ? 'Para empresas' : 'Para profesionales'}</p>
+                      <p className="text-xs text-gray-500">{plan.forRole === 'company' ? 'Para empresas' : plan.forRole === 'commerce' ? 'Para comercios' : 'Para profesionales'}</p>
                     </div>
                   </div>
 

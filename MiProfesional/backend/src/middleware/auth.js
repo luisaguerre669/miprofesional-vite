@@ -1,4 +1,5 @@
 const jwt = require("jsonwebtoken");
+const logger = require('../utils/logger');
 
 function authenticate(req, res, next) {
   const authHeader = req.headers.authorization;
@@ -48,6 +49,7 @@ async function requireAdmin(req, res, next) {
     }
     next();
   } catch (err) {
+    logger.error('Error verificando permisos de administrador:', err);
     return res.status(500).json({ success: false, message: 'Error verificando permisos de administrador.' });
   }
 }
@@ -62,6 +64,7 @@ async function requireEmployer(req, res, next) {
     req.authUser = user;
     next();
   } catch (err) {
+    logger.error('Error verificando permisos de empresa:', err);
     return res.status(500).json({ success: false, message: 'Error verificando permisos de empresa.' });
   }
 }

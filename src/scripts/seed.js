@@ -247,7 +247,7 @@ async function seed() {
       }
 
       parent.subcategories = subIds;
-      parent.professionalCount = await mongoose.model('Professional').countDocuments({ categoryId: { $in: subIds } });
+      parent.professionalCount = await mongoose.model('Professional').countDocuments({ 'categories.categoryId': { $in: subIds } });
       await parent.save();
 
       console.log(`  ${mainData.title} — ${subIds.length} subcategorias, ${parent.professionalCount} profesionales`);

@@ -67,8 +67,31 @@ const categorySchema = new mongoose.Schema({
     emergency: {
       type: Boolean,
       default: false
+    },
+    primaryCategory: {
+      type: String,
+      enum: ['professional', 'empresa', 'comercio', null],
+      default: null
     }
   },
+  commerceTypes: [{
+    type: String,
+    enum: ['minorista', 'mayorista', 'mixto'],
+  }],
+  commerceSubcategories: {
+    type: Map,
+    of: [{
+      title: String,
+      slug: String,
+      description: String,
+      image: String,
+      icon: String
+    }],
+    default: {}
+  },
+  commerceTags: [{
+    type: String
+  }],
   stats: {
     totalBookings: {
       type: Number,
@@ -142,11 +165,11 @@ categorySchema.pre('save', function(next) {
 // Instance methods
 categorySchema.methods.updateProfessionalCount = async function() {
   const Professional = mongoose.model('Professional');
-  const count = await Professional.countDocuments({ 
-    categoryId: this._id, 
-    isActive: true 
+  const count = await Professional.countDocuments({
+    'categories.categoryId': this._id,
+    isActive: true
   });
-  
+
   this.professionalCount = count;
   return this.save();
 };
@@ -156,8 +179,9 @@ categorySchema.methods.updateStats = async function() {
   const Booking = mongoose.model('Booking');
   const Review = mongoose.model('Review');
   
-  // Get all professionals in this category
-  const professionals = await Professional.find({ categoryId: this._id });
+  const professionals = await Professional.find({
+    'categories.categoryId': this._id
+  });
   const professionalIds = professionals.map(p => p._id);
   
   // Calculate stats
@@ -174,7 +198,7 @@ categorySchema.methods.updateStats = async function() {
     ]).then(result => result[0]?.avgRating || 0),
     Review.countDocuments({ toProfessional: { $in: professionalIds } }),
     Professional.aggregate([
-      { $match: { categoryId: this._id } },
+      { $match: { 'categories.categoryId': this._id } },
       { $group: { _id: null, avgPrice: { $avg: '$hourlyRate' } } }
     ]).then(result => result[0]?.avgPrice || 0)
   ]);

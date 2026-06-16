@@ -65,11 +65,17 @@ async function migrate() {
 
     // Step 3: Migrate professionals from old category to new one
     if (oldCategory && oldCategory._id.toString() !== newCategory._id.toString()) {
-      const professionalsCount = await Professional.countDocuments({ categoryId: oldCategory._id });
+      const professionalsCount = await Professional.countDocuments({ 'categories.categoryId': oldCategory._id });
       
       if (professionalsCount > 0) {
         console.log(`🔄 Migrando ${professionalsCount} profesionales de categoría antigua a nueva...`);
         const result = await Professional.updateMany(
+          { 'categories.categoryId': oldCategory._id },
+          { $set: { 'categories.$[elem].categoryId': newCategory._id } },
+          { arrayFilters: [{ 'elem.categoryId': oldCategory._id }] }
+        );
+        // Also update legacy field for consistency
+        await Professional.updateMany(
           { categoryId: oldCategory._id },
           { categoryId: newCategory._id }
         );
@@ -100,7 +106,7 @@ async function migrate() {
     }
 
     // Step 7: Validation - verify all emergency category professionals are linked
-    const emergencyProfessionals = await Professional.find({ categoryId: newCategory._id });
+    const emergencyProfessionals = await Professional.find({ 'categories.categoryId': newCategory._id });
     console.log(`\n✅ Verificación Final:`);
     console.log(`   - Categoría 24-7 ID: ${newCategory._id}`);
     console.log(`   - Profesionales en 24-7: ${emergencyProfessionals.length}`);
