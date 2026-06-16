@@ -142,10 +142,6 @@ router.put(
       if (!review) {
         return res.status(404).json({ success: false, message: 'Review not found' });
       }
-<<<<<<< HEAD
-
-=======
->>>>>>> 9eec28205422cb328c48e5a359ffb4dabfda9400
       if (review.fromUser.toString() !== req.userId) {
         return res.status(403).json({ success: false, message: 'Not authorized to edit this review' });
       }

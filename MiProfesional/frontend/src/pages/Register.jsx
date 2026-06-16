@@ -794,7 +794,7 @@ const Register = () => {
                       </div>
                       <div className="relative z-10">
                         <p className="text-white text-xs font-semibold flex items-center justify-center gap-1.5">
-                          <Gift size={12} /> 60 DÍAS GRATIS — primeros 700 suscriptos
+                          <Gift size={12} /> 60 días gratis para los primeros 700 suscriptores.
                         </p>
                       </div>
                     </div>

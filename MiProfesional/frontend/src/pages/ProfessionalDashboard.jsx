@@ -403,9 +403,9 @@ const ProfessionalDashboard = () => {
                               <Gift size={20} className="text-primary-600" />
                             </div>
                             <div>
-                              <h4 className="font-bold text-gray-900 text-sm">30 días gratis</h4>
+                              <h4 className="font-bold text-gray-900 text-sm">60 días gratis</h4>
                               <p className="text-xs text-gray-500">
-                                Disfrutá tu mes gratuito sin cargo. Tu perfil esta visible para clientes.
+                                Disfrutá tu periodo gratuito sin cargo. Tu perfil esta visible para clientes.
                               </p>
                             </div>
                           </div>
@@ -424,7 +424,7 @@ const ProfessionalDashboard = () => {
                           <div>
                             <p className="text-sm font-semibold text-gray-900">Luego $5.000/mes</p>
                             <p className="text-xs text-gray-600 mt-1">
-                              Al finalizar los 30 días gratis, se activara automaticamente tu suscripcion recurrente de <strong>$5.000 ARS/mes</strong>.
+                              Al finalizar los 60 días gratis, se activara automaticamente tu suscripcion recurrente de <strong>$5.000 ARS/mes</strong>.
                               Sin cargos anticipados. Podes cancelar cuando quieras.
                             </p>
                             <button onClick={handleCreatePayment}
@@ -433,7 +433,7 @@ const ProfessionalDashboard = () => {
                             >
                               {creatingPayment ? 'Procesando...' : <>Activar suscripcion ahora <ArrowRight size={14} /></>}
                             </button>
-                            <p className="text-[10px] text-gray-400 mt-1.5">Al activar ahora, el cobro comenzara al finalizar los 30 días gratis.</p>
+                            <p className="text-[10px] text-gray-400 mt-1.5">Al activar ahora, el cobro comenzara al finalizar los 60 días gratis.</p>
                           </div>
                         </div>
                       </div>
@@ -492,7 +492,7 @@ const ProfessionalDashboard = () => {
 
                   <div className="p-5 bg-gray-50 rounded-xl border border-gray-200">
                     <h4 className="font-bold text-gray-900 text-sm mb-2">Que incluye tu suscripcion</h4>
-                    <p className="text-xs text-gray-500">30 días gratis, luego $5.000/mes. Acceso completo a la plataforma: tu perfil aparece en los resultados de busqueda del marketplace y los clientes pueden contactarte directamente. Cancelas cuando quieras.</p>
+                    <p className="text-xs text-gray-500">60 días gratis para los primeros 700 suscriptores, luego $5.000/mes. Acceso completo a la plataforma: tu perfil aparece en los resultados de busqueda del marketplace y los clientes pueden contactarte directamente. Cancelas cuando quieras.</p>
                   </div>
 
                   {subscription.isVisible === false && (

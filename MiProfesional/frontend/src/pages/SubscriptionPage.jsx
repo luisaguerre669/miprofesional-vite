@@ -164,7 +164,7 @@ export default function SubscriptionPage() {
                       <span className="text-4xl font-black text-gray-900">${plan.price.toLocaleString('es-AR')}</span>
                       <span className="text-gray-500 text-sm">ARS</span>
                     </div>
-                    <p className="text-xs text-gray-400">/{plan.durationDays} días</p>
+                    <p className="text-xs text-gray-400">{plan.trialDays ? `${plan.trialDays} días gratis` : 'Suscripción mensual'}</p>
                   </div>
 
                   <p className="text-sm text-gray-600 mb-4">{plan.description}</p>

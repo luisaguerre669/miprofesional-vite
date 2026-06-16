@@ -71,7 +71,7 @@ const promoSlides = [
     tag: 'Para Profesionales',
     title: 'Publica tu perfil ',
     titleAccent: 'y crece',
-    desc: 'Mostra tus servicios a miles de clientes potenciales. Empeza con 30 dias gratis sin compromiso.',
+    desc: 'Mostra tus servicios a miles de clientes potenciales. Empeza con 60 dias gratis para los primeros 700 suscriptores.',
     link: '/register?role=professional',
     color: 'emerald',
   },
@@ -740,9 +740,9 @@ const Home = () => {
         </Link>
       </section>
 
-      {/* 3 ENTRY POINTS */}
+      {/* 4 ENTRY POINTS */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-6 md:-mt-12 relative z-30 mb-6 md:mb-10">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {/* Cliente */}
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 md:p-6 hover:shadow-md transition-all text-center">
             <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center mx-auto mb-3">
@@ -752,6 +752,7 @@ const Home = () => {
             <div className="inline-flex items-center gap-1 px-3 py-0.5 bg-emerald-100 text-emerald-700 rounded-full text-xs font-semibold mb-3">
               <Crown size={12} /> Gratis
             </div>
+            <p className="text-xs text-gray-500 mb-4">Publicá búsquedas y encontrá profesionales sin costo.</p>
             <ul className="text-sm text-gray-600 space-y-2 mb-4 text-left">
               <li className="flex items-start gap-2"><CheckCircle size={14} className="text-emerald-500 shrink-0 mt-0.5" /> Buscar profesionales cerca tuyo</li>
               <li className="flex items-start gap-2"><CheckCircle size={14} className="text-emerald-500 shrink-0 mt-0.5" /> Comparar servicios y presupuestos</li>
@@ -775,7 +776,7 @@ const Home = () => {
               <span className="text-2xl font-bold text-gray-900">$5.000</span>
               <span className="text-xs text-gray-400">/mes</span>
             </div>
-            <p className="text-xs text-emerald-600 font-medium mb-3">30 días gratis · Cancela cuando quieras</p>
+            <p className="text-xs text-emerald-600 font-medium mb-3">60 días gratis para los primeros 700 suscriptores.</p>
             <ul className="text-sm text-gray-600 space-y-2 mb-4 text-left">
               <li className="flex items-start gap-2"><CheckCircle size={14} className="text-emerald-500 shrink-0 mt-0.5" /> Perfil visible en el marketplace</li>
               <li className="flex items-start gap-2"><CheckCircle size={14} className="text-emerald-500 shrink-0 mt-0.5" /> Recibir solicitudes de clientes</li>
@@ -783,27 +784,48 @@ const Home = () => {
             </ul>
             <Link to="/register?role=professional"
               className="block w-full py-2.5 bg-primary-600 text-white rounded-xl text-sm font-semibold hover:bg-primary-700 transition-all"
-            >Empezar 30 días gratis</Link>
+            >Empezar 60 días gratis</Link>
+          </div>
+
+          {/* Comercio */}
+          <div className="bg-white rounded-2xl border-2 border-amber-200 shadow-md p-5 md:p-6 hover:shadow-lg transition-all text-center relative">
+            <div className="w-12 h-12 bg-amber-50 rounded-xl flex items-center justify-center mx-auto mb-3">
+              <Store size={24} className="text-amber-600" />
+            </div>
+            <h3 className="text-lg font-bold text-gray-900 mb-1">Comercio</h3>
+            <div className="flex items-baseline justify-center gap-1 mb-1">
+              <span className="text-2xl font-bold text-gray-900">$10.000</span>
+              <span className="text-xs text-gray-400">/mes</span>
+            </div>
+            <p className="text-xs text-emerald-600 font-medium mb-3">60 días gratis para los primeros 700 suscriptores.</p>
+            <ul className="text-sm text-gray-600 space-y-2 mb-4 text-left">
+              <li className="flex items-start gap-2"><CheckCircle size={14} className="text-emerald-500 shrink-0 mt-0.5" /> Perfil en sección Comercios</li>
+              <li className="flex items-start gap-2"><CheckCircle size={14} className="text-emerald-500 shrink-0 mt-0.5" /> Subcategoría específica</li>
+              <li className="flex items-start gap-2"><CheckCircle size={14} className="text-emerald-500 shrink-0 mt-0.5" /> Horarios personalizados</li>
+            </ul>
+            <Link to="/register?role=professional"
+              className="block w-full py-2.5 bg-amber-600 text-white rounded-xl text-sm font-semibold hover:bg-amber-700 transition-all"
+            >Empezar 60 días gratis</Link>
           </div>
 
           {/* Empresa */}
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 md:p-6 hover:shadow-md transition-all text-center">
-            <div className="w-12 h-12 bg-amber-50 rounded-xl flex items-center justify-center mx-auto mb-3">
-              <Building2 size={24} className="text-amber-600" />
+            <div className="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center mx-auto mb-3">
+              <Building2 size={24} className="text-purple-600" />
             </div>
             <h3 className="text-lg font-bold text-gray-900 mb-1">Empresa</h3>
             <div className="flex items-baseline justify-center gap-1 mb-1">
               <span className="text-2xl font-bold text-gray-900">$20.000</span>
               <span className="text-xs text-gray-400">/mes</span>
             </div>
-            <p className="text-xs text-emerald-600 font-medium mb-3">30 días gratis · Cancela cuando quieras</p>
+            <p className="text-xs text-emerald-600 font-medium mb-3">60 días gratis para los primeros 700 suscriptores.</p>
             <ul className="text-sm text-gray-600 space-y-2 mb-4 text-left">
               <li className="flex items-start gap-2"><CheckCircle size={14} className="text-emerald-500 shrink-0 mt-0.5" /> Búsqueda avanzada de CVs</li>
               <li className="flex items-start gap-2"><CheckCircle size={14} className="text-emerald-500 shrink-0 mt-0.5" /> Acceso a profesionales del marketplace</li>
               <li className="flex items-start gap-2"><CheckCircle size={14} className="text-emerald-500 shrink-0 mt-0.5" /> Contacto directo sin comisiones</li>
             </ul>
             <Link to="/register?role=company"
-              className="block w-full py-2.5 bg-amber-600 text-white rounded-xl text-sm font-semibold hover:bg-amber-700 transition-all"
+              className="block w-full py-2.5 bg-purple-600 text-white rounded-xl text-sm font-semibold hover:bg-purple-700 transition-all"
             >Crear cuenta empresa</Link>
           </div>
         </div>
@@ -1012,12 +1034,29 @@ const Home = () => {
 
 
 
+      {/* GENERAL PROMO BANNER */}
+      <section className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 my-6">
+        <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 rounded-2xl p-6 md:p-8 text-center shadow-xl shadow-amber-500/20">
+          <span className="inline-block px-3 py-1 bg-white/20 text-white text-[10px] font-bold uppercase tracking-widest rounded-full mb-3">
+            Promoción de lanzamiento
+          </span>
+          <h3 className="text-xl md:text-2xl font-black text-white mb-2">
+            Los primeros 700 Profesionales, Comercios y Empresas que se registren obtendrán 60 días de suscripción totalmente gratis.
+          </h3>
+          <Link
+            to="/register"
+            className="inline-flex items-center gap-2 px-8 py-3 bg-white text-amber-700 font-bold rounded-xl hover:bg-amber-50 transition-all shadow-lg mt-4"
+          >
+            Registrarme ahora <ArrowRight size={18} />
+          </Link>
+        </div>
+      </section>
+
       {/* PRICING */}
       <section className="py-10 md:py-16 px-4">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-6 md:mb-10">
             <h2 className="text-xl md:text-2xl font-bold text-gray-900">Elegí el plan ideal para vos</h2>
-            <p className="text-amber-700 mt-1 text-xs md:text-sm font-semibold">⚡ 60 DÍAS GRATIS — primeros 700 suscriptores. Después mantené tu plan desde $5.000/mes.</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="bg-white rounded-2xl border border-gray-100 p-5 md:p-6 text-center">
@@ -1025,9 +1064,9 @@ const Home = () => {
                 <User size={20} className="text-blue-600" />
               </div>
               <h3 className="font-bold text-gray-900">Cliente</h3>
-              <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-2">Acceso gratuito</p>
+              <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-2">Gratis</p>
               <p className="text-3xl font-black text-gray-900 mb-1">$0</p>
-              <p className="text-[11px] text-gray-500 mb-4">Siempre gratis</p>
+              <p className="text-[11px] text-gray-500 mb-4">Publicá búsquedas y encontrá profesionales sin costo.</p>
               <ul className="text-xs text-gray-600 space-y-2 mb-5 text-left">
                 <li className="flex items-start gap-2"><CheckCircle size={12} className="text-emerald-500 shrink-0 mt-0.5" /> Buscar profesionales</li>
                 <li className="flex items-start gap-2"><CheckCircle size={12} className="text-emerald-500 shrink-0 mt-0.5" /> Buscar comercios</li>
@@ -1037,14 +1076,14 @@ const Home = () => {
               <Link to="/register" className="block w-full py-2 bg-blue-600 text-white text-xs font-bold rounded-xl hover:bg-blue-700 transition-all">Crear cuenta</Link>
             </div>
             <div className="bg-white rounded-2xl border-2 border-primary-200 p-5 md:p-6 text-center relative">
-              <span className="inline-flex items-center gap-1 px-3 py-0.5 bg-primary-100 text-primary-700 text-[10px] font-bold rounded-full mb-2">60 días gratis</span>
+              <span className="inline-flex items-center gap-1 px-3 py-0.5 bg-primary-100 text-primary-700 text-[10px] font-bold rounded-full mb-2">60 días gratis para los primeros 700 suscriptores</span>
               <div className="w-10 h-10 bg-primary-50 rounded-xl flex items-center justify-center mx-auto mb-3">
                 <Briefcase size={20} className="text-primary-600" />
               </div>
               <h3 className="font-bold text-gray-900">Profesional</h3>
-              <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-1">Plan Mensual</p>
+              <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-1">$5.000 por mes</p>
               <p className="text-3xl font-black text-gray-900 mb-1">$5.000</p>
-              <p className="text-[11px] text-gray-500 mb-4">por mes · Cancelas cuando quieras</p>
+              <p className="text-[11px] text-gray-500 mb-4">60 días gratis para los primeros 700 suscriptores.</p>
               <ul className="text-xs text-gray-600 space-y-2 mb-5 text-left">
                 <li className="flex items-start gap-2"><CheckCircle size={12} className="text-emerald-500 shrink-0 mt-0.5" /> Perfil en marketplace</li>
                 <li className="flex items-start gap-2"><CheckCircle size={12} className="text-emerald-500 shrink-0 mt-0.5" /> CV premium destacado</li>
@@ -1053,14 +1092,14 @@ const Home = () => {
               <Link to="/register?role=professional" className="block w-full py-2 bg-primary-600 text-white text-xs font-bold rounded-xl hover:bg-primary-700 transition-all">Empezar 60 días gratis</Link>
             </div>
             <div className="bg-white rounded-2xl border-2 border-amber-200 p-5 md:p-6 text-center relative">
-              <span className="inline-flex items-center gap-1 px-3 py-0.5 bg-amber-100 text-amber-700 text-[10px] font-bold rounded-full mb-2">60 días gratis</span>
+              <span className="inline-flex items-center gap-1 px-3 py-0.5 bg-amber-100 text-amber-700 text-[10px] font-bold rounded-full mb-2">60 días gratis para los primeros 700 suscriptores</span>
               <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center mx-auto mb-3">
                 <Store size={20} className="text-amber-600" />
               </div>
               <h3 className="font-bold text-gray-900">Comercio</h3>
-              <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-1">Plan Mensual</p>
+              <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-1">$10.000 por mes</p>
               <p className="text-3xl font-black text-gray-900 mb-1">$10.000</p>
-              <p className="text-[11px] text-gray-500 mb-4">por mes · Cancelas cuando quieras</p>
+              <p className="text-[11px] text-gray-500 mb-4">60 días gratis para los primeros 700 suscriptores.</p>
               <ul className="text-xs text-gray-600 space-y-2 mb-5 text-left">
                 <li className="flex items-start gap-2"><CheckCircle size={12} className="text-emerald-500 shrink-0 mt-0.5" /> Perfil en sección Comercios</li>
                 <li className="flex items-start gap-2"><CheckCircle size={12} className="text-emerald-500 shrink-0 mt-0.5" /> Subcategoría específica</li>
@@ -1074,9 +1113,9 @@ const Home = () => {
                 <Building2 size={20} className="text-purple-600" />
               </div>
               <h3 className="font-bold text-gray-900">Empresa</h3>
-              <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-1">Plan Mensual</p>
+              <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-1">$20.000 por mes</p>
               <p className="text-3xl font-black text-gray-900 mb-1">$20.000</p>
-              <p className="text-[11px] text-gray-500 mb-4">por mes · Cancelas cuando quieras</p>
+              <p className="text-[11px] text-gray-500 mb-4">60 días gratis para los primeros 700 suscriptores.</p>
               <ul className="text-xs text-gray-600 space-y-2 mb-5 text-left">
                 <li className="flex items-start gap-2"><CheckCircle size={12} className="text-emerald-500 shrink-0 mt-0.5" /> Búsqueda avanzada de CVs</li>
                 <li className="flex items-start gap-2"><CheckCircle size={12} className="text-emerald-500 shrink-0 mt-0.5" /> Contacto ilimitado</li>

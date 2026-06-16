@@ -101,16 +101,16 @@ export default function MainBanner() {
         </div>
       </div>
 
-      {/* 60-DAY PROMO BANNER */}
+      {/* PROMO BANNER */}
       <div className="main-banner-promo-slot" aria-label="Promocion 60 dias gratis">
-        <span className="promo-slot-label">Promoción limitada</span>
-        <Link to="/register?role=professional" className="promo-slot-active block no-underline">
+        <span className="promo-slot-label">Promoción de lanzamiento</span>
+        <Link to="/register" className="promo-slot-active block no-underline">
           <div className="promo-slot-content">
             <Gift size={18} />
             <span className="promo-slot-text">
-              <strong>60 DÍAS GRATIS</strong> — primeros 700 suscriptos. Sin compromiso, cancelá cuando quieras.
+              <strong>PROMOCIÓN DE LANZAMIENTO</strong> — Los primeros 700 Profesionales, Comercios y Empresas que se registren obtendrán 60 días de suscripción totalmente gratis.
             </span>
-            <span className="promo-slot-cta">Reclamar →</span>
+            <span className="promo-slot-cta">Registrarme ahora →</span>
           </div>
         </Link>
       </div>
